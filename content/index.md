@@ -56,31 +56,3 @@ comments: false
 </div>
 </div>
 
-<script>
-(function() {
-var el = document.getElementById('random-quote');
-if (!el) return;
-
-function pick(arr) {
-return arr[Math.floor(Math.random() * arr.length)];
-}
-
-try {
-  var controller = new AbortController();
-  var timeout = setTimeout(function() { controller.abort(); }, 5000);
-  fetch('/quotes.json', { signal: controller.signal })
-    .then(function(r) { if (!r.ok) throw Error(); return r.json(); })
-    .then(function(quotes) {
-      clearTimeout(timeout);
-      var q = pick(quotes);
-      el.textContent = '「 ' + (q.text || '') + ' 」';
-      el.title = q.source || '';
-    })
-    .catch(function() {
-      el.textContent = '「 欢迎来到安的博客 」';
-    });
-} catch(e) {
-el.textContent = '「 欢迎来到安的博客 」';
-}
-})();
-</script>

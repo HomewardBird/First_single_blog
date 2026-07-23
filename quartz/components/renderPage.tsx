@@ -352,13 +352,25 @@ export function renderPage(
             <div class="loader-orb"></div>
             <div class="loader-ring"></div>
           </div>
-          <div class="loader-text">安巢鸟的网站</div>
+          <div class="loader-text">归鸟的馆藏日志</div>
         </div>
         <video id="bg-video-light" muted loop playsinline preload="none" data-src={`${basePath}/static/light_bg.mp4`}></video>
         <video id="bg-video-dark" muted loop playsinline preload="none" data-src={`${basePath}/static/dark_bg.mp4`}></video>
         <img id="bg-image-light" src={`${basePath}/static/light_bg.jpg`} alt="" />
         <img id="bg-image-dark" src={`${basePath}/static/dark_bg.jpg`} alt="" />
         <div id="bg-overlay"></div>
+        <div id="top-bar">
+          <div class="top-bar-inner">
+            <span class="top-bar-title">归鸟的馆藏日志</span>
+            <div class="top-bar-right">
+              <button id="hamburger-btn" class="hamburger-btn" aria-label="菜单">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+              </button>
+            </div>
+          </div>
+        </div>
         {frame.css && <style dangerouslySetInnerHTML={{ __html: frame.css }} />}
         <div id="quartz-root" class="page" data-frame={frame.name}>
           <Body {...componentData}>
@@ -381,383 +393,118 @@ export function renderPage(
           dangerouslySetInnerHTML={{
             __html: `
 (function() {
-  /* ===== 加载界面：仅首次访问显示 ===== */
+  var _loaded = false;
+  try { _loaded = sessionStorage.getItem('qzt-loaded') === '1' || !!window.__qzt_loaded; } catch(e) { _loaded = !!window.__qzt_loaded; }
   var loader = document.getElementById('page-loader');
-  var pageLoaded = false;
-  try { pageLoaded = sessionStorage.getItem('qzt-loaded') === '1' || window.__qzt_loaded; } catch(e) { pageLoaded = !!window.__qzt_loaded; }
-
   function hideLoader() {
     if (!loader || !loader.parentNode) return;
-    loader.classList.remove('show');
-    loader.classList.add('fade-out');
-    setTimeout(function() {
-      if (loader.parentNode) loader.parentNode.removeChild(loader);
-    }, 600);
+    loader.classList.remove('show'); loader.classList.add('fade-out');
+    setTimeout(function() { if (loader.parentNode) loader.parentNode.removeChild(loader); }, 600);
   }
-
   if (loader) {
-    if (pageLoaded || document.readyState === 'complete') {
-      hideLoader();
-    } else {
+    if (!_loaded && document.readyState !== 'complete') {
       loader.classList.add('show');
-      window.addEventListener('load', function() {
-        setTimeout(hideLoader, 200);
-      });
-      setTimeout(function() { hideLoader(); }, 5000);
+      window.addEventListener('load', function() { setTimeout(hideLoader, 200); });
+      setTimeout(hideLoader, 5000);
     }
     window.__qzt_loaded = true;
     try { sessionStorage.setItem('qzt-loaded', '1'); } catch(e) {}
   }
 
-  /* ===== 视频懒加载 ===== */
-  function getVideos() { return document.querySelectorAll('#bg-video-light, #bg-video-dark'); }
-  var videosLoaded = false;
+  var _vLoaded = false;
   function lazyLoadVideos() {
-    if (videosLoaded) return;
-    videosLoaded = true;
-    getVideos().forEach(function(v) {
+    if (_vLoaded) return; _vLoaded = true;
+    document.querySelectorAll('#bg-video-light, #bg-video-dark').forEach(function(v) {
       var src = v.getAttribute('data-src');
       if (src) { v.src = src; v.load(); }
     });
   }
 
-  function getIsDark() {
-    return document.documentElement.getAttribute('data-theme') === 'dark'
-        || document.documentElement.getAttribute('saved-theme') === 'dark';
-  }
-  var isDark = getIsDark();
+  var bp = (document.body && document.body.getAttribute('data-basepath')) || '';
+  function tp(f) { return bp + '/static/' + f; }
 
-  /* ===== 阅读模式：浅色/深色各5个 ===== */
-  var LIGHT_MODES = [
-    { color: '',        icon: '\\uD83C\\uDFAC', label: '视频背景' },
-    { color: '#FFDEAD', icon: '\\uD83D\\uDCD6', label: '暖黄' },
-    { color: '#B0D6EC', icon: '\\uD83D\\uDCD8', label: '淡蓝' },
-    { color: '#B3EBBA', icon: '\\uD83D\\uDCD7', label: '柔绿' },
-    { color: '#F9F9F9', icon: '\\u2B1C',         label: '白色' }
-  ];
-  var DARK_MODES = [
-    { color: '',        icon: '\\uD83C\\uDFAC', label: '视频背景' },
-    { color: '#7C706C', icon: '\\uD83D\\uDCD6', label: '暖灰' },
-    { color: '#6A6E80', icon: '\\uD83D\\uDCD8', label: '冷灰' },
-    { color: '#676767', icon: '\\u2B1B',         label: '中灰' },
-    { color: '#242424', icon: '\\u25CF',         label: '深灰' }
-  ];
-
-  function getModes() { return isDark ? DARK_MODES : LIGHT_MODES; }
-
-  function getSaved() {
-    try { var v = parseInt(localStorage.getItem('readingMode')); return (v >= 0 && v <= 4) ? v : 0; } catch(e) { return 0; }
-  }
-  var mode = getSaved();
-
-  /* ===== 动态构建按钮面板 ===== */
-  function buildPanel() {
-    var panel = document.getElementById('reading-mode-colors');
-    if (!panel) return;
-    var modes = getModes();
-    var html = '';
-    for (var i = 0; i < modes.length; i++) {
-      var m = modes[i];
-      var bg = m.color ? 'background:' + m.color + ';' : '';
-      var fg = '';
-      if (m.color && !isDark) { fg = 'color:#2b2b2b;'; }
-      else if (m.color && isDark) { fg = 'color:#ccc;'; }
-      html += '<button data-mode="' + i + '" class="rm-color" style="' + bg + fg + '" title="' + m.label + '">' + m.icon + '</button>';
-    }
-    html += '<div class="rm-divider"></div>';
-    html += '<button data-font="auto" class="rm-font active" title="自动">A</button>';
-    html += '<button data-font="dark" class="rm-font" title="深黑" style="color:#2b2b2b;">A</button>';
-    html += '<button data-font="gray" class="rm-font" title="深灰" style="color:#4e4e4e;">A</button>';
-    html += '<button data-font="light" class="rm-font" title="浅白" style="color:#ebebec;">A</button>';
-    html += '<button data-font="sepia" class="rm-font" title="暖褐" style="color:#c8a87c;">A</button>';
-    html += '<button data-font="blue" class="rm-font" title="淡蓝" style="color:#88aacc;">A</button>';
-    html += '<div class="rm-divider"></div>';
-    html += '<button id="lock-mode-btn" class="rm-lock" title="锁定背景">\\uD83D\\uDD13</button>';
-    panel.innerHTML = html;
-
-    var cbs = panel.querySelectorAll('.rm-color');
-    var fbs = panel.querySelectorAll('.rm-font');
-    cbs.forEach(function(b) {
-      b.addEventListener('click', function(e) {
-        e.stopPropagation();
-        applyMode(parseInt(b.getAttribute('data-mode')));
-        var cp = document.getElementById('reading-mode-colors');
-        if (cp) cp.classList.add('hidden');
-      });
-    });
-    fbs.forEach(function(b) {
-      b.addEventListener('click', function(e) {
-        e.stopPropagation();
-        applyFontMode(b.getAttribute('data-font'));
-      });
-    });
-    lockBtn = document.getElementById('lock-mode-btn');
-    if (lockBtn) {
-      lockBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        setLocked(!readingLocked);
-      });
-    }
-  }
-
-  /* ===== 字体模式 ===== */
-  function getFontMode() {
-    try { return localStorage.getItem('fontMode') || 'auto'; } catch(e) { return 'auto'; }
-  }
-  var fontMode = getFontMode();
-
-  function applyFontMode(fm) {
-    fontMode = fm;
-    try { localStorage.setItem('fontMode', fm); } catch(e) {}
-    var panel = document.getElementById('reading-mode-colors');
-    var fbs = panel ? panel.querySelectorAll('.rm-font') : [];
-    fbs.forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-font') === fm); });
-    ['dark','light','gray','sepia','blue'].forEach(function(k) {
-      document.body.removeAttribute('data-font-' + k);
-    });
-    if (fm !== 'auto') document.body.setAttribute('data-font-' + fm, 'true');
-  }
-
-  /* ===== 视频控制 ===== */
-  function playCurrentVideo() {
-    if (window.innerWidth <= 768) return;
-    lazyLoadVideos();
-    getVideos().forEach(function(v) { v.style.display = ''; });
-    var target = isDark ? document.getElementById('bg-video-dark') : document.getElementById('bg-video-light');
-    if (target) { if (!target.src) { target.src = target.getAttribute('data-src'); target.load(); } target.play().catch(function(){}); }
-  }
-
-  function pauseAllVideos() {
-    getVideos().forEach(function(v) { v.pause(); });
-  }
-
-  /* ===== 应用模式 ===== */
-  function applyMode(m) {
-    mode = m;
-    try { localStorage.setItem('readingMode', String(m)); } catch(e) {}
-    var modes = getModes();
-    var mainBtn = document.getElementById('reading-mode-btn');
-    if (mainBtn) mainBtn.textContent = modes[m].icon;
-    var panel = document.getElementById('reading-mode-colors');
-    var cbs = panel ? panel.querySelectorAll('.rm-color') : [];
-    cbs.forEach(function(b) { b.classList.toggle('active', parseInt(b.getAttribute('data-mode')) === m); });
-
-    document.body.removeAttribute('data-bg-light');
-    document.body.removeAttribute('data-bg-dark');
-
-    var overlay = document.getElementById('bg-overlay');
-    if (m === 0) {
-      if (overlay) {
-        overlay.style.background = '';
-        overlay.style.backdropFilter = '';
-        overlay.style.webkitBackdropFilter = '';
-      }
-      document.body.removeAttribute('data-reading-mode');
-      playCurrentVideo();
-    } else {
-      getVideos().forEach(function(v) { v.style.display = 'none'; });
-      if (overlay) {
-        overlay.style.background = modes[m].color;
-        overlay.style.backdropFilter = 'none';
-        overlay.style.webkitBackdropFilter = 'none';
-      }
-      document.body.setAttribute('data-reading-mode', 'true');
-      pauseAllVideos();
-      document.body.setAttribute(isDark ? 'data-bg-dark' : 'data-bg-light', 'true');
-    }
-    updateLockBtn();
-  }
-
-  /* ===== 锁定机制 ===== */
-  var readingLocked = false;
-  var lockBtn = null;
-  try { readingLocked = localStorage.getItem('readingLocked') === '1'; } catch(e) {}
-  function setLocked(v) {
-    readingLocked = v;
-    try { localStorage.setItem('readingLocked', v ? '1' : '0'); } catch(e) {}
-    updateLockBtn();
-  }
-  function updateLockBtn() {
-    if (!lockBtn) return;
-    lockBtn.textContent = readingLocked ? '\\uD83D\\uDD12' : '\\uD83D\\uDD13';
-    lockBtn.classList.toggle('locked', readingLocked);
-  }
-
-  /* ===== 页面切换背景逻辑（修复：锁定优先 + 保留用户选择） ===== */
-  function handlePageSwitch() {
-    // 如果锁定了，什么都不做，保持当前选择
-    if (readingLocked) return;
-    var isIndex = document.body.getAttribute('data-slug') === 'index';
-    // 只在用户没主动操作过时（mode 来自 localStorage）才自动切换
-    var saved = getSaved();
-    if (isIndex && saved === 0) return; // 首页且已选视频，不动
-    if (!isIndex && saved === 0) applyMode(1);  // 子页面且当前是视频，切纯色
-    else if (isIndex && saved !== 0) applyMode(0); // 首页且不是视频，切视频
-  }
-
-  /* ===== 主题切换 ===== */
-  function onThemeChange() {
-    var wasDark = isDark;
-    isDark = getIsDark();
-    if (wasDark !== isDark) {
-      buildPanel();
-      applyMode(mode);
-      applyFontMode(fontMode);
-      updateLockBtn();
-    }
-  }
-
-  if (!window.__qzt_observer_bound) {
-    window.__qzt_observer_bound = true;
-    var themeObserver = new MutationObserver(onThemeChange);
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'saved-theme'] });
-  }
-
-  /* ===== 面板交互 ===== */
-  function bindPanelToggle() {
-    var btn = document.getElementById('reading-mode-btn');
-    if (btn && !btn.__toggle_bound) {
-      btn.__toggle_bound = true;
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var cp = document.getElementById('reading-mode-colors');
-        if (cp) cp.classList.toggle('hidden');
-      });
-    }
-  }
-
-  /* ===== 音乐播放器 ===== */
   var tracks = [
-    '/static/05 Coffee Cats.m4a',
-    '/static/1-28 希望的明⽇.m4a',
-    '/static/2-06 玉磬漻漻.m4a',
-    '/static/2-16 风清月白.m4a',
-    '/static/26 Welcome School.m4a',
-    '/static/ornave-lofi-moon-light-553399.mp3',
-    '/static/monume-lofi-chill-chill-509496.mp3',
-    '/static/mao690276--527415.mp3',
-    '/static/lofidreams-cozy-lofi-background-music-for-study-457198.mp3',
-    '/static/apalonbeats-lofi-lofi-music-lofi-chill-2-560425.mp3'
+    tp('05 Coffee Cats.m4a'), tp('1-28 希望的明\u2F47.m4a'),
+    tp('2-06 玉磬漻漻.m4a'), tp('2-16 风清月白.m4a'),
+    tp('26 Welcome School.m4a'), tp('ornave-lofi-moon-light-553399.mp3'),
+    tp('monume-lofi-chill-chill-509496.mp3'), tp('mao690276--527415.mp3'),
+    tp('lofidreams-cozy-lofi-background-music-for-study-457198.mp3'),
+    tp('apalonbeats-lofi-lofi-music-lofi-chill-2-560425.mp3')
   ];
-  var current = 0;
+  var cur = 0;
   var audio = new Audio();
-  audio.preload = 'metadata';
-  audio.loop = false;
+  audio.preload = 'metadata'; audio.loop = false;
 
-  function loadTrack(i) {
-    current = i % tracks.length;
-    audio.src = tracks[current];
-    audio.load();
-  }
+  function loadTrack(i) { cur = i % tracks.length; audio.src = tracks[cur]; audio.load(); }
 
-  audio.addEventListener('ended', function() { loadTrack(current + 1); audio.play().catch(function(){}); });
-  audio.addEventListener('error', function() { loadTrack(current + 1); if (window.showToast) window.showToast('音频加载失败，跳过'); audio.play().catch(function(){}); });
-
-  var musicClickTimer = null;
-  function bindMusic() {
-    var btn = document.getElementById('music-btn');
-    if (!btn || btn.__music_bound) return;
-    btn.__music_bound = true;
-    btn.addEventListener('click', function(e) {
-      var mb = document.getElementById('music-btn');
-      if (musicClickTimer) {
-        clearTimeout(musicClickTimer); musicClickTimer = null;
-        loadTrack(current + 1);
-        if (mb) { mb.classList.add('loading'); mb.textContent = ''; }
-        audio.play().then(function() {
-          if (mb) { mb.classList.remove('loading'); mb.classList.add('playing'); mb.textContent = '\\uD83C\\uDFB6'; }
-          showTrackName();
-        }).catch(function() {
-          if (mb) { mb.classList.remove('loading'); if (window.showToast) window.showToast('播放失败'); }
-        });
-        return;
-      }
-      musicClickTimer = setTimeout(function() {
-        musicClickTimer = null;
-        var mb2 = document.getElementById('music-btn');
-        if (audio.paused) {
-          if (!audio.src || audio.src === window.location.href) loadTrack(0);
-          if (mb2) { mb2.classList.add('loading'); mb2.textContent = ''; }
-          audio.play().then(function() {
-            if (mb2) { mb2.classList.remove('loading'); mb2.classList.add('playing'); mb2.textContent = '\\uD83C\\uDFB6'; }
-            showTrackName();
-          }).catch(function() {
-            if (mb2) { mb2.classList.remove('loading'); mb2.textContent = '\\u26A0'; setTimeout(function() { var mb3 = document.getElementById('music-btn'); if (mb3) mb3.textContent = '\\uD83C\\uDFB5'; }, 1500); }
-          });
-        } else {
-          audio.pause(); if (mb2) { mb2.classList.remove('playing'); mb2.textContent = '\\uD83C\\uDFB5'; }
-        }
-      }, 250);
-    });
-  }
-
-  function showTrackName() {
-    var name = tracks[current].split('/').pop().replace(/\\.[^.]+$/, '');
-    var label = document.getElementById('track-label');
-    if (!label) {
-      label = document.createElement('div'); label.id = 'track-label';
-      var fc = document.getElementById('floating-controls');
-      if (fc) fc.appendChild(label);
-    }
-    if (label) { label.textContent = name; label.classList.add('show'); }
-    clearTimeout(label._timeout);
-    label._timeout = setTimeout(function() { if (label) label.classList.remove('show'); }, 2000);
-  }
-
-  function showToast(msg) {
-    var fc = document.getElementById('floating-controls');
-    if (!fc) return;
-    var existing = fc.querySelector('.music-toast');
-    if (existing) existing.remove();
-    var t = document.createElement('div');
-    t.className = 'music-toast';
+  function _showToast(msg) {
+    var old = document.querySelector('.music-toast'); if (old) old.remove();
+    var t = document.createElement('div'); t.className = 'music-toast';
     t.textContent = msg;
-    t.style.cssText = 'position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:6px;background:rgba(0,0,0,0.7);color:#fff;padding:4px 10px;border-radius:8px;font-size:0.75rem;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity 0.25s';
-    fc.appendChild(t);
+    t.style.cssText = 'position:fixed;bottom:6rem;left:50%;transform:translateX(-50%);z-index:10050;background:rgba(255,255,255,0.85);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.3);border-radius:14px;padding:0.85rem 1.5rem;font-size:0.92rem;color:var(--dark);opacity:0;transition:opacity 0.4s ease;pointer-events:none';
+    document.body.appendChild(t);
     requestAnimationFrame(function() { t.style.opacity = '1'; });
-    setTimeout(function() { t.style.opacity = '0'; setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 250); }, 1500);
+    setTimeout(function() { t.style.opacity = '0'; setTimeout(function() { if (t.parentNode) t.remove(); }, 400); }, 2000);
   }
 
-  // Expose music toggle for custom.js top-bar button
-  window.__musicBtnClick = function() {
-    var btn = document.getElementById('music-btn');
-    if (btn) btn.click();
+  audio.addEventListener('ended', function() { loadTrack(cur + 1); audio.play().catch(function(){}); _notify(); });
+  audio.addEventListener('error', function() { loadTrack(cur + 1); _showToast('音频加载失败，跳过'); audio.play().catch(function(){}); _notify(); });
+
+  var _cbs = [];
+  function _notify() {
+    var st = { playing: !audio.paused, track: tracks[cur].split('/').pop().replace(/\.[^.]+$/, '') };
+    _cbs.forEach(function(fn) { fn(st); });
+  }
+
+  window.__music = {
+    toggle: function() {
+      if (!audio.src || audio.src === location.href) loadTrack(0);
+      if (audio.paused) audio.play().catch(function(){ _showToast('播放失败'); });
+      else audio.pause();
+      _notify();
+    },
+    next: function() {
+      loadTrack(cur + 1);
+      audio.play().catch(function(){ _showToast('播放失败'); });
+      _notify();
+    },
+    prev: function() {
+      loadTrack(cur - 1 + tracks.length);
+      audio.play().catch(function(){ _showToast('播放失败'); });
+      _notify();
+    },
+    onChange: function(fn) { _cbs.push(fn); },
+    getState: function() { return { playing: !audio.paused, track: tracks[cur].split('/').pop().replace(/\.[^.]+$/, '') }; }
   };
 
-  /* ===== 全局点击关闭面板 ===== */
-  if (!window.__qzt_click_bound) {
-    window.__qzt_click_bound = true;
-    document.addEventListener('click', function() {
-      var cp = document.getElementById('reading-mode-colors');
-      if (cp && !cp.classList.contains('hidden')) cp.classList.add('hidden');
-    });
+  function loadDailyQuote() {
+    var el = document.getElementById('random-quote');
+    if (!el) return;
+    try {
+      var ctrl = new AbortController();
+      var tm = setTimeout(function() { ctrl.abort(); }, 5000);
+      fetch(bp + '/quotes.json', { signal: ctrl.signal })
+        .then(function(r) { if (!r.ok) throw Error(); return r.json(); })
+        .then(function(qs) {
+          clearTimeout(tm);
+          var q = qs[Math.floor(Math.random() * qs.length)];
+          el.textContent = '\u300C ' + (q.text || '') + ' \u300D';
+          el.title = q.source || '';
+        })
+        .catch(function() { el.textContent = '\u300C \u6B22\u8FCE\u6765\u5230\u5B89\u7684\u535A\u5BA2 \u300D'; });
+    } catch(e) { el.textContent = '\u300C \u6B22\u8FCE\u6765\u5230\u5B89\u7684\u535A\u5BA2 \u300D'; }
   }
 
-  /* ===== SPA 导航重建 ===== */
-  function reinit() {
-    var cp = document.getElementById('reading-mode-colors');
-    if (cp) cp.classList.add('hidden');
-    buildPanel();
-    applyMode(mode);
-    handlePageSwitch();
-    updateLockBtn();
-  }
+  lazyLoadVideos();
+  loadDailyQuote();
 
-  if (!window.__qzt_nav_bound) {
-    window.__qzt_nav_bound = true;
-    document.addEventListener('nav', function() {
-      reinit();
-    });
+  if (!window.__qzt_nb) {
+    window.__qzt_nb = true;
+    document.addEventListener('nav', function() { loadDailyQuote(); });
     document.addEventListener('visibilitychange', function() {
-      if (document.hidden) pauseAllVideos();
-      else if (mode === 0) playCurrentVideo();
+      if (document.hidden) document.querySelectorAll('#bg-video-light, #bg-video-dark').forEach(function(v) { v.pause(); });
     });
   }
-
-  bindPanelToggle();
-  bindMusic();
-  reinit();
-  applyFontMode(fontMode);
 })();
           `.trim(),
           }}
