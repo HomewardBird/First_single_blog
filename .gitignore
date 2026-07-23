@@ -1,0 +1,25 @@
+# 环境变量
+.env
+
+# 违禁词明文（加密版本 .enc 可提交）
+GFW补充词库.txt
+
+# 审核日志
+moderate-log-*.json
+moderation-log.jsonl
+
+# Node
+node_modules/
+
+# 构建产物
+public/
+
+# IDE
+.vscode/
+.idea/
+
+# Quartz 编译缓存（核心！解决 163MB 膨胀）
+.quartz-cache/
+
+# Obsidian 本地缓存
+.obsidian/
