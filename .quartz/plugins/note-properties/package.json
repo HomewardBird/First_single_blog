@@ -1,0 +1,159 @@
+{
+  "name": "@quartz-community/note-properties",
+  "version": "0.1.0",
+  "description": "Frontmatter processing and note properties display for Quartz",
+  "type": "module",
+  "license": "MIT",
+  "author": "Quartz Community",
+  "homepage": "https://github.com/quartz-community/note-properties",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/quartz-community/note-properties"
+  },
+  "keywords": [
+    "quartz",
+    "quartz-plugin",
+    "note-properties",
+    "frontmatter",
+    "transformer",
+    "component"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js"
+    },
+    "./components": {
+      "types": "./dist/components/index.d.ts",
+      "import": "./dist/components/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier . --check",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint && npm run format && npm run test"
+  },
+  "peerDependencies": {
+    "preact": "^10.0.0",
+    "vfile": "^6.0.3"
+  },
+  "peerDependenciesMeta": {
+    "preact": {
+      "optional": false
+    },
+    "vfile": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@quartz-community/types": "github:quartz-community/types",
+    "@quartz-community/utils": "github:quartz-community/utils"
+  },
+  "devDependencies": {
+    "@types/hast": "^3.0.4",
+    "@types/js-yaml": "^4.0.9",
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^24.10.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "github-slugger": "^2.0.0",
+    "gray-matter": "^4.0.3",
+    "hast-util-to-jsx-runtime": "^2.3.6",
+    "js-yaml": "^4.1.0",
+    "preact": "^10.28.2",
+    "prettier": "^3.6.2",
+    "remark-frontmatter": "^5.0.0",
+    "sass": "^1.97.3",
+    "toml": "^3.0.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "unified": "^11.0.5",
+    "vitest": "^2.1.9"
+  },
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10.9.2"
+  },
+  "quartz": {
+    "name": "note-properties",
+    "displayName": "Note Properties",
+    "category": [
+      "transformer",
+      "component"
+    ],
+    "version": "1.0.0",
+    "quartzVersion": ">=5.0.0",
+    "dependencies": [],
+    "defaultOrder": 5,
+    "defaultEnabled": true,
+    "defaultOptions": {
+      "includeAll": false,
+      "includedProperties": [
+        "description",
+        "tags",
+        "aliases"
+      ],
+      "excludedProperties": [],
+      "hidePropertiesView": false,
+      "delimiters": "---",
+      "language": "yaml"
+    },
+    "optionSchema": {
+      "includeAll": {
+        "type": "boolean",
+        "description": "Include all frontmatter properties in the display"
+      },
+      "includedProperties": {
+        "type": "array",
+        "description": "Properties to include when includeAll is false"
+      },
+      "excludedProperties": {
+        "type": "array",
+        "description": "Properties to exclude from display"
+      },
+      "hidePropertiesView": {
+        "type": "boolean",
+        "description": "Hide the visual properties panel while still processing frontmatter"
+      },
+      "delimiters": {
+        "type": "string",
+        "description": "Frontmatter delimiters"
+      },
+      "language": {
+        "type": "enum",
+        "values": [
+          "yaml",
+          "toml"
+        ],
+        "description": "Frontmatter language"
+      }
+    },
+    "components": {
+      "NotePropertiesComponent": {
+        "displayName": "Note Properties",
+        "defaultPosition": "beforeBody",
+        "defaultPriority": 15
+      }
+    }
+  }
+}

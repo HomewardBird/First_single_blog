@@ -1,0 +1,133 @@
+{
+  "name": "@quartz-community/og-image",
+  "version": "0.1.0",
+  "description": "OG image emitter plugin for Quartz. Generates social preview images using satori and sharp.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Quartz Community",
+  "homepage": "https://quartz.jzhao.xyz",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/quartz-community/og-image"
+  },
+  "keywords": [
+    "quartz",
+    "quartz-plugin",
+    "og-image",
+    "emitter",
+    "social-image",
+    "satori"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier . --check",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint && npm run format && npm run test"
+  },
+  "peerDependencies": {
+    "preact": "^10.0.0",
+    "sharp": "^0.33.0",
+    "vfile": "^6.0.3"
+  },
+  "peerDependenciesMeta": {
+    "preact": {
+      "optional": false
+    },
+    "sharp": {
+      "optional": true
+    },
+    "vfile": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@quartz-community/types": "github:quartz-community/types",
+    "@quartz-community/utils": "github:quartz-community/utils"
+  },
+  "devDependencies": {
+    "@types/hast": "^3.0.4",
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^24.10.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "github-slugger": "^2.0.0",
+    "hast-util-to-jsx-runtime": "^2.3.6",
+    "preact": "^10.28.2",
+    "prettier": "^3.6.2",
+    "reading-time": "^1.5.0",
+    "satori": "^0.12.0",
+    "sharp": "^0.33.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vfile": "^6.0.3",
+    "vitest": "^2.1.9"
+  },
+  "quartz": {
+    "name": "og-image",
+    "displayName": "OG Image",
+    "category": "emitter",
+    "version": "1.0.0",
+    "quartzVersion": ">=5.0.0",
+    "requiresInstall": true,
+    "dependencies": [],
+    "defaultOrder": 50,
+    "defaultEnabled": true,
+    "defaultOptions": {
+      "colorScheme": "lightMode",
+      "width": 1200,
+      "height": 630,
+      "excludeRoot": false,
+      "defaultTitle": "Untitled",
+      "defaultDescription": "No description provided"
+    },
+    "optionSchema": {
+      "colorScheme": {
+        "type": "enum",
+        "values": [
+          "lightMode",
+          "darkMode"
+        ]
+      },
+      "width": {
+        "type": "number"
+      },
+      "height": {
+        "type": "number"
+      },
+      "excludeRoot": {
+        "type": "boolean"
+      },
+      "defaultTitle": {
+        "type": "string"
+      },
+      "defaultDescription": {
+        "type": "string"
+      }
+    }
+  },
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10.9.2"
+  }
+}
