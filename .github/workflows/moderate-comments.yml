@@ -1,0 +1,26 @@
+name: 评论违禁词审核
+
+on:
+  discussion_comment:
+    types: [created]
+
+jobs:
+  moderate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 审核评论
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          BANNED_WORDS_KEY: ${{ secrets.BANNED_WORDS_KEY }}
+        run: npx tsx scripts/moderate-single.ts

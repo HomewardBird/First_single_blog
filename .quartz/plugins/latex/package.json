@@ -1,0 +1,120 @@
+{
+  "name": "@quartz-community/latex",
+  "version": "0.1.0",
+  "description": "LaTeX/KaTeX/MathJax/Typst math rendering plugin for Quartz",
+  "type": "module",
+  "license": "MIT",
+  "author": "Quartz Community",
+  "homepage": "https://github.com/quartz-community/latex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/quartz-community/latex"
+  },
+  "keywords": [
+    "quartz",
+    "quartz-plugin",
+    "latex",
+    "katex",
+    "mathjax",
+    "typst",
+    "math"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier . --check",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint && npm run format && npm run test"
+  },
+  "peerDependencies": {
+    "@myriaddreamin/rehype-typst": "^0.5.0",
+    "preact": "^10.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@myriaddreamin/rehype-typst": {
+      "optional": true
+    },
+    "preact": {
+      "optional": false
+    }
+  },
+  "dependencies": {
+    "@quartz-community/types": "github:quartz-community/types"
+  },
+  "devDependencies": {
+    "@myriaddreamin/rehype-typst": "^0.7.0-rc2",
+    "@types/hast": "^3.0.4",
+    "@types/katex": "^0.16.7",
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^24.10.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "katex": "^0.16.11",
+    "preact": "^10.28.2",
+    "prettier": "^3.6.2",
+    "rehype-katex": "^7.0.1",
+    "rehype-mathjax": "^6.0.0",
+    "remark-math": "^6.0.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vfile": "^6.0.3",
+    "vitest": "^2.1.9"
+  },
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10.9.2"
+  },
+  "quartz": {
+    "name": "latex",
+    "displayName": "LaTeX",
+    "category": "transformer",
+    "version": "1.0.0",
+    "quartzVersion": ">=5.0.0",
+    "requiresInstall": true,
+    "dependencies": [],
+    "defaultOrder": 80,
+    "defaultEnabled": true,
+    "defaultOptions": {
+      "renderEngine": "katex"
+    },
+    "optionSchema": {
+      "renderEngine": {
+        "type": "enum",
+        "values": [
+          "katex",
+          "mathjax",
+          "typst"
+        ]
+      },
+      "katexOptions": {
+        "type": "object"
+      },
+      "mathJaxOptions": {
+        "type": "object"
+      },
+      "typstOptions": {
+        "type": "object"
+      }
+    }
+  }
+}

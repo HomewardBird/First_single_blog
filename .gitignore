@@ -1,0 +1,37 @@
+# 环境变量
+.env
+
+# 违禁词明文（加密版本 .enc 可提交）
+GFW补充词库.txt
+
+# 审核日志
+moderate-log-*.json
+moderation-log.jsonl
+
+# Node
+node_modules/
+
+# 构建产物
+public/
+.quartz-cache/
+
+# 插件目录：提交快照（含预构建 dist）以加速 CI，忽略依赖与 TUI
+.quartz/plugins/*/node_modules/
+.quartz/plugins/obsidian-flavored-markdown
+.quartz/tui/
+
+# 本地插件依赖
+plugins/*/node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+node_modules/
+public/
+.quartz-cache/
+
+# TypeScript build cache
+tsconfig.tsbuildinfo
+
+content/.obsidian/
