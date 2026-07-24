@@ -1,19 +1,20 @@
 # yaml-language-server: $schema=./quartz/plugins/quartz-plugins.schema.json
 configuration:
-  pageTitle: 归鸟的馆藏日志
+  pageTitle: Quartz 5
   pageTitleSuffix: ""
   enableSPA: true
   enablePopovers: true
-  analytics: null
-  locale: zh-CN
-  baseUrl: homewardbird.dpdns.org
+  analytics:
+    provider: plausible
+  locale: en-US
+  baseUrl: quartz.jzhao.xyz
   ignorePatterns:
     - private
     - templates
     - .obsidian
   theme:
-    fontOrigin: local
-    cdnCaching: false
+    fontOrigin: googleFonts
+    cdnCaching: true
     typography:
       header: Schibsted Grotesk
       body: Source Sans Pro
@@ -60,7 +61,7 @@ plugins:
   - source: github:quartz-community/obsidian-flavored-markdown
     enabled: true
     options:
-      enableInHtmlEmbed: true
+      enableInHtmlEmbed: false
       enableCheckbox: true
     order: 30
   - source: github:quartz-community/github-flavored-markdown
@@ -103,23 +104,6 @@ plugins:
     enabled: true
   - source: github:quartz-community/explicit-publish
     enabled: false
-  - source: github:quartz-community/unlisted-pages
-    enabled: true
-    options: {}
-    order: 45
-  - source: github:quartz-community/encrypted-pages
-    enabled: true
-    options:
-      iterations: 600000
-      passwordField: password
-      unlistWhenEncrypted: false
-      outputPath: static/encryptedContentIndex.json
-  - source: github:quartz-community/stacked-pages
-    enabled: false
-    layout:
-      position: afterBody
-      priority: 50
-      display: all
   - source: github:quartz-community/alias-redirects
     enabled: true
   - source: github:quartz-community/content-index
@@ -203,20 +187,10 @@ plugins:
       priority: 5
       condition: not-index
   - source: github:quartz-community/comments
-    enabled: true
+    enabled: false
     options:
       provider: giscus
-      options:
-        repo: "HomewardBird/First_single_blog"
-        repoId: "R_kgDOTbNa5g"
-        category: "Announcements"
-        categoryId: "DIC_kwDOTbNa5s4DBg2M"
-        mapping: "pathname"
-        strict: false
-        reactionsEnabled: true
-        inputPosition: "top"
-        lang: "zh-CN"
-        themeUrl: "/static/giscus"
+      options: {}
     layout:
       position: afterBody
       priority: 10
@@ -224,8 +198,8 @@ plugins:
     enabled: true
     options:
       links:
-        GitHub: https://github.com/HomewardBird
-        版权与来源: /关于
+        GitHub: https://github.com/jackyzha0/quartz
+        Discord Community: https://discord.gg/cRFFHYye7t
   - source: github:quartz-community/recent-notes
     enabled: false
   - source: github:quartz-community/spacer
@@ -256,6 +230,28 @@ plugins:
     layout:
       position: beforeBody
       priority: 15
+      display: all
+  - source: github:quartz-community/unlisted-pages
+    enabled: true
+    options: {}
+    order: 45
+  - source: github:quartz-community/encrypted-pages
+    enabled: true
+    options:
+      iterations: 600000
+      passwordField: password
+      unlistWhenEncrypted: false
+      outputPath: static/encryptedContentIndex.json
+    order: 900
+    layout:
+      position: body
+      priority: 100
+      display: all
+  - source: github:quartz-community/stacked-pages
+    enabled: false
+    layout:
+      position: afterBody
+      priority: 50
       display: all
 layout:
   groups:
