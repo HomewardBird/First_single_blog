@@ -1,0 +1,187 @@
+---
+title: 📚 馆藏日志 / HomewardBird's Shelf
+---
+
+<style>
+/* ====== 1. 视频背景 & 磨砂遮罩 ====== */
+.fullscreen-bg-container {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.fullscreen-bg-video {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 100vw; height: 100vh;
+  object-fit: cover;
+  transform: translate(-50%, -50%);
+}
+
+/* 磨砂遮罩（日间） */
+.fullscreen-bg-container::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(252, 251, 250, 0.65);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* 暗黑模式磨砂加深 */
+[data-theme="dark"] .fullscreen-bg-container::after {
+  background: rgba(10, 10, 12, 0.85) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+/* ====== 2. 透明化 Quartz 默认底色 ====== */
+body, .page, main, article, .sidebar, .left-sidebar, .right-sidebar, .explorer, .toc, .backlinks, header, nav {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* ====== 3. 卡片网格 & 卡片（日间） ====== */
+.glass-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 3rem 0;
+}
+
+.glass-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  padding: 2rem;
+  text-decoration: none !important;
+  color: inherit;
+  overflow: hidden;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ★★★ 暗黑模式卡片：暴力覆盖 ★★★ */
+[data-theme="dark"] .glass-card {
+  background: rgba(10, 10, 12, 0.96) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 卡片内部所有文字强制亮色 */
+[data-theme="dark"] .glass-card,
+[data-theme="dark"] .glass-card * {
+  color: #f5f5f5 !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .glass-card a {
+  color: #b3d4ff !important;
+}
+
+/* 悬停效果 */
+.glass-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.card-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  transition: transform 0.4s ease;
+}
+.glass-card:hover .card-icon {
+  transform: scale(1.15) rotate(5deg);
+}
+
+.card-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.card-desc {
+  font-size: 0.95rem;
+  opacity: 0.8;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* 扫光特效 */
+.glass-card::after {
+  content: "";
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.25), transparent);
+  transform: skewX(-20deg);
+}
+.glass-card:hover::after {
+  left: 200%;
+  transition: left 0.8s ease-in-out;
+}
+
+/* ====== 4. 侧边栏等组件暗黑模式背景（可选） ====== */
+[data-theme="dark"] .sidebar,
+[data-theme="dark"] .explorer,
+[data-theme="dark"] .toc,
+[data-theme="dark"] .backlinks,
+[data-theme="dark"] header,
+[data-theme="dark"] nav {
+  background: rgba(10, 10, 12, 0.75) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* 全局文字变亮（保证侧边栏文字也清晰） */
+[data-theme="dark"] body,
+[data-theme="dark"] p,
+[data-theme="dark"] li,
+[data-theme="dark"] span,
+[data-theme="dark"] div,
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+  color: #e0e0e0 !important;
+}
+
+[data-theme="dark"] a {
+  color: #b3d4ff !important;
+}
+</style>
+
+<!-- ====== HTML 结构：全屏视频组件 ====== -->
+<!-- 这里的 autoplay muted loop playsinline 是让视频在所有浏览器上静音自动循环的关键 -->
+<div class="fullscreen-bg-container">
+  <video class="fullscreen-bg-video" autoplay muted loop playsinline src="/static/bg.webm"></video>
+</div>
+
+<!-- ====== 主页图书卡片 ====== -->
+<div class="glass-grid">
+
+  <a href="计算机基础入门" class="glass-card">
+    <div class="card-icon">💻</div>
+    <div class="card-title">计算机基础入门</div>
+    <p class="card-desc">用最直白、最不绕弯子的话，带你认识计算机。</p>
+  </a>
+
+  <a href="随笔" class="glass-card">
+    <div class="card-icon">🍃</div>
+    <div class="card-title">随笔碎碎念</div>
+    <p class="card-desc">生活里的点滴，读书笔记与观影感悟。</p>
+  </a>
+
+</div>

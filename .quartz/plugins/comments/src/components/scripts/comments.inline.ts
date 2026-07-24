@@ -66,14 +66,29 @@ const addCleanup = (fn: () => void) => {
 };
 
 if (typeof document !== "undefined") {
+  let giscusTimeout: ReturnType<typeof setTimeout> | null = null;
+
   const setupComments = () => {
     cleanup.forEach((fn) => fn());
     cleanup.length = 0;
+
+    if (giscusTimeout) { clearTimeout(giscusTimeout); giscusTimeout = null; }
+
+    const slug = document.body.getAttribute("data-slug");
+    if (slug === "index") return;
 
     const giscusContainer = document.querySelector(".giscus") as GiscusElement;
     if (!giscusContainer) {
       return;
     }
+
+    giscusTimeout = setTimeout(() => {
+      const container = document.querySelector(".giscus") as HTMLElement | null;
+      if (container && !container.querySelector("iframe.giscus-frame")) {
+        container.style.display = "none";
+      }
+    }, 8000);
+    addCleanup(() => { if (giscusTimeout) { clearTimeout(giscusTimeout); giscusTimeout = null; } });
 
     const giscusScript = document.createElement("script");
     giscusScript.src = "https://giscus.app/client.js";

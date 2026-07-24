@@ -1,20 +1,17 @@
-# First Single Blog
+# Quartz v5
 
-> “写作是思考的延伸，而分享是思想的碰撞。” —— 改编自 Richard Hamming
+> “[One] who works with the door open gets all kinds of interruptions, but [they] also occasionally gets clues as to what the world is and what might be important.” — Richard Hamming
 
-本项目是一个基于 [Quartz v5](https://quartz.jzhao.xyz/) 构建的个人博客，旨在打造一个简洁、高效的数字花园，用于记录日常思考、技术笔记与生活感悟。
+Quartz is a set of tools that helps you publish your [digital garden](https://jzhao.xyz/posts/networked-thought) and notes as a website for free.
 
-🔗 在线访问：[安的小站](https://homewardbird.dpdns.org)  
-📖 Quartz 官方文档：https://quartz.jzhao.xyz/  
-💬 加入 Quartz 中文社区（欢迎交流）：[Discord](https://discord.gg/cRFFHYye7t)
+🔗 Read the documentation and get started: https://quartz.jzhao.xyz/
 
-## 贡献者
+[Join the Discord Community](https://discord.gg/cRFFHYye7t)
 
-感谢以下小伙伴为这个博客付出的努力：
+## Sponsors
 
-- [HomewardBird](https://github.com/HomewardBird) – 项目发起人 & 主要内容创作
-- [OctSeventh](https://github.com/RobertLau2480) – 协作开发 & 配置优化
-
----
-
-如果你也想搭建自己的 Quartz 博客，欢迎参考上述官方文档，或直接 fork 本仓库作为起点。
+<p align="center">
+  <a href="https://github.com/sponsors/jackyzha0">
+    <img src="https://cdn.jsdelivr.net/gh/jackyzha0/jackyzha0/sponsorkit/sponsors.svg" />
+  </a>
+</p>

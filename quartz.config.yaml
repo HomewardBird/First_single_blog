@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=./quartz/plugins/quartz-plugins.schema.json
 configuration:
-  pageTitle: 安巢鸟的网站
+  pageTitle: 归鸟的馆藏日志
   pageTitleSuffix: ""
   enableSPA: true
   enablePopovers: true
@@ -12,8 +12,8 @@ configuration:
     - templates
     - .obsidian
   theme:
-    fontOrigin: googleFonts
-    cdnCaching: true
+    fontOrigin: local
+    cdnCaching: false
     typography:
       header: Schibsted Grotesk
       body: Source Sans Pro
@@ -76,7 +76,6 @@ plugins:
     enabled: true
     options:
       markdownLinkResolution: shortest
-      openLinksInNewTab: true
     order: 60
   - source: github:quartz-community/description
     enabled: true
@@ -144,8 +143,6 @@ plugins:
     enabled: true
   - source: github:quartz-community/explorer
     enabled: true
-    options:
-      filterFn: '(node) => node.slugSegment !== "tags" && node.slugSegment !== "个人博客" && node.slugSegment !== "留言" && node.slugSegment !== "关于" && node.slugSegment !== "index"'
     layout:
       position: left
       priority: 50
@@ -218,7 +215,6 @@ plugins:
         strict: false
         reactionsEnabled: true
         inputPosition: "top"
-        sort: "upvotes"
         lang: "zh-CN"
         themeUrl: "/static/giscus"
     layout:
