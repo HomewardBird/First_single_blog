@@ -1,10 +1,20 @@
 @echo off
-git add -A
-git commit -m "更新 %date% %time%" --no-verify
-git push origin dev --no-verify
-git checkout release-ver
-git checkout dev -- .
-git commit -m "同步到 release-ver" --no-verify
-git push origin release-ver --no-verify
-git checkout dev
-echo Done.
+echo =======================================
+echo    Auto Uploading Blog to GitHub...
+echo =======================================
+echo.
+
+git add .
+
+set "msg="
+set /p msg="Enter commit message (Press Enter to use default 'update blog'): "
+if "%msg%"=="" set msg=update blog
+
+git commit -m "%msg%"
+git push origin release-ver
+
+echo.
+echo =======================================
+echo    SUCCESS! Uploaded to GitHub.
+echo =======================================
+pause
