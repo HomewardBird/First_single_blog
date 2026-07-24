@@ -18,8 +18,6 @@ public/
 .vscode/
 .idea/
 
-# Quartz 编译缓存（核心！解决 163MB 膨胀）
+node_modules/
+public/
 .quartz-cache/
-
-# Obsidian 本地缓存
-.obsidian/

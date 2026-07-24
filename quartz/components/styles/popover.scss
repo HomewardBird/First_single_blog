@@ -76,7 +76,7 @@
     opacity 0.3s ease,
     visibility 0.3s ease;
 
-  @media all and (max-width: 1200px) {
+  @media all and ($mobile) {
     display: none !important;
   }
 }

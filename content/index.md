@@ -1,19 +1,19 @@
 ---
-title: 安的小站
+title: 安巢鸟的小站
 lang: zh-CN
 comments: false
 ---
 
 <div class="home-wrapper">
 <header class="home-header">
-<h1 class="site-title">安的个人网站</h1>
+<h1 class="site-title">安巢鸟的个人网站</h1>
 <p class="random-quote" id="random-quote">「 正在加载... 」</p>
 </header>
 
 <section class="author-words">
 <p>
 站主不太会说漂亮话，欢迎你们的到来<br>
-两个悬浮窗，一个调节背景和字体，锁是代表锁定背景。（上方菜单栏也可调） <br>
+功能都集中在上方菜单栏中，若体验有问题请来联系站长<br>
 音乐的话可以播放十首歌（站长不太听轻音乐，有推荐的可以写邮箱或私信站长B站安巢鸟）
 <br>
 <br>
