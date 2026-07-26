@@ -1119,3 +1119,35 @@ html[data-theme="dark"] .hb-lock-btn.locked, html[saved-theme="dark"] .hb-lock-b
     gap: 3px;
   }
 }
+
+/* ====== Quartz 专用：图片对齐语法 (#pic_center / #pic_left / #pic_right) ====== */
+
+/* 图片居中 (支持 #pic_center 或 #center) */
+article img[src*="#pic_center"],
+article img[src*="#center"] {
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* 让居中图片的图注/下方文字也跟着居中 */
+article p:has(> img[src*="#pic_center"]),
+article p:has(> img[src*="#center"]) {
+  text-align: center;
+}
+
+/* 图片靠左 (支持 #pic_left 或 #left) */
+article img[src*="#pic_left"],
+article img[src*="#left"] {
+  display: block !important;
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+/* 图片靠右 (支持 #pic_right 或 #right) */
+article img[src*="#pic_right"],
+article img[src*="#right"] {
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
