@@ -13,14 +13,15 @@
   },
   "scripts": {
     "quartz": "./quartz/bootstrap-cli.mjs",
-    "docs": "npx quartz build --serve -d docs",
-    "check": "tsc --noEmit && npx prettier . --check",
-    "format": "npx prettier . --write",
+    "docs": "npm quartz build --serve -d docs",
+    "check": "tsc --noEmit && npm prettier . --check",
+    "format": "npm prettier . --write",
     "test": "tsx --test",
     "profile": "0x -D prof ./quartz/bootstrap-cli.mjs build --concurrency=1",
-    "install-plugins": "npx tsx ./quartz/plugins/loader/install-plugins.ts",
-    "prebuild": "npm run install-plugins"
-  },
+    "install-plugins": "npm tsx ./quartz/plugins/loader/install-plugins.ts",
+    "prebuild": "npm run install-plugins",
+    "build": "node ./quartz/bootstrap-cli.mjs build"   // ← 只加这一行
+  }
   "engines": {
     "npm": ">=10.9.2",
     "node": ">=22"
