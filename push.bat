@@ -1,20 +1,10 @@
 @echo off
-echo =======================================
-echo    Auto Uploading Blog to GitHub...
-echo =======================================
-echo.
+chcp 65001 >nul
 
 git add .
-
-set "msg="
-set /p msg="Enter commit message (Press Enter to use default 'update blog'): "
-if "%msg%"=="" set msg=update blog
-
-git commit -m "%msg%"
-git push origin release-ver
+git commit -m "update blog"
+git push -f origin release-ver
 
 echo.
-echo =======================================
-echo    SUCCESS! Uploaded to GitHub.
-echo =======================================
+echo Upload complete!
 pause
