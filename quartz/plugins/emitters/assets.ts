@@ -21,18 +21,7 @@ function getPageTypeExtensions(ctx: BuildCtx): Set<string> {
 
 const ROOT_ROOT_FILES = [
   "dark_bg.mp4", "light_bg.mp4",
-  "static/dark_bg.mp4", "static/light_bg.mp4",
   "quotes.json",
-  "static/05 Coffee Cats.m4a",
-  "static/1-28 希望的明⽇.m4a",
-  "static/2-06 玉磬漻漻.m4a",
-  "static/2-16 风清月白.m4a",
-  "static/26 Welcome School.m4a",
-  "static/ornave-lofi-moon-light-553399.mp3",
-  "static/monume-lofi-chill-chill-509496.mp3",
-  "static/mao690276--527415.mp3",
-  "static/lofidreams-cozy-lofi-background-music-for-study-457198.mp3",
-  "static/apalonbeats-lofi-lofi-music-lofi-chill-2-560425.mp3",
 ]
 
 const filesToCopy = async (argv: Argv, cfg: QuartzConfig, excludeExtensions: Set<string>) => {
