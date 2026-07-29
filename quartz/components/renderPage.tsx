@@ -14,6 +14,7 @@ import { GlobalConfiguration } from "../cfg"
 import { i18n } from "../i18n"
 import { styleText } from "util"
 import { resolveFrame } from "./frames"
+import { CustomElements } from "./CustomElements"
 import type { TreeTransform } from "../plugins/types"
 import type { BuildCtx } from "../util/ctx"
 
@@ -347,30 +348,7 @@ export function renderPage(
     <html lang={lang} dir={direction}>
       <Head {...componentData} />
       <body data-slug={slug} data-basepath={basePath}>
-        <div id="page-loader">
-          <div class="loader-glass">
-            <div class="loader-orb"></div>
-            <div class="loader-ring"></div>
-          </div>
-          <div class="loader-text">归鸟的馆藏日志</div>
-        </div>
-        <video id="bg-video-light" muted loop playsinline preload="none" data-src={`${basePath}/static/light_bg.mp4`}></video>
-        <video id="bg-video-dark" muted loop playsinline preload="none" data-src={`${basePath}/static/dark_bg.mp4`}></video>
-        <img id="bg-image-light" src={`${basePath}/static/light_bg.jpg`} alt="" />
-        <img id="bg-image-dark" src={`${basePath}/static/dark_bg.jpg`} alt="" />
-        <div id="bg-overlay"></div>
-        <div id="top-bar">
-          <div class="top-bar-inner">
-            <span class="top-bar-title">归鸟的馆藏日志</span>
-            <div class="top-bar-right">
-              <button id="hamburger-btn" class="hamburger-btn" aria-label="菜单">
-                <span class="hamburger-line"></span>
-                <span class="hamburger-line"></span>
-                <span class="hamburger-line"></span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <CustomElements basePath={basePath} />
         {frame.css && <style dangerouslySetInnerHTML={{ __html: frame.css }} />}
         <div id="quartz-root" class="page" data-frame={frame.name}>
           <Body {...componentData}>
@@ -393,117 +371,21 @@ export function renderPage(
           dangerouslySetInnerHTML={{
             __html: `
 (function() {
-  var _loaded = false;
-  try { _loaded = sessionStorage.getItem('qzt-loaded') === '1' || !!window.__qzt_loaded; } catch(e) { _loaded = !!window.__qzt_loaded; }
+  var loaded = !!window.__qzt_loaded;
   var loader = document.getElementById('page-loader');
-  function hideLoader() {
+  function hide() {
     if (!loader || !loader.parentNode) return;
     loader.classList.remove('show'); loader.classList.add('fade-out');
     setTimeout(function() { if (loader.parentNode) loader.parentNode.removeChild(loader); }, 600);
   }
   if (loader) {
-    if (!_loaded && document.readyState !== 'complete') {
+    if (!loaded && document.readyState !== 'complete') {
       loader.classList.add('show');
-      window.addEventListener('load', function() { setTimeout(hideLoader, 200); });
-      setTimeout(hideLoader, 5000);
+      window.addEventListener('load', function() { setTimeout(hide, 200); });
+      setTimeout(hide, 5000);
     }
     window.__qzt_loaded = true;
     try { sessionStorage.setItem('qzt-loaded', '1'); } catch(e) {}
-  }
-
-  var _vLoaded = false;
-  function lazyLoadVideos() {
-    if (_vLoaded) return; _vLoaded = true;
-    document.querySelectorAll('#bg-video-light, #bg-video-dark').forEach(function(v) {
-      var src = v.getAttribute('data-src');
-      if (src) { v.src = src; v.load(); }
-    });
-  }
-
-  var bp = (document.body && document.body.getAttribute('data-basepath')) || '';
-  function tp(f) { return bp + '/static/' + f; }
-
-  var tracks = [
-    tp('05 Coffee Cats.m4a'), tp('1-28 希望的明\u2F47.m4a'),
-    tp('2-06 玉磬漻漻.m4a'), tp('2-16 风清月白.m4a'),
-    tp('26 Welcome School.m4a'), tp('ornave-lofi-moon-light-553399.mp3'),
-    tp('monume-lofi-chill-chill-509496.mp3'), tp('mao690276--527415.mp3'),
-    tp('lofidreams-cozy-lofi-background-music-for-study-457198.mp3'),
-    tp('apalonbeats-lofi-lofi-music-lofi-chill-2-560425.mp3')
-  ];
-  var cur = 0;
-  var audio = new Audio();
-  audio.preload = 'metadata'; audio.loop = false;
-
-  function loadTrack(i) { cur = i % tracks.length; audio.src = tracks[cur]; audio.load(); }
-
-  function _showToast(msg) {
-    var old = document.querySelector('.music-toast'); if (old) old.remove();
-    var t = document.createElement('div'); t.className = 'music-toast';
-    t.textContent = msg;
-    t.style.cssText = 'position:fixed;bottom:6rem;left:50%;transform:translateX(-50%);z-index:10050;background:rgba(255,255,255,0.85);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.3);border-radius:14px;padding:0.85rem 1.5rem;font-size:0.92rem;color:var(--dark);opacity:0;transition:opacity 0.4s ease;pointer-events:none';
-    document.body.appendChild(t);
-    requestAnimationFrame(function() { t.style.opacity = '1'; });
-    setTimeout(function() { t.style.opacity = '0'; setTimeout(function() { if (t.parentNode) t.remove(); }, 400); }, 2000);
-  }
-
-  audio.addEventListener('ended', function() { loadTrack(cur + 1); audio.play().catch(function(){}); _notify(); });
-  audio.addEventListener('error', function() { loadTrack(cur + 1); _showToast('音频加载失败，跳过'); audio.play().catch(function(){}); _notify(); });
-
-  var _cbs = [];
-  function _notify() {
-    var st = { playing: !audio.paused, track: tracks[cur].split('/').pop().replace(/\.[^.]+$/, '') };
-    _cbs.forEach(function(fn) { fn(st); });
-  }
-
-  window.__music = {
-    toggle: function() {
-      if (!audio.src || audio.src === location.href) loadTrack(0);
-      if (audio.paused) audio.play().catch(function(){ _showToast('播放失败'); });
-      else audio.pause();
-      _notify();
-    },
-    next: function() {
-      loadTrack(cur + 1);
-      audio.play().catch(function(){ _showToast('播放失败'); });
-      _notify();
-    },
-    prev: function() {
-      loadTrack(cur - 1 + tracks.length);
-      audio.play().catch(function(){ _showToast('播放失败'); });
-      _notify();
-    },
-    onChange: function(fn) { _cbs.push(fn); },
-    getState: function() { return { playing: !audio.paused, track: tracks[cur].split('/').pop().replace(/\.[^.]+$/, '') }; }
-  };
-
-  function loadDailyQuote() {
-    var el = document.getElementById('random-quote');
-    if (!el) return;
-    try {
-      var ctrl = new AbortController();
-      var tm = setTimeout(function() { ctrl.abort(); }, 5000);
-      fetch(bp + '/quotes.json', { signal: ctrl.signal })
-        .then(function(r) { if (!r.ok) throw Error(); return r.json(); })
-        .then(function(qs) {
-          clearTimeout(tm);
-          var q = qs[Math.floor(Math.random() * qs.length)];
-          el.textContent = '\u300C ' + (q.text || '') + ' \u300D';
-          el.title = q.source || '';
-        })
-        .catch(function() { el.textContent = '\u300C \u6B22\u8FCE\u6765\u5230\u5B89\u7684\u535A\u5BA2 \u300D'; });
-    } catch(e) { el.textContent = '\u300C \u6B22\u8FCE\u6765\u5230\u5B89\u7684\u535A\u5BA2 \u300D'; }
-  }
-
-  lazyLoadVideos();
-  loadDailyQuote();
-
-  if (!window.__qzt_nb) {
-    window.__qzt_nb = true;
-    document.addEventListener('nav', function() { loadDailyQuote(); });
-    document.addEventListener('visibilitychange', function() {
-      if (document.hidden) document.querySelectorAll('#bg-video-light, #bg-video-dark').forEach(function(v) { v.pause(); });
-    });
   }
 })();
           `.trim(),
