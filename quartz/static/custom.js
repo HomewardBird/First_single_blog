@@ -7,6 +7,127 @@ var BG_KEY         = "bgColor"
 var FONT_COLOR_KEY = "fontColor"
 var LOCK_KEY       = "bgLocked"
 
+// Handler dedup set
+var _handlerSet = new WeakSet()
+
+// ====================================================================
+//  Base path
+// ====================================================================
+var _bp = ''
+function getBp() {
+  if (!_bp) { var b = document.body; _bp = (b && b.getAttribute('data-basepath')) || '' }
+  return _bp
+}
+
+// ====================================================================
+//  Music Player
+// ====================================================================
+var _vLoaded = false;
+function lazyLoadVideos() {
+  if (_vLoaded) return; _vLoaded = true;
+  document.querySelectorAll('#bg-video-light, #bg-video-dark').forEach(function(v) {
+    var src = v.getAttribute('data-src');
+    if (src) { v.src = src; v.load(); }
+  });
+}
+
+var tracks = [
+  '05 Coffee Cats.m4a',
+  '1-28 希望的明\u2F47.m4a',
+  '2-06 玉磬漻漻.m4a',
+  '2-16 风清月白.m4a',
+  '26 Welcome School.m4a',
+  'ornave-lofi-moon-light-553399.mp3',
+  'monume-lofi-chill-chill-509496.mp3',
+  'mao690276--527415.mp3',
+  'lofidreams-cozy-lofi-background-music-for-study-457198.mp3',
+  'apalonbeats-lofi-lofi-music-lofi-chill-2-560425.mp3'
+];
+var cur = 0;
+var audio = new Audio();
+audio.preload = 'metadata'; audio.loop = false; audio.playbackRate = 1.0;
+
+function loadTrack(i) { cur = i % tracks.length; audio.src = getBp() + '/static/' + tracks[cur]; audio.load(); }
+
+var _toastTimer = null;
+function createToast(text, link, dur, cls) {
+  dur = dur || 2000; cls = cls || 'music-toast';
+  var old = document.querySelector('.' + cls); if (old) old.remove();
+  if (_toastTimer) { clearTimeout(_toastTimer); _toastTimer = null; }
+  var t = document.createElement('div'); t.className = cls;
+  var base = 'position:fixed;bottom:calc(6rem + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:10050;background:rgba(255,255,255,0.85);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.3);border-radius:14px;padding:0.85rem 1.5rem;font-size:0.92rem;color:var(--dark);opacity:0;transition:opacity 0.4s ease;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,0.12)';
+  t.style.cssText = base;
+  if (link) { t.innerHTML = '<a href="'+link+'" style="color:var(--secondary);font-weight:600;text-decoration:none">'+text+'</a>'; }
+  else { t.textContent = text; }
+  document.body.appendChild(t);
+  requestAnimationFrame(function() { t.style.opacity = '1'; });
+  _toastTimer = setTimeout(function() { t.style.opacity = '0'; _toastTimer = setTimeout(function() { if (t.parentNode) t.remove(); }, 400); }, dur);
+}
+
+function _showToast(msg) { createToast(msg); }
+
+audio.addEventListener('ended', function() { loadTrack(cur + 1); audio.play().catch(function(){}); _notify(); });
+audio.addEventListener('error', function() { loadTrack(cur + 1); _showToast('音频加载失败，跳过'); audio.play().catch(function(){}); _notify(); });
+
+var _cbs = [];
+function _notify() {
+  var st = { playing: !audio.paused, track: tracks[cur].split('/').pop().replace(/\.[^.]+$/, '') };
+  _cbs.forEach(function(fn) { fn(st); });
+}
+
+window.__music = {
+  toggle: function() {
+    if (!audio.src || audio.src === location.href) loadTrack(0);
+    if (audio.paused) audio.play().catch(function(){ _showToast('播放失败'); });
+    else audio.pause();
+    _notify();
+  },
+  next: function() {
+    loadTrack(cur + 1);
+    audio.play().catch(function(){ _showToast('播放失败'); });
+    _notify();
+  },
+  prev: function() {
+    loadTrack(cur - 1 + tracks.length);
+    audio.play().catch(function(){ _showToast('播放失败'); });
+    _notify();
+  },
+  onChange: function(fn) { _cbs.push(fn); },
+  getState: function() { return { playing: !audio.paused, track: tracks[cur].split('/').pop().replace(/\.[^.]+$/, '') }; },
+  setVolume: function(v) { audio.volume = v; localStorage.setItem('musicVolume', v); },
+  getVolume: function() { return audio.volume; },
+  toggleLoop: function() { audio.loop = !audio.loop; localStorage.setItem('musicLoop', audio.loop ? '1' : '0'); return audio.loop; },
+  getLoop: function() { return audio.loop; }
+};
+
+function loadDailyQuote() {
+  var el = document.getElementById('random-quote');
+  if (!el) return;
+  try {
+    var ctrl = new AbortController();
+    var tm = setTimeout(function() { ctrl.abort(); }, 5000);
+    fetch(getBp() + '/quotes.json', { signal: ctrl.signal })
+      .then(function(r) { if (!r.ok) throw Error(); return r.json(); })
+      .then(function(qs) {
+        clearTimeout(tm);
+        var q = qs[Math.floor(Math.random() * qs.length)];
+        el.textContent = '「 ' + (q.text || '') + ' 」';
+        el.title = q.source || '';
+      })
+      .catch(function() { el.textContent = '「 欢迎来到安巢鸟的个人网站 」'; });
+  } catch(e) { el.textContent = '「 欢迎来到安巢鸟的个人网站 」'; }
+}
+
+function syncMusicUI() {
+  if (!window.__music) return;
+  var vs = document.querySelector('.hb-vol-slider');
+  if (vs) vs.value = audio.volume.toString();
+  var vl = document.querySelector('.hb-vol-label');
+  if (vl) vl.textContent = audio.volume.toFixed(2);
+  var lb = document.querySelector('.hb-loop-btn');
+  if (lb) { lb.textContent = audio.loop ? '🔂' : '🔁'; lb.classList.toggle('active', audio.loop); }
+}
+
 // ====================================================================
 //  Reading progress save / restore
 // ====================================================================
@@ -15,10 +136,13 @@ function getSlug() {
 }
 
 document.addEventListener("nav", function () {
-  if (!document.getElementById("hamburger-menu")) rebuildUI()
-  else { closeHamburger() }
+  if (!document.getElementById("hamburger-menu")) {
+    rebuildUI()
+    syncMusicUI()
+  } else { closeHamburger() }
+  closeSidebar()
   var tbT = document.querySelector("#top-bar .top-bar-title")
-  if (tbT) tbT.textContent = document.title || "\u5F52\u9E1F\u7684\u9986\u85CF\u65E5\u5FD7"
+  if (tbT) tbT.textContent = document.title || "归鸟的馆藏日志"
   restoreLock()
   var prev = sessionStorage.getItem('__prevPage')
   var cur = getSlug()
@@ -30,6 +154,7 @@ document.addEventListener("nav", function () {
   // SPA reconstructs <body>, 重写当前背景的内联样式
   setBg(localStorage.getItem(BG_KEY) || "default")
   sessionStorage.setItem('__prevPage', cur)
+  loadDailyQuote()
 })
 
 // ====================================================================
@@ -37,20 +162,22 @@ document.addEventListener("nav", function () {
 // ====================================================================
 function showToast(text, link, dur) {
   dur = dur || 5000
-  var old = document.querySelector(".toast-notification"); if (old) old.remove()
-  var t = document.createElement("div"); t.className = "toast-notification"
-  var s = "position:fixed;bottom:6rem;left:50%;transform:translateX(-50%);z-index:10050;" +
-    "background:rgba(255,255,255,0.85);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.3);" +
-    "border-radius:14px;padding:0.85rem 1.5rem;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.12);" +
-    "display:flex;align-items:center;gap:0.8rem;font-size:0.92rem;color:var(--dark);" +
-    "opacity:0;transition:opacity 0.4s ease, transform 0.4s ease;transform:translateX(-50%) translateY(16px);cursor:default;"
-  t.style.cssText = s
-  var inner = link ? '<a href="'+link+'" style="color:var(--secondary);font-weight:600;text-decoration:none;flex:1">'+text+'</a>' : '<span style="flex:1">'+text+'</span>'
-  t.innerHTML = inner + '<button class="toast-close" style="background:none;border:none;font-size:1.2rem;cursor:pointer;opacity:0.5;padding:0;line-height:1">&times;</button>'
-  t.querySelector(".toast-close").onclick = function () { t.remove() }
-  document.body.appendChild(t)
-  requestAnimationFrame(function () { t.style.opacity = "1"; t.style.transform = "translateX(-50%) translateY(0)" })
-  setTimeout(function () { t.style.opacity = "0"; t.style.transform = "translateX(-50%) translateY(16px)"; setTimeout(function () { if (t.parentNode) t.remove() }, 400) }, dur)
+  createToast(text, link, dur, 'toast-notification')
+  var t = document.querySelector('.toast-notification:last-child')
+  if (t) {
+    t.style.maxWidth = '90vw'
+    t.style.transform = 'translateX(-50%) translateY(16px)'
+    t.style.cursor = 'default'
+    t.style.display = 'flex'
+    t.style.alignItems = 'center'
+    t.style.gap = '0.8rem'
+    var btn = document.createElement('button')
+    btn.textContent = '\u00D7'
+    btn.style.cssText = 'background:none;border:none;font-size:1.2rem;cursor:pointer;opacity:0.5;padding:0;line-height:1;flex-shrink:0'
+    btn.onclick = function() { t.remove() }
+    if (!link) { var sp = t.querySelector('span') || t; sp.after(btn) }
+    requestAnimationFrame(function() { t.style.transform = 'translateX(-50%) translateY(0)' })
+  }
 }
 
 // ====================================================================
@@ -76,8 +203,8 @@ function isDark() {
 }
 function currentBgOpts() {
   return isDark()
-    ? [{ id:"default", label:"\u89C6\u9891" }, { id:"dark", label:"\u6DF1\u7070" }, { id:"black", label:"\u7EAF\u9ED1" }]
-    : [{ id:"default", label:"\u89C6\u9891" }, { id:"white", label:"\u7EAF\u767D" }, { id:"cream", label:"\u7C73\u767D" }, { id:"gray", label:"\u6D45\u7070" }, { id:"blue", label:"\u96FE\u84DD" }]
+    ? [{ id:"default", label:"视频" }, { id:"dark", label:"深灰" }, { id:"black", label:"纯黑" }]
+    : [{ id:"default", label:"视频" }, { id:"white", label:"纯白" }, { id:"cream", label:"米白" }, { id:"gray", label:"浅灰" }, { id:"blue", label:"雾蓝" }]
 }
 function setBg(id) {
   localStorage.setItem(BG_KEY, id)
@@ -114,12 +241,12 @@ function restoreBg() { var s = localStorage.getItem(BG_KEY); if (s) setBg(s) }
 //  Font Colour mode (data-font-* / data-bg-*)
 // ====================================================================
 var fontColorOpts = [
-  { id:"auto",   label:"\u81EA\u52A8" },
-  { id:"dark",   label:"\u6DF1\u8272" },
-  { id:"light",  label:"\u6D45\u8272" },
-  { id:"gray",   label:"\u7070\u8272" },
-  { id:"sepia",  label:"\u590D\u53E4" },
-  { id:"blue",   label:"\u84DD\u8C03" },
+  { id:"auto",   label:"自动" },
+  { id:"dark",   label:"深色" },
+  { id:"light",  label:"浅色" },
+  { id:"gray",   label:"灰色" },
+  { id:"sepia",  label:"复古" },
+  { id:"blue",   label:"蓝调" },
 ]
 
 function setFontColor(id) {
@@ -176,9 +303,9 @@ function rebuildUI() {
     bar = document.createElement("div"); bar.id = "top-bar"
     var inner = document.createElement("div"); inner.className = "top-bar-inner"
     var t = document.createElement("span"); t.className = "top-bar-title"
-    t.textContent = document.title || "\u5F52\u9E1F\u7684\u9986\u85CF\u65E5\u5FD7"
+    t.textContent = document.title || "归鸟的馆藏日志"
     var wrap = document.createElement("div"); wrap.style.cssText = "position:relative;display:flex;align-items:center"
-    var btn = document.createElement("button"); btn.className = "hamburger-btn"; btn.setAttribute("aria-label", "\u83DC\u5355")
+    var btn = document.createElement("button"); btn.className = "hamburger-btn"; btn.setAttribute("aria-label", "菜单")
     btn.innerHTML = '<span class="hamburger-line"></span><span class="hamburger-line"></span><span class="hamburger-line"></span>'
     btn.onclick = function (e) { e.stopPropagation(); toggleHamburger() }
     wrap.appendChild(btn)
@@ -186,7 +313,7 @@ function rebuildUI() {
     document.body.prepend(bar)
   }
   var tbt = bar.querySelector(".top-bar-title")
-  if (tbt) tbt.textContent = document.title || "\u5F52\u9E1F\u7684\u9986\u85CF\u65E5\u5FD7"
+  if (tbt) tbt.textContent = document.title || "归鸟的馆藏日志"
   var hb = bar.querySelector(".hamburger-btn")
   if (hb && !hb._hc) { hb._hc = true; hb.onclick = function(e) { e.stopPropagation(); toggleHamburger() } }
 
@@ -205,7 +332,7 @@ function rebuildUI() {
     var pb = document.querySelector('.hb-music-play')
     if (pb) pb.textContent = st.playing ? '\u23F8' : '\u25B6'
     var tn = document.querySelector('.hb-music-track')
-    if (tn) tn.textContent = st.track || '\u672A\u64AD\u653E'
+      if (tn) tn.textContent = st.track || '未播放'
   }
 }
 
@@ -221,20 +348,28 @@ function buildMenuHTML() {
   var fcHtml = fontColorOpts.map(function (o) { return '<button class="hb-fc-btn" data-fc="'+o.id+'">'+o.label+'</button>' }).join("")
 
   return [
-    '<div class="hb-section"><div class="hb-title">\uD83D\uDD24 \u5916\u89C2</div>',
-    '<div class="hb-sub">\u5B57\u4F53\u5927\u5C0F</div><div class="hb-row">', fHtml, '</div>',
-    '<div class="hb-sub">\u80CC\u666F\u989C\u8272</div><div class="hb-row hb-bg-row">', bHtml, '</div>',
-    '<div class="hb-sub">\u6587\u5B57\u989C\u8272</div><div class="hb-row">', fcHtml, '</div>',
+    '<div class="hb-section"><div class="hb-title">🔅 外观</div>',
+    '<div class="hb-sub">字体大小</div><div class="hb-row">', fHtml, '</div>',
+    '<div class="hb-sub">背景颜色</div><div class="hb-row hb-bg-row">', bHtml, '</div>',
+    '<div class="hb-sub">文字颜色</div><div class="hb-row">', fcHtml, '</div>',
     '<div class="hb-inline-row">',
-      '<button class="hb-lock-btn" title="\u9501\u5B9A\u80CC\u666F\u4E0D\u53D8">\uD83D\uDD12 \u9501\u5B9A</button>',
+      '<button class="hb-lock-btn" title="锁定背景不变">🔒 锁定</button>',
     '</div></div>',
-    '<div class="hb-section"><div class="hb-title">\uD83C\uDFB5 \u97F3\u4E50</div>',
+    '<div class="hb-section"><div class="hb-title">🎵 音乐</div>',
     '<div class="hb-music-row">',
-      '<button class="hb-music-btn hb-music-prev" title="\u4E0A\u4E00\u9996">\u23EE</button>',
-      '<button class="hb-music-btn hb-music-play" title="\u64AD\u653E/\u6682\u505C">\u25B6</button>',
-      '<button class="hb-music-btn hb-music-next" title="\u4E0B\u4E00\u9996">\u23ED</button>',
+      '<button class="hb-music-btn hb-music-prev" title="上一首">⏮</button>',
+      '<button class="hb-music-btn hb-music-play" title="播放/暂停">▶</button>',
+      '<button class="hb-music-btn hb-music-next" title="下一首">⏭</button>',
     '</div>',
-    '<div class="hb-music-track">\u672A\u64AD\u653E</div>',
+    '<div class="hb-music-track">未播放</div>',
+    '<div class="hb-volume-row">',
+      '<span class="hb-vol-icon">🔊</span>',
+      '<input type="range" class="hb-vol-slider" min="0" max="1" step="0.05" value="1">',
+      '<span class="hb-vol-label">1.0</span>',
+    '</div>',
+    '<div class="hb-loop-row">',
+      '<button class="hb-loop-btn" title="循环模式">🔁</button>',
+    '</div>',
     '</div>',
   ].join("")
 }
@@ -244,9 +379,15 @@ function attachHandlers() {
   document.querySelectorAll(".hb-bg-btn").forEach(function (b) { b.addEventListener("click", function () { setBg(this.dataset.bg) }) })
   document.querySelectorAll(".hb-fc-btn").forEach(function (b) { b.addEventListener("click", function () { setFontColor(this.dataset.fc) }) })
   document.querySelectorAll(".hb-lock-btn").forEach(function (b) { b.addEventListener("click", toggleLock) })
-  var mp = document.querySelector('.hb-music-play'); if (mp && !mp._hm) { mp._hm = true; mp.addEventListener('click', function() { if (window.__music) window.__music.toggle(); }); }
-  var mn = document.querySelector('.hb-music-next'); if (mn && !mn._hn) { mn._hn = true; mn.addEventListener('click', function() { if (window.__music) window.__music.next(); }); }
-  var mpv = document.querySelector('.hb-music-prev'); if (mpv && !mpv._hp) { mpv._hp = true; mpv.addEventListener('click', function() { if (window.__music) window.__music.prev(); }); }
+  ;[['.hb-music-play','click',function(){if(window.__music)window.__music.toggle()}],
+    ['.hb-music-next','click',function(){if(window.__music)window.__music.next()}],
+    ['.hb-music-prev','click',function(){if(window.__music)window.__music.prev()}],
+    ['.hb-vol-slider','input',function(){var v=parseFloat(this.value);if(window.__music)window.__music.setVolume(v);var l=document.querySelector('.hb-vol-label');if(l)l.textContent=v.toFixed(2)}],
+    ['.hb-loop-btn','click',function(){if(!window.__music)return;var loop=window.__music.toggleLoop();this.textContent=loop?'🔂':'🔁';this.classList.toggle('active',loop)}],
+    ['#nav-toggle-btn','click',function(e){e.stopPropagation();toggleSidebar()}],
+    ['#tb-search-btn','click',function(){var b=document.querySelector('.search-button');if(b)b.click()}],
+    ['#tb-theme-btn','click',function(){var b=document.querySelector('button.darkmode');if(b)b.click()}]
+  ].forEach(function(a){var el=document.querySelector(a[0]);if(el&&!_handlerSet.has(el)){_handlerSet.add(el);el.addEventListener(a[1],a[2])}})
 }
 
 // ====================================================================
@@ -254,8 +395,11 @@ function attachHandlers() {
 // ====================================================================
 function toggleHamburger() {
   var m = document.getElementById("hamburger-menu"); if (!m) return
-  m.classList.toggle("open")
-  if (m.classList.contains("open")) {
+  var open = m.classList.toggle("open")
+  var btn = document.querySelector('#hamburger-btn')
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false')
+  updateScrollLock()
+  if (open) {
     refreshBgButtons()
   }
 }
@@ -270,12 +414,43 @@ function refreshBgButtons() {
   var saved = localStorage.getItem(BG_KEY)
   if (saved) row.querySelectorAll(".hb-bg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.bg === saved) })
 }
-function closeHamburger() { var m = document.getElementById("hamburger-menu"); if (m) m.classList.remove("open") }
+function closeHamburger() { var m = document.getElementById("hamburger-menu"); if (m) m.classList.remove("open"); updateScrollLock(); }
+
+function updateScrollLock() {
+  var sidebarOpen = document.querySelector('.left.sidebar')?.classList.contains('open');
+  var menuOpen = document.getElementById('hamburger-menu')?.classList.contains('open');
+  document.body.style.overflow = (sidebarOpen || menuOpen) ? 'hidden' : '';
+}
+
+// ====================================================================
+//  Sidebar slide panel
+// ====================================================================
+function toggleSidebar() {
+  var s = document.querySelector('.left.sidebar');
+  if (!s) return;
+  var open = s.classList.toggle('open');
+  var btn = document.querySelector('#nav-toggle-btn');
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  updateScrollLock();
+}
+function openSidebar() {
+  var s = document.querySelector('.left.sidebar');
+  if (s) s.classList.add('open');
+}
+function closeSidebar() {
+  var s = document.querySelector('.left.sidebar');
+  if (s) s.classList.remove('open');
+  updateScrollLock();
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeSidebar();
+});
 
 // ====================================================================
 //  Init
 // ====================================================================
 function init() {
+  getBp()
   rebuildUI()
   restoreFontSize()
   restoreBg()
@@ -289,14 +464,33 @@ function init() {
   }
   try { sessionStorage.setItem('__prevPage', slug) } catch(e) {}
 
+  // Restore music volume & loop
+  var savedVol = localStorage.getItem('musicVolume');
+  if (savedVol !== null) audio.volume = parseFloat(savedVol);
+  var savedLoop = localStorage.getItem('musicLoop');
+  if (savedLoop === '1') audio.loop = true;
+  syncMusicUI()
+
   if (window.__music && window.__music.onChange) {
     window.__music.onChange(function(st) {
       var pb = document.querySelector('.hb-music-play')
-      if (pb) pb.textContent = st.playing ? '\u23F8' : '\u25B6'
+      if (pb) pb.textContent = st.playing ? '⏸' : '▶'
       var tn = document.querySelector('.hb-music-track')
-      if (tn) tn.textContent = st.track || '\u672A\u64AD\u653E'
+      if (tn) tn.textContent = st.track || '未播放'
     })
   }
+
+  // Close sidebar when clicking outside
+  document.addEventListener('click', function(e) {
+    var sidebar = document.querySelector('.left.sidebar');
+    var navT = document.querySelector('#nav-toggle-btn');
+    if (sidebar && sidebar.classList.contains('open') && !sidebar.contains(e.target) && navT && !navT.contains(e.target)) {
+      closeSidebar();
+    }
+  });
+
+  lazyLoadVideos()
+  loadDailyQuote()
 }
 
 // ====================================================================
@@ -305,7 +499,13 @@ function init() {
 var _ci = null
 function loadCI() {
   if (_ci) return Promise.resolve(_ci)
-  return fetch("/static/contentIndex.json").then(function (r) { return r.json() }).then(function (d) {
+  // Reuse global fetchData promise if available
+  if (typeof fetchData !== 'undefined' && typeof fetchData.then === 'function') {
+    return fetchData.then(function (d) {
+      _ci = d.content || d; return _ci
+    }).catch(function () { return null })
+  }
+  return fetch(getBp() + '/static/contentIndex.json').then(function (r) { return r.json() }).then(function (d) {
     _ci = d.content || d; return _ci
   }).catch(function () { return null })
 }
@@ -385,6 +585,13 @@ function startObserver() {
   var el = document.documentElement
   themeObserver.observe(el, { attributes: true, attributeFilter: ["data-theme", "saved-theme"] })
 }
+
+// Pause video when tab hidden
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) {
+    document.querySelectorAll('#bg-video-light, #bg-video-dark').forEach(function(v) { v.pause(); });
+  }
+});
 
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { init(); startObserver() })
 else { init(); startObserver() }

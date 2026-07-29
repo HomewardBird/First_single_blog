@@ -1,5 +1,5 @@
 import type { QuartzComponent, QuartzComponentProps, SortFn } from "@quartz-community/types";
-import { getDate, byDateAndAlphabetical } from "@quartz-community/utils/sort";
+import { getDate } from "@quartz-community/utils/sort";
 import { resolveRelative, isFolderPath } from "../util/path";
 import type { FullSlug } from "../util/path";
 
@@ -13,13 +13,6 @@ export function byDateAndAlphabeticalFolderFirst(_cfg: unknown): SortFn {
     if (f1IsFolder && !f2IsFolder) return -1;
     if (!f1IsFolder && f2IsFolder) return 1;
 
-    if (f1.dates && f2.dates) {
-      return (getDate(f2)?.getTime() ?? 0) - (getDate(f1)?.getTime() ?? 0);
-    } else if (f1.dates && !f2.dates) {
-      return -1;
-    } else if (!f1.dates && f2.dates) {
-      return 1;
-    }
     const f1Title = f1.frontmatter?.title?.toLowerCase() ?? "";
     const f2Title = f2.frontmatter?.title?.toLowerCase() ?? "";
     return f1Title.localeCompare(f2Title);
