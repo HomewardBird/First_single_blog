@@ -100,9 +100,19 @@ window.__music = {
   getLoop: function() { return audio.loop; }
 };
 
+var _quotesCache = null
+var _quoteFetching = false
 function loadDailyQuote() {
   var el = document.getElementById('random-quote');
   if (!el) return;
+  if (_quotesCache) {
+    var cq = _quotesCache[Math.floor(Math.random() * _quotesCache.length)];
+    el.textContent = '「 ' + (cq.text || '') + ' 」';
+    el.title = cq.source || '';
+    return;
+  }
+  if (_quoteFetching) return;
+  _quoteFetching = true;
   try {
     var ctrl = new AbortController();
     var tm = setTimeout(function() { ctrl.abort(); }, 5000);
@@ -110,12 +120,14 @@ function loadDailyQuote() {
       .then(function(r) { if (!r.ok) throw Error(); return r.json(); })
       .then(function(qs) {
         clearTimeout(tm);
+        _quotesCache = qs;
         var q = qs[Math.floor(Math.random() * qs.length)];
         el.textContent = '「 ' + (q.text || '') + ' 」';
         el.title = q.source || '';
       })
-      .catch(function() { el.textContent = '「 欢迎你的到来 」'; });
-  } catch(e) { el.textContent = '「 欢迎你的到来 」'; }
+      .catch(function() { el.textContent = '「 欢迎你的到来 」'; })
+      .finally(function() { _quoteFetching = false; });
+  } catch(e) { el.textContent = '「 欢迎你的到来 」'; _quoteFetching = false; }
 }
 
 function syncMusicUI() {
@@ -298,19 +310,9 @@ function restoreLock() {
 //  Top bar + hamburger menu
 // ====================================================================
 function rebuildUI() {
+  // 顶栏由 CustomElements.tsx 服务端渲染保证存在，无需 JS 兜底创建
   var bar = document.getElementById("top-bar")
-  if (!bar) {
-    bar = document.createElement("div"); bar.id = "top-bar"
-    var inner = document.createElement("div"); inner.className = "top-bar-inner"
-    var t = document.createElement("span"); t.className = "top-bar-title"
-    t.textContent = document.title || "归鸟的馆藏日志"
-    var wrap = document.createElement("div"); wrap.style.cssText = "position:relative;display:flex;align-items:center"
-    var btn = document.createElement("button"); btn.className = "hamburger-btn"; btn.setAttribute("aria-label", "菜单")
-    btn.innerHTML = '<span class="hamburger-line"></span><span class="hamburger-line"></span><span class="hamburger-line"></span>'
-    wrap.appendChild(btn)
-    inner.appendChild(t); inner.appendChild(wrap); bar.appendChild(inner)
-    document.body.prepend(bar)
-  }
+  if (!bar) return
   var tbt = bar.querySelector(".top-bar-title")
   if (tbt) tbt.textContent = document.title || "归鸟的馆藏日志"
 
@@ -413,6 +415,26 @@ function isMobileUI() {
   return window.matchMedia && window.matchMedia('(max-width: 800px)').matches
 }
 
+// ====================================================================
+//  焦点管理（面板开关时保存/恢复焦点，支持键盘导航）
+// ====================================================================
+var _hbLastFocus = null
+function saveFocus() {
+  var a = document.activeElement
+  _hbLastFocus = (a && a !== document.body) ? a : null
+}
+function restoreFocus() {
+  if (_hbLastFocus && document.contains(_hbLastFocus)) {
+    try { _hbLastFocus.focus() } catch (e) {}
+  }
+  _hbLastFocus = null
+}
+function focusPanel(panel) {
+  if (!panel) return
+  var first = panel.querySelector('button, [href], input, [tabindex]:not([tabindex="-1"])')
+  if (first) { try { first.focus() } catch (e) {} }
+}
+
 // 移动端：展开 / 收起 explorer 目录（全屏面板）
 function toggleMobileExplorer(forceOpen) {
   var exp = document.querySelector('.explorer')
@@ -420,16 +442,28 @@ function toggleMobileExplorer(forceOpen) {
   if (!exp) return false
   var collapsed = exp.classList.contains('collapsed')
   var open = typeof forceOpen === 'boolean' ? forceOpen : collapsed
+  var content = exp.querySelector('.explorer-content')
   if (open) {
     exp.classList.remove('collapsed')
     exp.setAttribute('aria-expanded', 'true')
+    if (content) {
+      content.setAttribute('role', 'dialog')
+      content.setAttribute('aria-modal', 'true')
+    }
     if (sidebar) sidebar.classList.add('open')
     document.documentElement.classList.add('mobile-no-scroll')
+    saveFocus()
+    focusPanel(content || exp)
   } else {
     exp.classList.add('collapsed')
     exp.setAttribute('aria-expanded', 'false')
+    if (content) {
+      content.removeAttribute('role')
+      content.removeAttribute('aria-modal')
+    }
     if (sidebar) sidebar.classList.remove('open')
     document.documentElement.classList.remove('mobile-no-scroll')
+    restoreFocus()
   }
   updateScrollLock()
   return true
@@ -441,15 +475,28 @@ function toggleHamburger() {
   var open = m.classList.toggle("open")
   var btn = document.querySelector('#hamburger-btn')
   if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false')
-  updateScrollLock()
   if (open) {
+    saveFocus()
+    focusPanel(m)
     refreshBgButtons()
+  } else {
+    restoreFocus()
   }
+  updateScrollLock()
 }
+var _bgButtonsKey = null
 function refreshBgButtons() {
-  var opts = currentBgOpts()
   var row = document.querySelector(".hb-bg-row")
   if (!row) return
+  var opts = currentBgOpts()
+  // 选项未变化时跳过 DOM 重建（避免每次开面板都重建 + 重绑）
+  var key = opts.map(function (o) { return o.id }).join(',')
+  if (_bgButtonsKey === key) {
+    var saved = localStorage.getItem(BG_KEY)
+    row.querySelectorAll(".hb-bg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.bg === saved) })
+    return
+  }
+  _bgButtonsKey = key
   row.innerHTML = opts.map(function (o) { return '<button class="hb-bg-btn" data-bg="'+o.id+'">'+o.label+'</button>' }).join("")
   // Re-attach handlers
   row.querySelectorAll(".hb-bg-btn").forEach(function (b) { b.addEventListener("click", function () { setBg(this.dataset.bg) }) })
@@ -461,6 +508,7 @@ function closeHamburger() {
   var m = document.getElementById("hamburger-menu"); if (m) m.classList.remove("open")
   var btn = document.querySelector('#hamburger-btn')
   if (btn) btn.setAttribute('aria-expanded', 'false')
+  restoreFocus()
   updateScrollLock();
 }
 
@@ -496,8 +544,19 @@ function closeSidebar() {
   if (s) s.classList.remove('open');
   updateScrollLock();
 }
+// Esc 统一关闭：设置面板 / 侧边栏 / 移动端目录
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeSidebar();
+  if (e.key !== 'Escape') return
+  var menu = document.getElementById('hamburger-menu')
+  var menuOpen = menu && menu.classList.contains('open')
+  var explorerOpen = isMobileUI() && document.querySelector('.explorer') &&
+    !document.querySelector('.explorer').classList.contains('collapsed')
+  if (menuOpen) { closeHamburger(); return }
+  if (explorerOpen) {
+    toggleMobileExplorer(false)
+    return
+  }
+  closeSidebar()
 });
 
 // ====================================================================
@@ -612,8 +671,9 @@ function insertPrevNext() {
   })
 }
 
-document.addEventListener("nav", function () { setTimeout(insertPrevNext, 120) })
-document.addEventListener("DOMContentLoaded", function () { setTimeout(insertPrevNext, 250) })
+// nav 事件触发时 DOM 已完成 morph，直接插入即可（无需 setTimeout 猜测时机）
+document.addEventListener("nav", function () { insertPrevNext() })
+document.addEventListener("DOMContentLoaded", function () { insertPrevNext() })
 
 // ====================================================================
 //  Watch theme changes → refresh bg buttons
