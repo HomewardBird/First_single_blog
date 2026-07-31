@@ -6,7 +6,7 @@ export function CustomElements({ basePath }: { basePath: string }) {
           <div class="loader-orb"></div>
           <div class="loader-ring"></div>
         </div>
-        <div class="loader-text">归鸟的馆藏日志</div>
+        <div class="loader-text">安巢鸟的个人网站</div>
       </div>
       <video
         id="bg-video-light"
@@ -41,7 +41,7 @@ export function CustomElements({ basePath }: { basePath: string }) {
               <line x1="3" y1="6" x2="15" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/>
             </svg>
           </button>
-          <span class="top-bar-title">归鸟的馆藏日志</span>
+          <span class="top-bar-title">安巢鸟的个人网站</span>
           <div class="top-bar-right">
             <button id="tb-search-btn" class="tb-action-btn" aria-label="搜索" title="搜索">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">

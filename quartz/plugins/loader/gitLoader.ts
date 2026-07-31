@@ -469,28 +469,23 @@ export async function installPlugin(
   }
 
   // Git source: clone
-  // Check if already installed
+  // Check if already installed.
+  // Note: we only check for package.json here, NOT the presence of a .git
+  // directory. When plugins are vendored into the host repo (committed to
+  // git), the nested .git directories are NOT committed, so git.resolveRef
+  // would always fail on a fresh clone and force re-cloning + rebuilding
+  // every plugin (very slow on CI). package.json + pre-built dist/ is the
+  // reliable signal that the plugin can be reused as-is.
   if (!options.force && fs.existsSync(pluginDir)) {
-    // For subdir installs, the .git directory is removed after extraction,
-    // so check for package.json instead. For full-repo installs, check git HEAD.
-    if (spec.subdir) {
-      const pkgPath = path.join(pluginDir, "package.json")
-      if (fs.existsSync(pkgPath)) {
-        if (options.verbose) {
-          console.log(styleText("cyan", `→`), `Plugin ${spec.name} already installed`)
-        }
-        return { pluginDir, nativeDeps: collectNativeDeps(pluginDir) }
+    const pkgPath = path.join(pluginDir, "package.json")
+    if (fs.existsSync(pkgPath)) {
+      if (options.verbose) {
+        console.log(styleText("cyan", `→`), `Plugin ${spec.name} already installed`)
       }
-    } else {
-      try {
-        await git.resolveRef({ fs, dir: pluginDir, ref: "HEAD" })
-        if (options.verbose) {
-          console.log(styleText("cyan", `→`), `Plugin ${spec.name} already installed`)
-        }
-        return { pluginDir, nativeDeps: collectNativeDeps(pluginDir) }
-      } catch {
-        // If git operations fail, re-clone
-      }
+      // Ensure peer deps are linked (idempotent; skips existing entries).
+      // Needed on CI where the vendored repo may miss some symlinks.
+      linkPeerDependencies(pluginDir)
+      return { pluginDir, nativeDeps: collectNativeDeps(pluginDir) }
     }
   }
 

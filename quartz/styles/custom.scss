@@ -346,7 +346,7 @@ html[saved-theme="dark"] .hb-music-btn {
     padding: 1rem !important;
     position: fixed !important;
     inset: 0 !important;
-    z-index: 9999 !important;
+    z-index: 10000 !important;
     height: 100dvh !important;
     width: 100vw !important;
     max-width: 100vw !important;
@@ -358,12 +358,16 @@ html[saved-theme="dark"] .hb-music-btn {
     @include dark { background: rgba(22, 22, 24, 0.90) !important; }
   }
 
-  /* 汉堡按钮永远在菜单之上 - 菜单展开时固定定位脱离侧边栏层叠上下文 */
+  /* 目录面板内按钮：下移到顶栏下方，避免与顶栏左侧导航按钮重叠 */
   .sidebar.left:has(.explorer:not(.collapsed)) .mobile-explorer {
     position: fixed !important;
-    z-index: 10001 !important;
-    top: 1rem !important;
+    z-index: 10012 !important;   /* above #top-bar (10010) so it stays tappable */
+    top: calc(36px + 0.75rem) !important;
     left: 1rem !important;
+  }
+  /* 目录列表顶部让出按钮位置（按钮已下移，原 4rem 不够） */
+  .sidebar.left:has(.explorer:not(.collapsed)) .explorer-content {
+    padding-top: calc(36px + 5rem) !important;
   }
 
   .page-title a {
@@ -949,7 +953,7 @@ html[saved-theme="dark"] .hamburger-line {
   width: 300px;
   max-height: calc(100vh - 60px);
   overflow-y: auto;
-  z-index: 10009;
+  z-index: 10013;
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
@@ -1069,10 +1073,9 @@ html[data-theme="dark"] .hb-lock-btn.locked, html[saved-theme="dark"] .hb-lock-b
 @media (max-width: 800px) {
   #top-bar {
     height: 36px;
-    pointer-events: none;               /* let clicks through to sidebar behind */
   }
   #top-bar .top-bar-inner {
-    pointer-events: auto;               /* but still click the hamburger */
+    /* no pointer-events hack: mobile-explorer is above top-bar via z-index */
   }
   .page > #quartz-body {
     margin-top: 36px;
@@ -1377,17 +1380,6 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light { display: inline; }
   .left.sidebar.open {
     left: 0 !important;
   }
-  /* 覆盖原移动端 sidebar 样式 */
-  .sidebar.left:has(.explorer:not(.collapsed)) {
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 9999 !important;
-    height: 100dvh !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
-  }
 }
 @media (max-width: 480px) {
   .left.sidebar {
@@ -1397,6 +1389,13 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light { display: inline; }
   }
   .left.sidebar.open {
     left: 0 !important;
+  }
+  /* 目录面板按钮：同步适配 32px 顶栏 */
+  .sidebar.left:has(.explorer:not(.collapsed)) .mobile-explorer {
+    top: calc(32px + 0.75rem) !important;
+  }
+  .sidebar.left:has(.explorer:not(.collapsed)) .explorer-content {
+    padding-top: calc(32px + 5rem) !important;
   }
 }
 
