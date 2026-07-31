@@ -346,7 +346,7 @@ html[saved-theme="dark"] .hb-music-btn {
     padding: 1rem !important;
     position: fixed !important;
     inset: 0 !important;
-    z-index: 9999 !important;
+    z-index: 10000 !important;
     height: 100dvh !important;
     width: 100vw !important;
     max-width: 100vw !important;
@@ -1375,17 +1375,6 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light { display: inline; }
   }
   .left.sidebar.open {
     left: 0 !important;
-  }
-  /* 覆盖原移动端 sidebar 样式 */
-  .sidebar.left:has(.explorer:not(.collapsed)) {
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 9999 !important;
-    height: 100dvh !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
   }
 }
 @media (max-width: 480px) {
