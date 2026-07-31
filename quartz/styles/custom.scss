@@ -358,12 +358,16 @@ html[saved-theme="dark"] .hb-music-btn {
     @include dark { background: rgba(22, 22, 24, 0.90) !important; }
   }
 
-  /* 汉堡按钮永远在菜单之上 - 菜单展开时固定定位脱离侧边栏层叠上下文 */
+  /* 目录面板内按钮：下移到顶栏下方，避免与顶栏左侧导航按钮重叠 */
   .sidebar.left:has(.explorer:not(.collapsed)) .mobile-explorer {
     position: fixed !important;
     z-index: 10012 !important;   /* above #top-bar (10010) so it stays tappable */
-    top: 1rem !important;
+    top: calc(36px + 0.75rem) !important;
     left: 1rem !important;
+  }
+  /* 目录列表顶部让出按钮位置（按钮已下移，原 4rem 不够） */
+  .sidebar.left:has(.explorer:not(.collapsed)) .explorer-content {
+    padding-top: calc(36px + 5rem) !important;
   }
 
   .page-title a {
@@ -1385,6 +1389,13 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light { display: inline; }
   }
   .left.sidebar.open {
     left: 0 !important;
+  }
+  /* 目录面板按钮：同步适配 32px 顶栏 */
+  .sidebar.left:has(.explorer:not(.collapsed)) .mobile-explorer {
+    top: calc(32px + 0.75rem) !important;
+  }
+  .sidebar.left:has(.explorer:not(.collapsed)) .explorer-content {
+    padding-top: calc(32px + 5rem) !important;
   }
 }
 
