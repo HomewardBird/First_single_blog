@@ -24928,9 +24928,10 @@ var ObsidianFlavoredMarkdown = (userOpts) => {
                     const alt = match?.groups?.alt ?? "";
                     const width = match?.groups?.width ?? "auto";
                     const height = match?.groups?.height ?? "auto";
+                    const imageUrl = url + (anchor ? `#${anchor}` : "");
                     const imageNode = {
                       type: "image",
-                      url,
+                      url: imageUrl,
                       alt: "",
                       data: {
                         hProperties: {

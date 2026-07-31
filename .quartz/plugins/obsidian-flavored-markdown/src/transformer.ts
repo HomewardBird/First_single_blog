@@ -212,9 +212,13 @@ export const ObsidianFlavoredMarkdown: QuartzTransformerPlugin<
                     const alt = match?.groups?.alt ?? "";
                     const width = match?.groups?.width ?? "auto";
                     const height = match?.groups?.height ?? "auto";
+                    // Keep the #anchor (e.g. #pic_center / #pic_left / #pic_right) in
+                    // the image src so CSS selectors like img[src*="#pic_center"] can
+                    // match, mirroring Obsidian's behavior.
+                    const imageUrl = url + (anchor ? `#${anchor}` : "");
                     const imageNode: Image = {
                       type: "image",
-                      url,
+                      url: imageUrl,
                       alt: "",
                       data: {
                         hProperties: {
