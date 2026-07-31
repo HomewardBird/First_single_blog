@@ -114,8 +114,8 @@ function loadDailyQuote() {
         el.textContent = '「 ' + (q.text || '') + ' 」';
         el.title = q.source || '';
       })
-      .catch(function() { el.textContent = '「 欢迎来到安巢鸟的个人网站 」'; });
-  } catch(e) { el.textContent = '「 欢迎来到安巢鸟的个人网站 」'; }
+      .catch(function() { el.textContent = '「 欢迎你的到来 」'; });
+  } catch(e) { el.textContent = '「 欢迎你的到来 」'; }
 }
 
 function syncMusicUI() {
@@ -307,24 +307,18 @@ function rebuildUI() {
     var wrap = document.createElement("div"); wrap.style.cssText = "position:relative;display:flex;align-items:center"
     var btn = document.createElement("button"); btn.className = "hamburger-btn"; btn.setAttribute("aria-label", "菜单")
     btn.innerHTML = '<span class="hamburger-line"></span><span class="hamburger-line"></span><span class="hamburger-line"></span>'
-    btn.onclick = function (e) { e.stopPropagation(); toggleHamburger() }
     wrap.appendChild(btn)
     inner.appendChild(t); inner.appendChild(wrap); bar.appendChild(inner)
     document.body.prepend(bar)
   }
   var tbt = bar.querySelector(".top-bar-title")
   if (tbt) tbt.textContent = document.title || "归鸟的馆藏日志"
-  var hb = bar.querySelector(".hamburger-btn")
-  if (hb && !hb._hc) { hb._hc = true; hb.onclick = function(e) { e.stopPropagation(); toggleHamburger() } }
 
   if (!document.getElementById("hamburger-menu")) {
     var menu = document.createElement("div"); menu.id = "hamburger-menu"
     menu.innerHTML = buildMenuHTML()
     menu.addEventListener("click", function (e) { e.stopPropagation() })
     document.body.appendChild(menu)
-    document.addEventListener("click", function (e) {
-      if (menu.classList.contains("open") && !menu.contains(e.target) && !bar.contains(e.target)) closeHamburger()
-    })
   }
   attachHandlers()
   if (window.__music) {
@@ -337,7 +331,6 @@ function rebuildUI() {
 }
 
 function buildMenuHTML() {
-  // Font size
   var fHtml = [{sz:"small",l:"A\u207B"},{sz:"medium",l:"A"},{sz:"large",l:"A\u207A"}]
     .map(function (b) { return '<button class="hb-font-btn" data-sz="'+b.sz+'">'+b.l+'</button>' }).join("")
 
@@ -391,9 +384,59 @@ function attachHandlers() {
 }
 
 // ====================================================================
+//  Hamburger 事件委托（一次性绑定在 document 上，SPA 导航后依然有效）
+// ====================================================================
+var _hbDelegateBound = false
+function bindHamburgerDelegate() {
+  if (_hbDelegateBound) return
+  _hbDelegateBound = true
+  document.addEventListener("click", function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest("#hamburger-btn") : null
+    if (btn) { e.stopPropagation(); toggleHamburger(); return }
+    var menu = document.getElementById("hamburger-menu")
+    var bar = document.getElementById("top-bar")
+    if (menu && menu.classList.contains("open")) {
+      var inMenu = e.target && menu.contains(e.target)
+      var inBar = e.target && bar && bar.contains(e.target)
+      if (!inMenu && !inBar) closeHamburger()
+    }
+  })
+}
+
+// ====================================================================
 //  Hamburger helpers
 // ====================================================================
+function isMobileUI() {
+  var me = document.querySelector('.explorer .mobile-explorer')
+  if (!me) return false
+  if (me.checkVisibility) return me.checkVisibility()
+  return window.matchMedia && window.matchMedia('(max-width: 800px)').matches
+}
+
+// 移动端：展开 / 收起 explorer 目录（全屏面板）
+function toggleMobileExplorer(forceOpen) {
+  var exp = document.querySelector('.explorer')
+  var sidebar = document.querySelector('.left.sidebar')
+  if (!exp) return false
+  var collapsed = exp.classList.contains('collapsed')
+  var open = typeof forceOpen === 'boolean' ? forceOpen : collapsed
+  if (open) {
+    exp.classList.remove('collapsed')
+    exp.setAttribute('aria-expanded', 'true')
+    if (sidebar) sidebar.classList.add('open')
+    document.documentElement.classList.add('mobile-no-scroll')
+  } else {
+    exp.classList.add('collapsed')
+    exp.setAttribute('aria-expanded', 'false')
+    if (sidebar) sidebar.classList.remove('open')
+    document.documentElement.classList.remove('mobile-no-scroll')
+  }
+  updateScrollLock()
+  return true
+}
+
 function toggleHamburger() {
+  // 顶栏最右侧汉堡按钮 = 设置面板（外观/音乐）
   var m = document.getElementById("hamburger-menu"); if (!m) return
   var open = m.classList.toggle("open")
   var btn = document.querySelector('#hamburger-btn')
@@ -414,12 +457,18 @@ function refreshBgButtons() {
   var saved = localStorage.getItem(BG_KEY)
   if (saved) row.querySelectorAll(".hb-bg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.bg === saved) })
 }
-function closeHamburger() { var m = document.getElementById("hamburger-menu"); if (m) m.classList.remove("open"); updateScrollLock(); }
+function closeHamburger() {
+  var m = document.getElementById("hamburger-menu"); if (m) m.classList.remove("open")
+  var btn = document.querySelector('#hamburger-btn')
+  if (btn) btn.setAttribute('aria-expanded', 'false')
+  updateScrollLock();
+}
 
 function updateScrollLock() {
   var sidebarOpen = document.querySelector('.left.sidebar')?.classList.contains('open');
   var menuOpen = document.getElementById('hamburger-menu')?.classList.contains('open');
-  document.body.style.overflow = (sidebarOpen || menuOpen) ? 'hidden' : '';
+  var explorerOpen = isMobileUI() && document.querySelector('.explorer')?.classList.contains('collapsed') === false;
+  document.body.style.overflow = (sidebarOpen || menuOpen || explorerOpen) ? 'hidden' : '';
 }
 
 // ====================================================================
@@ -428,6 +477,11 @@ function updateScrollLock() {
 function toggleSidebar() {
   var s = document.querySelector('.left.sidebar');
   if (!s) return;
+  // 移动端：导航按钮 = 目录开关（与汉堡按钮一致，直达 explorer 目录）
+  if (isMobileUI()) {
+    var exp = document.querySelector('.explorer');
+    if (exp && toggleMobileExplorer(exp.classList.contains('collapsed'))) return;
+  }
   var open = s.classList.toggle('open');
   var btn = document.querySelector('#nav-toggle-btn');
   if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -452,6 +506,7 @@ document.addEventListener('keydown', function(e) {
 function init() {
   getBp()
   rebuildUI()
+  bindHamburgerDelegate()
   restoreFontSize()
   restoreBg()
   restoreFontColor()
@@ -481,10 +536,14 @@ function init() {
   }
 
   // Close sidebar when clicking outside
+  // NOTE: 汉堡按钮/目录面板由事件委托统一处理，这里排除，避免与移动端目录开关冲突
   document.addEventListener('click', function(e) {
     var sidebar = document.querySelector('.left.sidebar');
     var navT = document.querySelector('#nav-toggle-btn');
-    if (sidebar && sidebar.classList.contains('open') && !sidebar.contains(e.target) && navT && !navT.contains(e.target)) {
+    var hb = document.querySelector('#hamburger-btn');
+    var inHb = hb && e.target && hb.contains(e.target);
+    var inExplorer = e.target && e.target.closest && e.target.closest('.explorer');
+    if (!inHb && !inExplorer && sidebar && sidebar.classList.contains('open') && !sidebar.contains(e.target) && navT && !navT.contains(e.target)) {
       closeSidebar();
     }
   });
