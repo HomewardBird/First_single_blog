@@ -361,7 +361,7 @@ html[saved-theme="dark"] .hb-music-btn {
   /* 汉堡按钮永远在菜单之上 - 菜单展开时固定定位脱离侧边栏层叠上下文 */
   .sidebar.left:has(.explorer:not(.collapsed)) .mobile-explorer {
     position: fixed !important;
-    z-index: 10001 !important;
+    z-index: 10012 !important;   /* above #top-bar (10010) so it stays tappable */
     top: 1rem !important;
     left: 1rem !important;
   }
@@ -949,7 +949,7 @@ html[saved-theme="dark"] .hamburger-line {
   width: 300px;
   max-height: calc(100vh - 60px);
   overflow-y: auto;
-  z-index: 10009;
+  z-index: 10013;
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
@@ -1069,10 +1069,9 @@ html[data-theme="dark"] .hb-lock-btn.locked, html[saved-theme="dark"] .hb-lock-b
 @media (max-width: 800px) {
   #top-bar {
     height: 36px;
-    pointer-events: none;               /* let clicks through to sidebar behind */
   }
   #top-bar .top-bar-inner {
-    pointer-events: auto;               /* but still click the hamburger */
+    /* no pointer-events hack: mobile-explorer is above top-bar via z-index */
   }
   .page > #quartz-body {
     margin-top: 36px;
