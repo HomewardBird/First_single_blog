@@ -2,6 +2,17 @@ import { randomUUID } from "crypto"
 import { JSX } from "preact/jsx-runtime"
 import { QuartzPluginData } from "../plugins/vfile"
 
+// Localize CDN resources so community plugins stay untouched.
+// KaTeX assets are vendored into /static/katex/.
+const KATEX_CSS_URL = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+const KATEX_JS_URL = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js"
+
+export function localizeResource(url: string): string {
+  if (url === KATEX_CSS_URL) return "/static/katex/katex.min.css"
+  if (url === KATEX_JS_URL) return "/static/katex/copy-tex.min.js"
+  return url
+}
+
 export type JSResource = {
   loadTime: "beforeDOMReady" | "afterDOMReady"
   moduleType?: "module"
