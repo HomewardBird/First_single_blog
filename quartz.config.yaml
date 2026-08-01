@@ -98,7 +98,7 @@ plugins:
     enabled: false
     order: 92
   - source: github:quartz-community/fonts
-    enabled: true
+    enabled: false
   - source: github:quartz-community/remove-draft
     enabled: true
   - source: github:quartz-community/explicit-publish
@@ -219,7 +219,7 @@ plugins:
         reactionsEnabled: true
         inputPosition: "top"
         lang: "zh-CN"
-        themeUrl: "/static/giscus"
+        themeUrl: "https://homewardbird.dpdns.org/static/giscus"
     layout:
       position: afterBody
       priority: 10

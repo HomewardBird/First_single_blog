@@ -12,7 +12,7 @@ comments: false
 
 <section class="author-words">
 <p>
-站主不太会说漂亮话，欢迎你们的到来<br>
+站主不太会说漂亮话，<strong class="hello-words">欢迎你们的到来</strong><br>
 功能都集中在上方菜单栏中，若体验有问题请来联系站长<br>
 音乐的话可以播放十首歌（站长不太听轻音乐，有推荐的可以写邮箱或私信站长B站安巢鸟）
 </p>

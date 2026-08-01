@@ -148,7 +148,15 @@ function getSlug() {
 }
 
 document.addEventListener("nav", function () {
-  if (!document.getElementById("hamburger-menu")) {
+  injectHomeLink()
+  hideNavItem('个人博客')
+  // explorer 树可能晚于 nav 渲染，延迟重试
+  setTimeout(function () { hideNavItem('个人博客') }, 150)
+  // 移动端：导航后强制收起目录面板
+  if (isMobileUI()) {
+    var exp = document.querySelector('.explorer')
+    if (exp && !exp.classList.contains('collapsed')) toggleMobileExplorer(false)
+  }  if (!document.getElementById("hamburger-menu")) {
     rebuildUI()
     syncMusicUI()
   } else { closeHamburger() }
@@ -228,7 +236,7 @@ function setBg(id) {
   }
   var c = colors[id]
   if (c) {
-    document.querySelectorAll("#bg-video-light, #bg-video-dark, #bg-image-light, #bg-image-dark").forEach(function (v) { v.style.opacity = "0" })
+    document.querySelectorAll("#bg-video-light, #bg-video-dark, #bg-image-light, #bg-image-dark, #bg-image-light-pc, #bg-image-dark-pc").forEach(function (v) { v.style.opacity = "0" })
     ov.style.background = c; ov.style.backdropFilter = "none"; ov.style.webkitBackdropFilter = "none"
   } else {
     // SPA 重建了 <body>，新 video 元素只有 data-src 没有 src
@@ -241,8 +249,10 @@ function setBg(id) {
     var dark = isDark()
     var lv = document.getElementById("bg-video-light"), dv = document.getElementById("bg-video-dark")
     var li = document.getElementById("bg-image-light"), di = document.getElementById("bg-image-dark")
+    var liP = document.getElementById("bg-image-light-pc"), diP = document.getElementById("bg-image-dark-pc")
     if (lv) lv.style.opacity = dark ? "0" : "1"; if (dv) dv.style.opacity = dark ? "1" : "0"
     if (li) li.style.opacity = dark ? "0" : "1"; if (di) di.style.opacity = dark ? "1" : "0"
+    if (liP) liP.style.opacity = dark ? "0" : "1"; if (diP) diP.style.opacity = dark ? "1" : "0"
     ov.style.background = ""; ov.style.backdropFilter = ""; ov.style.webkitBackdropFilter = ""
   }
   document.querySelectorAll(".hb-bg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.bg === id) })
@@ -380,7 +390,6 @@ function attachHandlers() {
     ['.hb-vol-slider','input',function(){var v=parseFloat(this.value);if(window.__music)window.__music.setVolume(v);var l=document.querySelector('.hb-vol-label');if(l)l.textContent=v.toFixed(2)}],
     ['.hb-loop-btn','click',function(){if(!window.__music)return;var loop=window.__music.toggleLoop();this.textContent=loop?'🔂':'🔁';this.classList.toggle('active',loop)}],
     ['#nav-toggle-btn','click',function(e){e.stopPropagation();toggleSidebar()}],
-    ['#tb-search-btn','click',function(){var b=document.querySelector('.search-button');if(b)b.click()}],
     ['#tb-theme-btn','click',function(){var b=document.querySelector('button.darkmode');if(b)b.click()}]
   ].forEach(function(a){var el=document.querySelector(a[0]);if(el&&!_handlerSet.has(el)){_handlerSet.add(el);el.addEventListener(a[1],a[2])}})
 }
@@ -409,9 +418,6 @@ function bindHamburgerDelegate() {
 //  Hamburger helpers
 // ====================================================================
 function isMobileUI() {
-  var me = document.querySelector('.explorer .mobile-explorer')
-  if (!me) return false
-  if (me.checkVisibility) return me.checkVisibility()
   return window.matchMedia && window.matchMedia('(max-width: 800px)').matches
 }
 
@@ -520,6 +526,31 @@ function updateScrollLock() {
 }
 
 // ====================================================================
+//  Left sidebar extras: home link + nav cleanup
+// ====================================================================
+function injectHomeLink() {
+  var s = document.querySelector('.left.sidebar')
+  if (!s || s.querySelector('.home-link')) return
+  var a = document.createElement('a')
+  a.className = 'home-link'
+  a.href = getBp() + '/'
+  a.textContent = '安巢鸟的个人网站'
+  s.insertBefore(a, s.firstChild)
+}
+
+function hideNavItem(name) {
+  document.querySelectorAll('.left.sidebar .explorer .tree-item-self').forEach(function (el) {
+    var t = el.matches('.nav-file-title, .folder-title')
+      ? el
+      : el.querySelector('.nav-file-title, .folder-title')
+    if (t && t.textContent.trim() === name) {
+      var li = el.closest('li')
+      if (li) li.style.display = 'none'
+    }
+  })
+}
+
+// ====================================================================
 //  Sidebar slide panel
 // ====================================================================
 function toggleSidebar() {
@@ -530,10 +561,9 @@ function toggleSidebar() {
     var exp = document.querySelector('.explorer');
     if (exp && toggleMobileExplorer(exp.classList.contains('collapsed'))) return;
   }
-  var open = s.classList.toggle('open');
-  var btn = document.querySelector('#nav-toggle-btn');
-  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  updateScrollLock();
+  // PC 端：顶栏左侧按钮 = 折叠 / 展开左栏（复用 explorer 原生标题栏折叠）
+  var tb = document.querySelector('.explorer .desktop-explorer');
+  if (tb) tb.click();
 }
 function openSidebar() {
   var s = document.querySelector('.left.sidebar');
@@ -565,6 +595,8 @@ document.addEventListener('keydown', function(e) {
 function init() {
   getBp()
   rebuildUI()
+  injectHomeLink()
+  hideNavItem('个人博客')
   bindHamburgerDelegate()
   restoreFontSize()
   restoreBg()
@@ -694,8 +726,10 @@ var themeObserver = new MutationObserver(function () {
     var dark = isDark()
     var lv = document.getElementById("bg-video-light"), dv = document.getElementById("bg-video-dark")
     var li = document.getElementById("bg-image-light"), di = document.getElementById("bg-image-dark")
+    var liP = document.getElementById("bg-image-light-pc"), diP = document.getElementById("bg-image-dark-pc")
     if (lv) lv.style.opacity = dark ? "0" : "1"; if (dv) dv.style.opacity = dark ? "1" : "0"
     if (li) li.style.opacity = dark ? "0" : "1"; if (di) di.style.opacity = dark ? "1" : "0"
+    if (liP) liP.style.opacity = dark ? "0" : "1"; if (diP) diP.style.opacity = dark ? "1" : "0"
   }
   var fc = localStorage.getItem(FONT_COLOR_KEY)
   if (fc === "auto" || !fc) setFontColor("auto")
