@@ -64,6 +64,17 @@ document.addEventListener(
   true,
 )
 
+// Touch devices have no hover; prefetch on touchstart (usually fires well before click)
+document.addEventListener(
+  "touchstart",
+  (e) => {
+    if (!(e.target instanceof Element)) return
+    const opts = getOpts({ target: e.target } as unknown as Event)
+    if (opts) prefetchLink(opts.url)
+  },
+  true,
+)
+
 const cleanupFns: Set<(...args: any[]) => void> = new Set()
 window.addCleanup = (fn) => cleanupFns.add(fn)
 

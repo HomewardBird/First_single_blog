@@ -161,7 +161,7 @@ body {
   z-index: -2;
   pointer-events: none;
   filter: blur(3px) brightness(1.04);
-  transition: opacity 0.7s ease;
+  transition: opacity 0.25s ease;
   opacity: 0;
   will-change: opacity;
 }
@@ -204,7 +204,7 @@ html[saved-theme="dark"] #bg-image-dark  { opacity: 1; }
   backdrop-filter: blur(8px) saturate(1.1);
   -webkit-backdrop-filter: blur(8px) saturate(1.1);
   background: rgba(250, 248, 248, 0.55);
-  transition: background 0.7s ease;
+  transition: background 0.25s ease;
 }
 
 #bg-overlay { @include dark { background: rgba(22, 22, 24, 0.58); } }
@@ -1428,6 +1428,17 @@ html[saved-theme="dark"] .home-link {
 /* 顶栏标题：PC 与移动端均隐藏 */
 .top-bar-title {
   display: none !important;
+}
+
+/* ====== 右栏为空时（首页等）自动隐藏，内容全宽 ====== */
+@media (min-width: 1200px) {
+  .right.sidebar:empty {
+    display: none !important;
+  }
+  .page > #quartz-body:has(.right.sidebar:empty) {
+    grid-template-columns: 1fr !important;
+    grid-template-areas: "grid-center" "grid-footer" !important;
+  }
 }
 
 /* ====== 左侧栏：fixed 贴屏幕最左 + 折叠收缩 + 隐藏滚动条（PC） ====== */
