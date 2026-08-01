@@ -29,6 +29,11 @@ export function CustomElements({ basePath }: { basePath: string }) {
           </button>
           <span class="top-bar-title">安巢鸟的个人网站</span>
           <div class="top-bar-right">
+            <button id="tb-search-btn" class="tb-action-btn" aria-label="搜索" title="搜索">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+              </svg>
+            </button>
             <button id="tb-theme-btn" class="tb-action-btn" aria-label="切换主题" title="切换主题">
               <svg class="icon-dark" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
