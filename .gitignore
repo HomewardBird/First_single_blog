@@ -21,3 +21,6 @@ public/
 node_modules/
 public/
 .quartz-cache/
+
+# TypeScript build cache
+tsconfig.tsbuildinfo
