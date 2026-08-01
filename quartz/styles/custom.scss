@@ -1430,12 +1430,12 @@ html[saved-theme="dark"] .home-link {
   display: none !important;
 }
 
-/* ====== 右栏为空时（首页等）自动隐藏，内容全宽 ====== */
+/* ====== 右栏：仅首页为空时隐藏（文章页常显，保持正文宽度稳定） ====== */
 @media (min-width: 1200px) {
-  .right.sidebar:empty {
+  [data-slug="index"] .right.sidebar:empty {
     display: none !important;
   }
-  .page > #quartz-body:has(.right.sidebar:empty) {
+  [data-slug="index"] .page > #quartz-body:has(.right.sidebar:empty) {
     grid-template-columns: 1fr !important;
     grid-template-areas: "grid-center" "grid-footer" !important;
   }
