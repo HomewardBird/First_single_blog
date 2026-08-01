@@ -20,7 +20,6 @@ function getPageTypeExtensions(ctx: BuildCtx): Set<string> {
 }
 
 const ROOT_ROOT_FILES = [
-  "dark_bg.mp4", "light_bg.mp4",
   "quotes.json",
 ]
 
