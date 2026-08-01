@@ -75,6 +75,28 @@ document.addEventListener(
   true,
 )
 
+// Aggressive prefetch: warm the cache for every internal link in idle time,
+// so even the very first click navigates instantly.
+function prefetchAllLinks() {
+  if (!("requestIdleCallback" in window)) return
+  const links = Array.from(document.querySelectorAll("a[href]"))
+  let i = 0
+  const worker = () => {
+    const end = Math.min(i + 5, links.length)
+    for (; i < end; i++) {
+      const href = links[i].getAttribute("href")
+      if (!href || !isLocalUrl(href)) continue
+      try {
+        prefetchLink(new URL(href, window.location.origin))
+      } catch (e) {}
+    }
+    if (i < links.length) requestIdleCallback(worker)
+  }
+  requestIdleCallback(worker)
+}
+document.addEventListener("DOMContentLoaded", prefetchAllLinks)
+document.addEventListener("nav", prefetchAllLinks)
+
 const cleanupFns: Set<(...args: any[]) => void> = new Set()
 window.addCleanup = (fn) => cleanupFns.add(fn)
 
