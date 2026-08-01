@@ -155,16 +155,14 @@ document.addEventListener("nav", function () {
   var tbT = document.querySelector("#top-bar .top-bar-title")
   if (tbT) tbT.textContent = document.title || "归鸟的馆藏日志"
   restoreLock()
-  var prev = sessionStorage.getItem('__prevPage')
   var cur = getSlug()
   if (localStorage.getItem(LOCK_KEY) !== "true") {
-    var bg = localStorage.getItem(BG_KEY) || "default"
-    if (cur === "index" && bg !== "default") setBg("default")
-    else if (cur !== "index" && bg === "default" && (prev === "index" || !prev)) setBg(isDark() ? "dark" : "cream")
+    // 首页恢复图片背景；子页面自动切纯色（无条件，任何导航来源均生效）
+    if (cur === "index") setBg("default")
+    else setBg(isDark() ? "dark" : "cream")
   }
   // SPA reconstructs <body>, 重写当前背景的内联样式
   setBg(localStorage.getItem(BG_KEY) || "default")
-  sessionStorage.setItem('__prevPage', cur)
   loadDailyQuote()
 })
 
@@ -384,6 +382,7 @@ function attachHandlers() {
     ['.hb-vol-slider','input',function(){var v=parseFloat(this.value);if(window.__music)window.__music.setVolume(v);var l=document.querySelector('.hb-vol-label');if(l)l.textContent=v.toFixed(2)}],
     ['.hb-loop-btn','click',function(){if(!window.__music)return;var loop=window.__music.toggleLoop();this.textContent=loop?'🔂':'🔁';this.classList.toggle('active',loop)}],
     ['#nav-toggle-btn','click',function(e){e.stopPropagation();toggleSidebar()}],
+    ['#tb-search-btn','click',function(){var b=document.querySelector('.search-button');if(b)b.click()}],
     ['#tb-theme-btn','click',function(){var b=document.querySelector('button.darkmode');if(b)b.click()}]
   ].forEach(function(a){var el=document.querySelector(a[0]);if(el&&!_handlerSet.has(el)){_handlerSet.add(el);el.addEventListener(a[1],a[2])}})
 }
@@ -579,9 +578,11 @@ function toggleSidebar() {
   var tb = document.querySelector('.explorer .desktop-explorer');
   if (tb) tb.click();
 }
-function openSidebar() {
-  var s = document.querySelector('.left.sidebar');
-  if (s) s.classList.add('open');
+// 移动端初始化：目录面板默认收起（否则插件默认展开导致首屏被面板盖住）
+function initMobilePanel() {
+  if (!isMobileUI()) return
+  var exp = document.querySelector('.explorer')
+  if (exp && !exp.classList.contains('collapsed')) toggleMobileExplorer(false)
 }
 function closeSidebar() {
   var s = document.querySelector('.left.sidebar');
@@ -611,6 +612,7 @@ function init() {
   rebuildUI()
   injectHomeLink()
   hideNavItem('个人博客')
+  initMobilePanel()
   bindHamburgerDelegate()
   restoreFontSize()
   restoreBg()
@@ -618,11 +620,9 @@ function init() {
   restoreLock()
 
   var slug = getSlug()
-  if (slug !== "index" && localStorage.getItem(LOCK_KEY) !== "true") {
-    if (localStorage.getItem(BG_KEY) === "default" || !localStorage.getItem(BG_KEY))
-      setBg(isDark() ? "dark" : "cream")
+  if (localStorage.getItem(LOCK_KEY) !== "true" && slug !== "index") {
+    setBg(isDark() ? "dark" : "cream")
   }
-  try { sessionStorage.setItem('__prevPage', slug) } catch(e) {}
 
   // Restore music volume & loop
   var savedVol = localStorage.getItem('musicVolume');

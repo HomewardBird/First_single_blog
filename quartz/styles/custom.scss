@@ -377,9 +377,12 @@ html[saved-theme="dark"] .hb-music-btn {
     border-bottom: none;
     padding: 1rem !important;
     position: fixed !important;
-    inset: 0 !important;
+    top: 36px !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     z-index: 10000 !important;
-    height: 100dvh !important;
+    height: calc(100dvh - 36px) !important;
     width: 100vw !important;
     max-width: 100vw !important;
     margin: 0 !important;
@@ -495,29 +498,6 @@ html body[data-bg-dark="true"] .content-meta { color: #b8b8b8 !important; }
   padding: 1rem 1.5rem 4rem;
 }
 
-/* 移动端菜单底部渐变 overlay（position: fixed 不干扰菜单布局） */
-@media (max-width: 800px) {
-  .explorer-content::after {
-    content: '';
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 50px;
-    pointer-events: none;
-    z-index: 1;
-    opacity: 0;
-    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.85));
-    transition: opacity 0.2s ease;
-  }
-  .explorer-content:has(.gradient-active)::after {
-    opacity: 1;
-  }
-  .explorer-content::after {
-    @include dark { background: linear-gradient(to bottom, transparent, rgba(22, 22, 24, 0.90)); }
-  }
-}
-
 .home-header {
   text-align: center;
   margin-bottom: 2.8rem;
@@ -604,6 +584,13 @@ html[saved-theme="dark"] .random-quote {
   grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
   margin-bottom: 2rem;
+}
+/* 平板正文较窄：卡片改单列，避免挤成一两个字 */
+@media (min-width: 801px) and (max-width: 1199px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 }
 
 .glass-card {
@@ -1167,6 +1154,10 @@ html[data-theme="dark"] .hb-lock-btn.locked, html[saved-theme="dark"] .hb-lock-b
   .page > #quartz-body {
     margin-top: 32px;
   }
+  .sidebar.left:has(.explorer:not(.collapsed)) {
+    top: 32px !important;
+    height: calc(100dvh - 32px) !important;
+  }
   #hamburger-menu {
     top: 32px;
     right: 0.3rem;
@@ -1333,6 +1324,29 @@ html[saved-theme="dark"] .hb-loop-btn.active {
   }
 }
 
+/* ====== 平板（801-1199px）：默认双栏布局 + 玻璃容器 ====== */
+@media (min-width: 801px) and (max-width: 1199px) {
+  .left.sidebar,
+  .right.sidebar {
+    background: rgba(255, 255, 255, 0.78) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
+    @include dark {
+      background: rgba(22, 22, 24, 0.5) !important;
+      border-color: rgba(255, 255, 255, 0.12) !important;
+    }
+  }
+  .left.sidebar {
+    padding: 0.65rem 0.6rem !important;
+  }
+  .right.sidebar {
+    padding: 0.9rem 0.8rem !important;
+  }
+}
+
 /* 折叠由 explorer 原生标题栏控制，Grid 列宽固定保持留白 */
 [data-slug="index"] .left.sidebar {
   padding-top: 0.75rem !important;
@@ -1413,11 +1427,15 @@ html[saved-theme="dark"] .home-link {
   overflow-y: auto;
 }
 
+/* 顶栏标题：PC 与移动端均隐藏 */
+.top-bar-title {
+  display: none !important;
+}
+
 /* ====== 左侧栏：fixed 贴屏幕最左 + 折叠收缩 + 隐藏滚动条（PC） ====== */
-@media (min-width: 801px) {
-  /* PC 顶栏只留右侧按钮，左侧按钮与标题隐藏（移动端保留入口） */
-  #top-bar #nav-toggle-btn,
-  #top-bar .top-bar-title {
+@media (min-width: 1200px) {
+  /* PC 顶栏只留右侧按钮，左侧导航按钮隐藏（移动端保留入口） */
+  #top-bar #nav-toggle-btn {
     display: none !important;
   }
   /* 隐藏后按钮组变为唯一子元素，强制靠右 */
@@ -1492,12 +1510,16 @@ html[saved-theme="dark"] .home-link {
   }
 }
 
-/* 隐藏左侧栏里被取代的按钮（仍在 DOM 中供 proxy 点击；搜索按钮保留显示） */
+/* 隐藏左侧栏里被取代的按钮（仍在 DOM 中供 proxy 点击；搜索/阅读模式按钮保留显示） */
 .sidebar .darkmode,
-.sidebar .reader-mode,
 .sidebar .spacer,
 .sidebar .page-title {
   display: none !important;
+}
+@media (min-width: 1200px) {
+  .sidebar .readermode {
+    display: none !important;
+  }
 }
 
 /* ====== 顶栏快捷按钮统一样式 ====== */
@@ -1566,6 +1588,15 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light { display: inline; }
   }
   .left.sidebar.open {
     left: 0 !important;
+  }
+}
+
+/* ====== 移动端面板：恢复内容顺序（插件 order:-1 / margin:auto 干扰布局） ====== */
+@media (max-width: 800px) {
+  .explorer {
+    order: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
   }
 }
 
