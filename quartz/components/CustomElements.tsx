@@ -8,22 +8,6 @@ export function CustomElements({ basePath }: { basePath: string }) {
         </div>
         <div class="loader-text">安巢鸟的个人网站</div>
       </div>
-      <video
-        id="bg-video-light"
-        muted
-        loop
-        playsinline
-        preload="none"
-        data-src={`${basePath}/static/light_bg.mp4`}
-      ></video>
-      <video
-        id="bg-video-dark"
-        muted
-        loop
-        playsinline
-        preload="none"
-        data-src={`${basePath}/static/dark_bg.mp4`}
-      ></video>
       <img id="bg-image-light" src={`${basePath}/static/light_bg.jpg`} alt="" loading="lazy" />
       <img id="bg-image-dark" src={`${basePath}/static/dark_bg.jpg`} alt="" loading="lazy" />
       <img id="bg-image-light-pc" src={`${basePath}/static/light.jpg`} alt="" loading="lazy" />
