@@ -147,34 +147,11 @@ body {
 
 #page-loader .loader-text { @include dark { color: #d4d4d4; } }
 
-/* ====== 全屏视频背景（PC） ====== */
-#bg-video-light,
-#bg-video-dark {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: -2;
-  pointer-events: none;
-  filter: blur(3px) brightness(1.04);
-  transition: opacity 0.7s ease;
-  opacity: 0;
-  will-change: opacity;
-}
-
-#bg-video-light { opacity: 1; }
-#bg-video-dark  { opacity: 0; }
-
-html[data-theme="dark"] #bg-video-light,
-html[saved-theme="dark"] #bg-video-light { opacity: 0; }
-html[data-theme="dark"] #bg-video-dark,
-html[saved-theme="dark"] #bg-video-dark  { opacity: 1; }
-
-/* ====== 全屏图片背景（移动端） ====== */
+/* ====== 全屏图片背景 ====== */
 #bg-image-light,
-#bg-image-dark {
+#bg-image-dark,
+#bg-image-light-pc,
+#bg-image-dark-pc {
   position: fixed;
   top: 0;
   left: 0;
@@ -189,23 +166,21 @@ html[saved-theme="dark"] #bg-video-dark  { opacity: 1; }
   will-change: opacity;
 }
 
+/* 移动端：亮/暗切换（light_bg / dark_bg） */
 #bg-image-light { opacity: 1; }
 #bg-image-dark  { opacity: 0; }
-
 html[data-theme="dark"] #bg-image-light,
 html[saved-theme="dark"] #bg-image-light { opacity: 0; }
 html[data-theme="dark"] #bg-image-dark,
 html[saved-theme="dark"] #bg-image-dark  { opacity: 1; }
 
-/* PC 图片组暂用视频替代（文件保留备用） */
-#bg-image-light-pc,
-#bg-image-dark-pc {
-  display: none !important;
-}
+/* PC：统一用 light.jpg（dark 素材未授权） */
+#bg-image-light-pc { opacity: 1; }
+#bg-image-dark-pc  { opacity: 0; }
 
 @media (max-width: 768px) {
-  #bg-video-light,
-  #bg-video-dark {
+  #bg-image-light-pc,
+  #bg-image-dark-pc {
     display: none !important;
   }
 }

@@ -22,15 +22,6 @@ function getBp() {
 // ====================================================================
 //  Music Player
 // ====================================================================
-var _vLoaded = false;
-function lazyLoadVideos() {
-  if (_vLoaded) return; _vLoaded = true;
-  document.querySelectorAll('#bg-video-light, #bg-video-dark').forEach(function(v) {
-    var src = v.getAttribute('data-src');
-    if (src) { v.src = src; v.load(); }
-  });
-}
-
 var tracks = [
   '05 Coffee Cats.m4a',
   '1-28 希望的明\u2F47.m4a',
@@ -223,8 +214,8 @@ function isDark() {
 }
 function currentBgOpts() {
   return isDark()
-    ? [{ id:"default", label:"视频" }, { id:"dark", label:"深灰" }, { id:"black", label:"纯黑" }]
-    : [{ id:"default", label:"视频" }, { id:"white", label:"纯白" }, { id:"cream", label:"米白" }, { id:"gray", label:"浅灰" }, { id:"blue", label:"雾蓝" }]
+    ? [{ id:"default", label:"图片" }, { id:"dark", label:"深灰" }, { id:"black", label:"纯黑" }]
+    : [{ id:"default", label:"图片" }, { id:"white", label:"纯白" }, { id:"cream", label:"米白" }, { id:"gray", label:"浅灰" }, { id:"blue", label:"雾蓝" }]
 }
 function setBg(id) {
   localStorage.setItem(BG_KEY, id)
@@ -236,23 +227,15 @@ function setBg(id) {
   }
   var c = colors[id]
   if (c) {
-    document.querySelectorAll("#bg-video-light, #bg-video-dark, #bg-image-light, #bg-image-dark, #bg-image-light-pc, #bg-image-dark-pc").forEach(function (v) { v.style.opacity = "0" })
+    document.querySelectorAll("#bg-image-light, #bg-image-dark, #bg-image-light-pc, #bg-image-dark-pc").forEach(function (v) { v.style.opacity = "0" })
     ov.style.background = c; ov.style.backdropFilter = "none"; ov.style.webkitBackdropFilter = "none"
   } else {
-    // SPA 重建了 <body>，新 video 元素只有 data-src 没有 src
-    document.querySelectorAll('#bg-video-light, #bg-video-dark').forEach(function(v) {
-      if (!v.src || v.src === window.location.href) {
-        var s = v.getAttribute('data-src')
-        if (s) { v.src = s; v.load(); }
-      }
-    })
     var dark = isDark()
-    var lv = document.getElementById("bg-video-light"), dv = document.getElementById("bg-video-dark")
     var li = document.getElementById("bg-image-light"), di = document.getElementById("bg-image-dark")
     var liP = document.getElementById("bg-image-light-pc"), diP = document.getElementById("bg-image-dark-pc")
-    if (lv) lv.style.opacity = dark ? "0" : "1"; if (dv) dv.style.opacity = dark ? "1" : "0"
     if (li) li.style.opacity = dark ? "0" : "1"; if (di) di.style.opacity = dark ? "1" : "0"
-    if (liP) liP.style.opacity = dark ? "0" : "1"; if (diP) diP.style.opacity = dark ? "1" : "0"
+    // PC：暗色模式也保持 light.jpg
+    if (liP) liP.style.opacity = "1"; if (diP) diP.style.opacity = "0"
     ov.style.background = ""; ov.style.backdropFilter = ""; ov.style.webkitBackdropFilter = ""
   }
   document.querySelectorAll(".hb-bg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.bg === id) })
@@ -270,6 +253,17 @@ var fontColorOpts = [
   { id:"sepia",  label:"复古" },
   { id:"blue",   label:"蓝调" },
 ]
+
+// 亮色模式不展示「浅色」，暗色模式不展示「深色」「灰色」（深浅无意义且看不清）
+function getFontColorOpts() {
+  var dark = isDark()
+  return fontColorOpts.filter(function (o) {
+    if (o.id === "dark" && dark) return false
+    if (o.id === "light" && !dark) return false
+    if (o.id === "gray" && dark) return false
+    return true
+  })
+}
 
 function setFontColor(id) {
   // Clear all font-colour / bg data-*
@@ -350,13 +344,13 @@ function buildMenuHTML() {
   var bHtml = currentBgOpts().map(function (o) { return '<button class="hb-bg-btn" data-bg="'+o.id+'">'+o.label+'</button>' }).join("")
 
   // Font colour
-  var fcHtml = fontColorOpts.map(function (o) { return '<button class="hb-fc-btn" data-fc="'+o.id+'">'+o.label+'</button>' }).join("")
+  var fcHtml = getFontColorOpts().map(function (o) { return '<button class="hb-fc-btn" data-fc="'+o.id+'">'+o.label+'</button>' }).join("")
 
   return [
     '<div class="hb-section"><div class="hb-title">🔅 外观</div>',
     '<div class="hb-sub">字体大小</div><div class="hb-row">', fHtml, '</div>',
     '<div class="hb-sub">背景颜色</div><div class="hb-row hb-bg-row">', bHtml, '</div>',
-    '<div class="hb-sub">文字颜色</div><div class="hb-row">', fcHtml, '</div>',
+    '<div class="hb-sub">文字颜色</div><div class="hb-row hb-fc-row">', fcHtml, '</div>',
     '<div class="hb-inline-row">',
       '<button class="hb-lock-btn" title="锁定背景不变">🔒 锁定</button>',
     '</div></div>',
@@ -485,6 +479,7 @@ function toggleHamburger() {
     saveFocus()
     focusPanel(m)
     refreshBgButtons()
+    refreshFcButtons()
   } else {
     restoreFocus()
   }
@@ -509,6 +504,25 @@ function refreshBgButtons() {
   // Restore active state
   var saved = localStorage.getItem(BG_KEY)
   if (saved) row.querySelectorAll(".hb-bg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.bg === saved) })
+}
+
+// 文字颜色选项随主题增减（白天无「浅色」、夜间无「深色」）
+var _fcButtonsKey = null
+function refreshFcButtons() {
+  var row = document.querySelector(".hb-fc-row")
+  if (!row) return
+  var opts = getFontColorOpts()
+  var key = opts.map(function (o) { return o.id }).join(',')
+  if (_fcButtonsKey === key) {
+    var fc = localStorage.getItem(FONT_COLOR_KEY)
+    row.querySelectorAll(".hb-fc-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.fc === fc) })
+    return
+  }
+  _fcButtonsKey = key
+  row.innerHTML = opts.map(function (o) { return '<button class="hb-fc-btn" data-fc="'+o.id+'">'+o.label+'</button>' }).join("")
+  row.querySelectorAll(".hb-fc-btn").forEach(function (b) { b.addEventListener("click", function () { setFontColor(this.dataset.fc) }) })
+  var fc = localStorage.getItem(FONT_COLOR_KEY)
+  if (fc) row.querySelectorAll(".hb-fc-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.fc === fc) })
 }
 function closeHamburger() {
   var m = document.getElementById("hamburger-menu"); if (m) m.classList.remove("open")
@@ -639,7 +653,6 @@ function init() {
     }
   });
 
-  lazyLoadVideos()
   loadDailyQuote()
 }
 
@@ -712,24 +725,17 @@ document.addEventListener("DOMContentLoaded", function () { insertPrevNext() })
 // ====================================================================
 var themeObserver = new MutationObserver(function () {
   refreshBgButtons()
+  refreshFcButtons()
   var bg = localStorage.getItem(BG_KEY)
   if (bg && bg !== "default") {
     var opts = currentBgOpts().filter(function(o) { return o.id !== "default" })
     if (opts.length) setBg(opts[0].id)
   } else {
-    document.querySelectorAll('#bg-video-light, #bg-video-dark').forEach(function(v) {
-      if (!v.src || v.src === window.location.href) {
-        var s = v.getAttribute('data-src')
-        if (s) { v.src = s; v.load(); }
-      }
-    })
     var dark = isDark()
-    var lv = document.getElementById("bg-video-light"), dv = document.getElementById("bg-video-dark")
     var li = document.getElementById("bg-image-light"), di = document.getElementById("bg-image-dark")
     var liP = document.getElementById("bg-image-light-pc"), diP = document.getElementById("bg-image-dark-pc")
-    if (lv) lv.style.opacity = dark ? "0" : "1"; if (dv) dv.style.opacity = dark ? "1" : "0"
     if (li) li.style.opacity = dark ? "0" : "1"; if (di) di.style.opacity = dark ? "1" : "0"
-    if (liP) liP.style.opacity = dark ? "0" : "1"; if (diP) diP.style.opacity = dark ? "1" : "0"
+    if (liP) liP.style.opacity = "1"; if (diP) diP.style.opacity = "0"
   }
   var fc = localStorage.getItem(FONT_COLOR_KEY)
   if (fc === "auto" || !fc) setFontColor("auto")
@@ -738,13 +744,6 @@ function startObserver() {
   var el = document.documentElement
   themeObserver.observe(el, { attributes: true, attributeFilter: ["data-theme", "saved-theme"] })
 }
-
-// Pause video when tab hidden
-document.addEventListener('visibilitychange', function() {
-  if (document.hidden) {
-    document.querySelectorAll('#bg-video-light, #bg-video-dark').forEach(function(v) { v.pause(); });
-  }
-});
 
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { init(); startObserver() })
 else { init(); startObserver() }
