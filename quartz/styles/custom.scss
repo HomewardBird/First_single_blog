@@ -1329,8 +1329,6 @@ html[saved-theme="dark"] .hb-loop-btn.active {
   .left.sidebar,
   .right.sidebar {
     background: rgba(255, 255, 255, 0.78) !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.5) !important;
     border-radius: 16px !important;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
@@ -1468,8 +1466,6 @@ html[saved-theme="dark"] .home-link {
     overflow-y: auto !important;
     scrollbar-width: none !important;
     background: rgba(255, 255, 255, 0.78) !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border-right: 1px solid rgba(255, 255, 255, 0.5) !important;
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.06) !important;
     padding: 0.65rem 0.6rem 0.8rem !important;

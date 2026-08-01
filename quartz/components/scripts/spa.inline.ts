@@ -40,6 +40,30 @@ function notifyNav(url: FullSlug) {
   document.dispatchEvent(event)
 }
 
+// ====================================================================
+//  Hover prefetch: pre-download page HTML so navigation feels instant
+// ====================================================================
+const prefetchCache = new Map<string, string>()
+
+function prefetchLink(url: URL) {
+  if (prefetchCache.has(url.href)) return
+  fetchCanonical(url)
+    .then((res) => res.text())
+    .then((text) => prefetchCache.set(url.href, text))
+    .catch(() => {})
+}
+
+document.addEventListener(
+  "mouseover",
+  (e) => {
+    if (!(e.target instanceof Element)) return
+    if (!window.matchMedia("(hover: hover)").matches) return
+    const opts = getOpts({ target: e.target } as unknown as Event)
+    if (opts) prefetchLink(opts.url)
+  },
+  true,
+)
+
 const cleanupFns: Set<(...args: any[]) => void> = new Set()
 window.addCleanup = (fn) => cleanupFns.add(fn)
 
@@ -68,18 +92,26 @@ async function _navigate(url: URL, isBack: boolean = false) {
   isNavigating = true
   startLoading()
   p = p || new DOMParser()
-  const contents = await fetchCanonical(url)
-    .then((res) => {
-      const contentType = res.headers.get("content-type")
-      if (contentType?.startsWith("text/html")) {
-        return res.text()
-      } else {
+  let contents: string | undefined
+  const cached = prefetchCache.get(url.href)
+  if (cached) {
+    contents = cached
+    prefetchCache.delete(url.href)
+  } else {
+    contents = await fetchCanonical(url)
+      .then((res) => {
+        const contentType = res.headers.get("content-type")
+        if (contentType?.startsWith("text/html")) {
+          return res.text()
+        }
         window.location.assign(url)
-      }
-    })
-    .catch(() => {
-      window.location.assign(url)
-    })
+        return undefined
+      })
+      .catch(() => {
+        window.location.assign(url)
+        return undefined
+      })
+  }
 
   if (!contents) return
 
