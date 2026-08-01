@@ -1,6 +1,10 @@
 import { i18n } from "../i18n"
 import { FullSlug, getFileExtension, joinSegments, pathToRoot } from "../util/path"
-import { CSSResourceToStyleElement, JSResourceToScriptElement } from "../util/resources"
+import {
+  CSSResourceToStyleElement,
+  JSResourceToScriptElement,
+  localizeResource,
+} from "../util/resources"
 import { googleFontHref, googleFontSubsetHref } from "../util/theme"
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "./types"
 import { unescapeHTML } from "../util/escape"
@@ -96,10 +100,22 @@ export default (() => {
         <meta name="description" content={description} />
         <meta name="generator" content="Quartz" />
 
-        {css.map((resource) => CSSResourceToStyleElement(resource, true))}
+        {css.map((resource) =>
+          CSSResourceToStyleElement(
+            { ...resource, content: localizeResource(resource.content) },
+            true,
+          ),
+        )}
         {js
           .filter((resource) => resource.loadTime === "beforeDOMReady")
-          .map((res) => JSResourceToScriptElement(res, true))}
+          .map((res) =>
+            res.contentType === "external"
+              ? JSResourceToScriptElement(
+                  { ...res, src: localizeResource(res.src) },
+                  true,
+                )
+              : JSResourceToScriptElement(res, true),
+          )}
         {additionalHead.map((resource) => {
           if (typeof resource === "function") {
             return resource(fileData)

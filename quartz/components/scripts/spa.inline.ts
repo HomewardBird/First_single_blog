@@ -40,6 +40,63 @@ function notifyNav(url: FullSlug) {
   document.dispatchEvent(event)
 }
 
+// ====================================================================
+//  Hover prefetch: pre-download page HTML so navigation feels instant
+// ====================================================================
+const prefetchCache = new Map<string, string>()
+
+function prefetchLink(url: URL) {
+  if (prefetchCache.has(url.href)) return
+  fetchCanonical(url)
+    .then((res) => res.text())
+    .then((text) => prefetchCache.set(url.href, text))
+    .catch(() => {})
+}
+
+document.addEventListener(
+  "mouseover",
+  (e) => {
+    if (!(e.target instanceof Element)) return
+    if (!window.matchMedia("(hover: hover)").matches) return
+    const opts = getOpts({ target: e.target } as unknown as Event)
+    if (opts) prefetchLink(opts.url)
+  },
+  true,
+)
+
+// Touch devices have no hover; prefetch on touchstart (usually fires well before click)
+document.addEventListener(
+  "touchstart",
+  (e) => {
+    if (!(e.target instanceof Element)) return
+    const opts = getOpts({ target: e.target } as unknown as Event)
+    if (opts) prefetchLink(opts.url)
+  },
+  true,
+)
+
+// Aggressive prefetch: warm the cache for every internal link in idle time,
+// so even the very first click navigates instantly.
+function prefetchAllLinks() {
+  if (!("requestIdleCallback" in window)) return
+  const links = Array.from(document.querySelectorAll("a[href]"))
+  let i = 0
+  const worker = () => {
+    const end = Math.min(i + 5, links.length)
+    for (; i < end; i++) {
+      const href = links[i].getAttribute("href")
+      if (!href || !isLocalUrl(href)) continue
+      try {
+        prefetchLink(new URL(href, window.location.origin))
+      } catch (e) {}
+    }
+    if (i < links.length) requestIdleCallback(worker)
+  }
+  requestIdleCallback(worker)
+}
+document.addEventListener("DOMContentLoaded", prefetchAllLinks)
+document.addEventListener("nav", prefetchAllLinks)
+
 const cleanupFns: Set<(...args: any[]) => void> = new Set()
 window.addCleanup = (fn) => cleanupFns.add(fn)
 
@@ -68,18 +125,26 @@ async function _navigate(url: URL, isBack: boolean = false) {
   isNavigating = true
   startLoading()
   p = p || new DOMParser()
-  const contents = await fetchCanonical(url)
-    .then((res) => {
-      const contentType = res.headers.get("content-type")
-      if (contentType?.startsWith("text/html")) {
-        return res.text()
-      } else {
+  let contents: string | undefined
+  const cached = prefetchCache.get(url.href)
+  if (cached) {
+    contents = cached
+    prefetchCache.delete(url.href)
+  } else {
+    contents = await fetchCanonical(url)
+      .then((res) => {
+        const contentType = res.headers.get("content-type")
+        if (contentType?.startsWith("text/html")) {
+          return res.text()
+        }
         window.location.assign(url)
-      }
-    })
-    .catch(() => {
-      window.location.assign(url)
-    })
+        return undefined
+      })
+      .catch(() => {
+        window.location.assign(url)
+        return undefined
+      })
+  }
 
   if (!contents) return
 

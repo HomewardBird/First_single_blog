@@ -97,3 +97,30 @@ main .pagination-loader-container {
 main .gsc-loading-image {
   background-image: url("https://github.githubassets.com/images/mona-loading-default.gif");
 }
+
+/* ====== 站点适配：固定字号 + 对比度 ====== */
+main {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--color-fg-default);
+}
+main input,
+main textarea,
+main .gsc-comment-box-textarea,
+main .gsc-reply-box textarea {
+  font-size: 15px;
+}
+main .gsc-comment-content p,
+main .gsc-reactions button,
+main .gsc-comment-author,
+main .gsc-comment-header,
+main .gsc-social-reaction-summary {
+  color: var(--color-fg-default);
+}
+main .gsc-comment-content {
+  color: var(--color-fg-default);
+  font-size: 15px;
+}
+main .gsc-comment-content p {
+  margin: 0.4em 0;
+}

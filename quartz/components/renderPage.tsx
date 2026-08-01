@@ -5,6 +5,7 @@ import {
   CSSResource,
   JSResource,
   JSResourceToScriptElement,
+  localizeResource,
   StaticResources,
 } from "../util/resources"
 import { FullSlug, RelativeURL, joinSegments, normalizeHastElement } from "../util/path"
@@ -394,7 +395,14 @@ export function renderPage(
       </body>
       {pageResources.js
         .filter((resource) => resource.loadTime === "afterDOMReady")
-        .map((res) => JSResourceToScriptElement(res, true))}
+        .map((res) =>
+          res.contentType === "external"
+            ? JSResourceToScriptElement(
+                { ...res, src: localizeResource(res.src) },
+                true,
+              )
+            : JSResourceToScriptElement(res, true),
+        )}
     </html>
   )
 
