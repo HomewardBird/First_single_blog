@@ -24,3 +24,5 @@ public/
 
 # TypeScript build cache
 tsconfig.tsbuildinfo
+
+content/.obsidian/
