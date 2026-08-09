@@ -13,7 +13,11 @@ node_modules/
 
 # 构建产物
 public/
-.quartz/
+.quartz-cache/
+
+# 插件目录：提交快照（含预构建 dist）以加速 CI，忽略依赖与 TUI
+.quartz/plugins/*/node_modules/
+.quartz/tui/
 
 # 本地插件依赖
 plugins/*/node_modules/
