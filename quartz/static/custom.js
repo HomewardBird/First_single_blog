@@ -1059,8 +1059,15 @@
     var img = s.list[s.idx]
     if (!img) return
     var el = document.getElementById("lightbox-img")
+    var loader = document.getElementById("lightbox-loader")
     var src = (img.currentSrc || img.src || "").split("#")[0]
-    if (el.src !== src) el.src = src
+    if (el.src !== src) {
+      // 换图：显示加载动画，load/error 事件负责隐藏
+      el.src = src
+      if (loader) loader.classList.add("show")
+    } else {
+      if (loader) loader.classList.remove("show")
+    }
     el.alt = img.alt || ""
     s.rot = 0
     lbStageSize()
@@ -1249,7 +1256,7 @@
           '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>',
         ) +
         "</button>",
-      '<div id="lightbox-stage"><img id="lightbox-img" alt="" loading="eager"></div>',
+      '<div id="lightbox-stage"><img id="lightbox-img" alt="" loading="eager"><div id="lightbox-loader" aria-hidden="true"></div></div>',
       '<div id="lightbox-bar">',
       '<span id="lightbox-count"></span>',
       '<div id="lightbox-controls">',
@@ -1301,11 +1308,20 @@
 
     img.addEventListener("load", function () {
       if (!_lbOpen) return
+      var loader = document.getElementById("lightbox-loader")
+      if (loader) loader.classList.remove("show")
       // 新图尺寸与当前不同（或首次加载成功）时重新计算适配比例
       if (img.naturalWidth !== _lbState.natW || img.naturalHeight !== _lbState.natH) {
         lbComputeFit()
         lbReset(true)
       }
+    })
+
+    img.addEventListener("error", function () {
+      if (!_lbOpen) return
+      var loader = document.getElementById("lightbox-loader")
+      if (loader) loader.classList.remove("show")
+      showToast("图片加载失败")
     })
 
     stage.addEventListener(

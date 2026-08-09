@@ -142,6 +142,34 @@ describe("lightbox", () => {
     assert.ok(lb && !lb.classList.contains("open"), "Esc 后灯箱关闭")
   })
 
+  test("加载中显示 spinner，加载完成隐藏", () => {
+    const { window, document } = setup()
+    document
+      .getElementById("img1")!
+      .dispatchEvent(new window.MouseEvent("click", { bubbles: true }))
+    const loader = document.getElementById("lightbox-loader")!
+    assert.ok(loader.classList.contains("show"), "换图后 spinner 显示")
+    const lbImg = document.getElementById("lightbox-img")! as HTMLImageElement
+    Object.defineProperty(lbImg, "naturalWidth", { value: 800 })
+    lbImg.dispatchEvent(new window.Event("load"))
+    assert.ok(!loader.classList.contains("show"), "加载完成后 spinner 隐藏")
+  })
+
+  test("加载失败：spinner 隐藏 + toast 提示", () => {
+    const { window, document } = setup()
+    document
+      .getElementById("img1")!
+      .dispatchEvent(new window.MouseEvent("click", { bubbles: true }))
+    const loader = document.getElementById("lightbox-loader")!
+    assert.ok(loader.classList.contains("show"), "spinner 显示")
+    const lbImg = document.getElementById("lightbox-img")! as HTMLImageElement
+    lbImg.dispatchEvent(new window.Event("error"))
+    assert.ok(!loader.classList.contains("show"), "spinner 隐藏")
+    const toast = document.querySelector(".toast-notification")
+    assert.ok(toast, "出现失败提示 toast")
+    assert.ok(toast!.textContent!.includes("图片加载失败"), "提示内容正确")
+  })
+
   test("点击链接内图片不打开灯箱", () => {
     const { window, document } = setup()
     document
