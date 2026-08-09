@@ -335,7 +335,7 @@ export async function handleBuild(argv) {
   const pluginsIndex = path.join(process.cwd(), ".quartz", "plugins", "index.ts")
   if (!fs.existsSync(pluginsIndex)) {
     console.log(styleText("cyan", "Plugin cache missing, installing plugins..."))
-    await handlePluginInstallUnified({ fromConfig: true, concurrency: 1 })
+    await handlePluginInstallUnified({ fromConfig: true })
   }
 
   console.log(`\n${styleText(["bgGreen", "black"], ` Quartz v${version} `)} \n`)
