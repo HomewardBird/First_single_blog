@@ -15,6 +15,9 @@ node_modules/
 public/
 .quartz/
 
+# 本地插件依赖
+plugins/*/node_modules/
+
 # IDE
 .vscode/
 .idea/
