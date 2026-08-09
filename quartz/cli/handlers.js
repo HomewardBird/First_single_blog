@@ -28,6 +28,7 @@ import {
   handlePluginRestore,
   handlePluginCheck,
   handlePluginResolve,
+  handlePluginInstallUnified,
 } from "./plugin-git-handlers.js"
 import {
   configExists,
@@ -328,6 +329,13 @@ export async function handleBuild(argv) {
 
   if (argv.serve) {
     argv.watch = true
+  }
+
+  // 全新环境（CI/服务器）没有 .quartz/plugins：先按 lockfile/config 安装插件
+  const pluginsIndex = path.join(process.cwd(), ".quartz", "plugins", "index.ts")
+  if (!fs.existsSync(pluginsIndex)) {
+    console.log(styleText("cyan", "Plugin cache missing, installing plugins..."))
+    await handlePluginInstallUnified({ fromConfig: true, concurrency: 1 })
   }
 
   console.log(`\n${styleText(["bgGreen", "black"], ` Quartz v${version} `)} \n`)

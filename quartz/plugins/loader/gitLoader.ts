@@ -575,6 +575,17 @@ export function getPluginDir(name: string): string {
 }
 
 /**
+ * Resolve a plugin entry point as a path relative to the generated index
+ * (forward slashes). 用完整入口路径而不是目录名，避免 tsx/Node
+ * 对目录导入（index.ts / package.json main）解析失败。
+ */
+function entryPathForIndex(pluginName: string): string {
+  const entry = getPluginEntryPoint(pluginName)
+  const rel = path.relative(PLUGINS_CACHE_DIR, entry).replace(/\\/g, "/")
+  return rel.startsWith(".") ? rel : `./${rel}`
+}
+
+/**
  * Check if a plugin is installed
  */
 export function isPluginInstalled(name: string): boolean {
@@ -960,7 +971,9 @@ export async function regeneratePluginIndex(options: { verbose?: boolean } = {})
     if (passthrough.length === 0) continue
     const unique = passthrough.filter((n) => (nameCount.get(n) ?? 0) === 1)
     if (unique.length > 0) {
-      lines.push(`export { ${unique.join(", ")} } from "./${pluginName}"`)
+      // 用解析后的入口路径而不是目录名，避免 tsx/Node 对目录导入解析失败
+      const entry = entryPathForIndex(pluginName)
+      lines.push(`export { ${unique.join(", ")} } from "./${entry}"`)
     }
   }
   lines.push("")
