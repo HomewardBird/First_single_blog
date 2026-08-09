@@ -40,6 +40,18 @@ function setup() {
   window.Element.prototype.checkVisibility = function () {
     return true
   }
+  // jsdom 无 matchMedia；stub 为移动端，使交互走 custom.js 自带的
+  // toggleMobileExplorer 路径（explorer 插件脚本不会在测试环境加载）
+  window.matchMedia = ((query: string) => ({
+    matches: query.includes("max-width: 800px"),
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia
   window.eval(customJs)
   document.dispatchEvent(new window.Event("DOMContentLoaded") as UIEvent)
   const click = (sel: string) => {

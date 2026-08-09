@@ -26,7 +26,6 @@ export { ContentMeta } from "././content-meta/dist/index.js"
 export { ContentBody, ContentBodyOptions } from "././content-page/dist/index.js"
 export { EncryptedPage, EncryptedPageComponentOptions, EncryptedContentIndexOptions, EncryptedPagesOptions, SHADOW_INDEX_VERSION, decrypt, encryptAesGcm } from "././encrypted-pages/dist/index.js"
 export { FolderPage, FolderPageOptions, FolderContent } from "././folder-page/dist/index.js"
-export { FontFileEntry, FontSpecification, GoogleFontFile, ProcessedFontResult, QuartzFontRegistry, FontsEmitter, FontsOptions } from "././fonts/dist/index.js"
 export { NotePropertiesComponent, NotePropertiesComponentOptions, NotePropertiesOptions } from "././note-properties/dist/index.js"
 export { CustomOgImagesEmitterName } from "././og-image/dist/index.js"
 export { tokenClassifierTransformer } from "././syntax-highlighting/dist/index.js"
@@ -86,9 +85,6 @@ export const plugins: Record<string, Record<string, (...args: unknown[]) => void
   },
   "favicon": {
     Favicon: (...args: unknown[]) => { componentRegistry.setOptionOverrides("favicon", args[0] as Record<string, unknown>); },
-  },
-  "fonts": {
-    Fonts: (...args: unknown[]) => { componentRegistry.setOptionOverrides("fonts", args[0] as Record<string, unknown>); },
   },
   "footer": {
     Footer: (...args: unknown[]) => { componentRegistry.setOptionOverrides("footer", args[0] as Record<string, unknown>); },
@@ -156,7 +152,6 @@ export const EncryptedContentIndex = plugins["encrypted-pages"].EncryptedContent
 export const EncryptedPages = plugins["encrypted-pages"].EncryptedPages
 export const Explorer = plugins["explorer"].Explorer
 export const Favicon = plugins["favicon"].Favicon
-export const Fonts = plugins["fonts"].Fonts
 export const Footer = plugins["footer"].Footer
 export const GitHubFlavoredMarkdown = plugins["github-flavored-markdown"].GitHubFlavoredMarkdown
 export const Graph = plugins["graph"].Graph

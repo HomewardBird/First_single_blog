@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-// 注册 .scss/.css 存根 loader，避免 tsx 加载样式导入时崩溃
-import "./scss-stub-hook.mjs"
 import fs from "fs"
 import path from "path"
 import YAML from "yaml"
@@ -17,6 +15,7 @@ function readConfigPluginSources(): string[] {
     try {
       const cfg = YAML.parse(fs.readFileSync(configPath, "utf8"))
       const sources = (cfg.plugins ?? [])
+        .filter((entry: { enabled?: boolean }) => entry.enabled !== false)
         .map((entry: { source?: string }) => entry.source)
         .filter((s: unknown): s is string => typeof s === "string")
       if (sources.length > 0) return sources
