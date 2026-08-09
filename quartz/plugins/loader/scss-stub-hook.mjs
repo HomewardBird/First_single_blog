@@ -9,7 +9,10 @@ export default {}
 
 export function resolve(specifier, context, next) {
   if (specifier.endsWith(".scss") || specifier.endsWith(".css")) {
-    return next(specifier, { ...context, importAttributes: { ...context.importAttributes, type: undefined } })
+    return next(specifier, {
+      ...context,
+      importAttributes: { ...context.importAttributes, type: undefined },
+    })
   }
   return next(specifier, context)
 }
