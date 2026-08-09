@@ -170,6 +170,24 @@ describe("lightbox", () => {
     assert.ok(toast!.textContent!.includes("图片加载失败"), "提示内容正确")
   })
 
+  test("加载失败后再次打开会重试", () => {
+    const { window, document } = setup()
+    document
+      .getElementById("img1")!
+      .dispatchEvent(new window.MouseEvent("click", { bubbles: true }))
+    const lbImg = document.getElementById("lightbox-img")! as HTMLImageElement
+    lbImg.dispatchEvent(new window.Event("error"))
+    assert.ok(lbImg.hasAttribute("data-lb-error"), "失败已标记")
+    // 关闭后再次打开同一张图
+    document.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }))
+    document
+      .getElementById("img1")!
+      .dispatchEvent(new window.MouseEvent("click", { bubbles: true }))
+    const loader = document.getElementById("lightbox-loader")!
+    assert.ok(loader.classList.contains("show"), "重试时 spinner 显示")
+    assert.ok(!lbImg.hasAttribute("data-lb-error"), "已重新加载（标记清除由 load 完成）")
+  })
+
   test("点击链接内图片不打开灯箱", () => {
     const { window, document } = setup()
     document

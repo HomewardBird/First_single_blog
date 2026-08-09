@@ -1061,9 +1061,11 @@
     var el = document.getElementById("lightbox-img")
     var loader = document.getElementById("lightbox-loader")
     var src = (img.currentSrc || img.src || "").split("#")[0]
-    if (el.src !== src) {
-      // 换图：显示加载动画，load/error 事件负责隐藏
+    if (el.src !== src || el.hasAttribute("data-lb-error")) {
+      // 换图或上次加载失败：先清空 src 再赋值（相同 URL 需清空才能重新加载）
+      if (el.hasAttribute("data-lb-error")) el.src = ""
       el.src = src
+      el.removeAttribute("data-lb-error")
       if (loader) loader.classList.add("show")
     } else {
       if (loader) loader.classList.remove("show")
@@ -1308,6 +1310,7 @@
 
     img.addEventListener("load", function () {
       if (!_lbOpen) return
+      img.removeAttribute("data-lb-error")
       var loader = document.getElementById("lightbox-loader")
       if (loader) loader.classList.remove("show")
       // 新图尺寸与当前不同（或首次加载成功）时重新计算适配比例
@@ -1319,6 +1322,7 @@
 
     img.addEventListener("error", function () {
       if (!_lbOpen) return
+      img.setAttribute("data-lb-error", "1")
       var loader = document.getElementById("lightbox-loader")
       if (loader) loader.classList.remove("show")
       showToast("图片加载失败")
