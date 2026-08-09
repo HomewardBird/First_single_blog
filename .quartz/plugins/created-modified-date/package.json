@@ -1,0 +1,122 @@
+{
+  "name": "@quartz-community/created-modified-date",
+  "version": "0.1.0",
+  "description": "Created and modified date transformer plugin for Quartz",
+  "type": "module",
+  "license": "MIT",
+  "author": "Quartz Community",
+  "homepage": "https://github.com/quartz-community/created-modified-date",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/quartz-community/created-modified-date"
+  },
+  "keywords": [
+    "quartz",
+    "quartz-plugin",
+    "dates",
+    "created",
+    "modified",
+    "git",
+    "frontmatter"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier . --check",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint && npm run format && npm run test"
+  },
+  "peerDependencies": {
+    "@napi-rs/simple-git": "^0.1.19",
+    "preact": "^10.0.0"
+  },
+  "peerDependenciesMeta": {
+    "preact": {
+      "optional": false
+    },
+    "@napi-rs/simple-git": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@quartz-community/types": "github:quartz-community/types"
+  },
+  "devDependencies": {
+    "@napi-rs/simple-git": "^0.1.19",
+    "@types/hast": "^3.0.4",
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^24.10.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "preact": "^10.28.2",
+    "prettier": "^3.6.2",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vfile": "^6.0.3",
+    "vitest": "^2.1.9"
+  },
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10.9.2"
+  },
+  "quartz": {
+    "name": "created-modified-date",
+    "displayName": "Created/Modified Date",
+    "category": "transformer",
+    "version": "1.0.0",
+    "quartzVersion": ">=5.0.0",
+    "requiresInstall": true,
+    "dependencies": [],
+    "defaultOrder": 10,
+    "defaultEnabled": true,
+    "defaultOptions": {
+      "priority": [
+        "frontmatter",
+        "git",
+        "filesystem"
+      ],
+      "defaultDateType": "modified"
+    },
+    "optionSchema": {
+      "priority": {
+        "type": "array",
+        "items": {
+          "type": "enum",
+          "values": [
+            "frontmatter",
+            "git",
+            "filesystem"
+          ]
+        }
+      },
+      "defaultDateType": {
+        "type": "enum",
+        "values": [
+          "created",
+          "modified",
+          "published"
+        ]
+      }
+    }
+  }
+}

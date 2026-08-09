@@ -424,29 +424,35 @@ export async function installPlugin(
       throw new Error(`Local plugin path does not exist: ${spec.repo}`)
     }
 
-    if (!options.force && fs.existsSync(pluginDir)) {
-      // Check if existing entry is already a symlink to the right place
+    // Check if existing entry is already a symlink to the right place.
+    // 注意：用 lstat 而不是 existsSync —— existsSync 对指向不存在路径的
+    // 损坏 symlink（如 CI 上克隆的绝对路径链接）返回 false，导致下面
+    // 的清理分支被跳过、symlinkSync 报 EEXIST。
+    let existingLstat: fs.Stats | null = null
+    try {
+      existingLstat = fs.lstatSync(pluginDir)
+    } catch {
+      // lstat failed, recreate
+    }
+
+    if (!options.force && existingLstat?.isSymbolicLink()) {
       try {
-        const stat = fs.lstatSync(pluginDir)
-        if (stat.isSymbolicLink() && fs.realpathSync(pluginDir) === fs.realpathSync(spec.repo)) {
+        if (fs.realpathSync(pluginDir) === fs.realpathSync(spec.repo)) {
           if (options.verbose) {
             console.log(styleText("cyan", `→`), `Plugin ${spec.name} already linked`)
           }
           return { pluginDir, nativeDeps: collectNativeDeps(pluginDir) }
         }
       } catch {
-        // stat failed, recreate
+        // broken symlink, recreate below
       }
     }
 
-    // Clean up if force reinstall or existing non-symlink entry
-    if (fs.existsSync(pluginDir)) {
-      const stat = fs.lstatSync(pluginDir)
-      if (stat.isSymbolicLink()) {
-        fs.unlinkSync(pluginDir)
-      } else {
-        fs.rmSync(pluginDir, { recursive: true })
-      }
+    // Clean up if force reinstall or existing non-symlink / broken entry
+    if (existingLstat?.isSymbolicLink()) {
+      fs.unlinkSync(pluginDir)
+    } else if (fs.existsSync(pluginDir)) {
+      fs.rmSync(pluginDir, { recursive: true })
     }
 
     // Ensure parent directory exists
@@ -572,6 +578,17 @@ export async function installPlugins(
  */
 export function getPluginDir(name: string): string {
   return path.join(PLUGINS_CACHE_DIR, name)
+}
+
+/**
+ * Resolve a plugin entry point as a path relative to the generated index
+ * (forward slashes). 用完整入口路径而不是目录名，避免 tsx/Node
+ * 对目录导入（index.ts / package.json main）解析失败。
+ */
+function entryPathForIndex(pluginName: string): string {
+  const entry = getPluginEntryPoint(pluginName)
+  const rel = path.relative(PLUGINS_CACHE_DIR, entry).replace(/\\/g, "/")
+  return rel.startsWith(".") ? rel : `./${rel}`
 }
 
 /**
@@ -905,7 +922,12 @@ export async function regeneratePluginIndex(options: { verbose?: boolean } = {})
 
   const pluginDirs = fs.readdirSync(PLUGINS_CACHE_DIR).filter((name) => {
     const pluginPath = path.join(PLUGINS_CACHE_DIR, name)
-    return fs.statSync(pluginPath).isDirectory()
+    try {
+      return fs.statSync(pluginPath).isDirectory()
+    } catch {
+      // 跳过损坏的 symlink 等异常条目
+      return false
+    }
   })
 
   // Phase 1: Collect all exports per plugin, detect conflicts
@@ -960,7 +982,9 @@ export async function regeneratePluginIndex(options: { verbose?: boolean } = {})
     if (passthrough.length === 0) continue
     const unique = passthrough.filter((n) => (nameCount.get(n) ?? 0) === 1)
     if (unique.length > 0) {
-      lines.push(`export { ${unique.join(", ")} } from "./${pluginName}"`)
+      // 用解析后的入口路径而不是目录名，避免 tsx/Node 对目录导入解析失败
+      const entry = entryPathForIndex(pluginName)
+      lines.push(`export { ${unique.join(", ")} } from "./${entry}"`)
     }
   }
   lines.push("")

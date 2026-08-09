@@ -21,6 +21,7 @@ import {
   getPluginEntryPoint,
   toFileUrl,
   isLocalSource,
+  regeneratePluginIndex,
 } from "./gitLoader"
 import { loadComponentsFromPackage } from "./componentLoader"
 import { loadFramesFromPackage } from "./frameLoader"
@@ -275,6 +276,10 @@ export async function loadQuartzConfig(
   if (allNativeDeps.size > 0) {
     installNativeDeps(allNativeDeps, { verbose: false })
   }
+
+  // 新环境安装插件后必须重新生成 .quartz/plugins/index.ts，
+  // 否则 quartz/components 对 "../../.quartz/plugins" 的导入会解析失败
+  await regeneratePluginIndex({ verbose: false })
 
   // Collect manifests (requires native deps to be installed first)
   for (const entry of enabledEntries) {

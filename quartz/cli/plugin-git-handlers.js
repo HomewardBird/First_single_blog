@@ -502,7 +502,9 @@ export async function handlePluginInstallUnified({
     const configNames = new Set(pluginsJson.plugins.map((entry) => extractPluginName(entry.source)))
     const orphans = Object.keys(lockfile.plugins).filter((name) => !configNames.has(name))
 
+    // 只安装启用中的插件，跳过 disabled（避免 CI 上白装无用插件）
     const missing = pluginsJson.plugins
+      .filter((entry) => entry.enabled !== false)
       .filter((entry) => {
         const name = extractPluginName(entry.source)
         const pluginDir = path.join(PLUGINS_DIR, name)
