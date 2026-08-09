@@ -13,6 +13,7 @@ node_modules/
 
 # 构建产物
 public/
+.quartz/
 
 # IDE
 .vscode/
