@@ -1999,7 +1999,7 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light {
     left: -100vw !important;
     width: 100vw !important;
     max-width: 100vw !important;
-    height: calc(100vh - 36px) !important;
+    height: calc(100dvh - 36px) !important;
     border-right: none !important;
   }
   .left.sidebar.open {
@@ -2011,7 +2011,7 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light {
     position: fixed !important;
     top: 32px !important;
     left: -100vw !important;
-    height: calc(100vh - 32px) !important;
+    height: calc(100dvh - 32px) !important;
   }
   .left.sidebar.open {
     left: 0 !important;
@@ -2218,8 +2218,8 @@ html.lb-lock body {
     gap: 0.6rem;
   }
   #lightbox-controls button {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
   }
 }
 
