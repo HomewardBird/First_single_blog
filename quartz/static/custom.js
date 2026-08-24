@@ -43,10 +43,9 @@
   audio.loop = false
   audio.playbackRate = 1.0
 
-  // ---- 浏览器缓存（Cache API）：把音频文件存到用户浏览器，减少加载失败 ----
+  // ---- 浏览器缓存（Cache API）：只缓存实际播放的曲目 + 下一首，不做全量预载（会吃光带宽拖慢页面） ----
   var _cacheName = "blog-music-v1"
   var _objUrls = {} // 曲目索引 -> blob URL
-  var _preloading = false
 
   function cacheSupported() {
     return typeof window !== "undefined" && "caches" in window && !!window.isSecureContext
@@ -114,51 +113,50 @@
       })
   }
 
-  // 依次后台缓存全部曲目（每次只下载一首，避免带宽瞬间打满）
-  function preloadAllTracks() {
-    if (_preloading || !cacheSupported()) return
-    _preloading = true
-    var chain = Promise.resolve()
-    tracks.forEach(function (_, idx) {
-      chain = chain.then(function () {
-        if (_objUrls[idx]) return
-        return cacheTrack(idx)
-      })
-    })
-    chain.then(function () {
-      _preloading = false
-    })
-  }
-
-  // 首次用户交互后延迟触发全量缓存
-  var _preloadBound = false
-  function bindPreload() {
-    if (_preloadBound || !cacheSupported()) return
-    _preloadBound = true
-    ;["pointerdown", "keydown", "touchstart"].forEach(function (ev) {
-      document.addEventListener(
-        ev,
-        function () {
-          setTimeout(preloadAllTracks, 800)
-        },
-        { once: true, passive: true },
-      )
-    })
-  }
-
-  function loadTrack(i) {
+  function loadTrack(i, cb) {
     var want = ((i % tracks.length) + tracks.length) % tracks.length
     cur = want
     getTrackSrc(want, function (src) {
       if (want !== cur) return // 期间用户已切歌，丢弃过期结果
       audio.src = src
       audio.load()
+      if (cb) cb() // 确保 src 设置完成后才 play，避免播放失败
     })
     // 提前缓存下一首，切歌时可直接用 blob
     setTimeout(function () {
       cacheTrack((want + 1) % tracks.length)
     }, 1200)
   }
+
+  // 播放看门狗：发出播放请求后长时间无进展（网络卡住）则自动跳过
+  var _watchdog = null
+  function clearWatchdog() {
+    if (_watchdog) {
+      clearTimeout(_watchdog)
+      _watchdog = null
+    }
+  }
+  function armWatchdog() {
+    clearWatchdog()
+    _watchdog = setTimeout(function () {
+      if (audio.paused || audio.ended) return
+      if (audio.readyState >= 2) return
+      _showToast("音频加载超时，跳过")
+      loadTrack(cur + 1, safePlay)
+      _notify()
+    }, 6000)
+  }
+  function safePlay() {
+    armWatchdog()
+    audio.play().catch(function () {
+      clearWatchdog()
+      _showToast("播放失败")
+    })
+  }
+  audio.addEventListener("playing", clearWatchdog)
+  audio.addEventListener("canplay", clearWatchdog)
+  audio.addEventListener("ended", clearWatchdog)
+  audio.addEventListener("pause", clearWatchdog)
 
   var _toastTimer = null
   function createToast(text, link, dur, cls) {
@@ -202,14 +200,13 @@
   }
 
   audio.addEventListener("ended", function () {
-    loadTrack(cur + 1)
-    audio.play().catch(function () {})
+    loadTrack(cur + 1, safePlay)
     _notify()
   })
   audio.addEventListener("error", function () {
-    loadTrack(cur + 1)
+    clearWatchdog()
+    loadTrack(cur + 1, safePlay)
     _showToast("音频加载失败，跳过")
-    audio.play().catch(function () {})
     _notify()
   })
 
@@ -229,27 +226,22 @@
 
   window.__music = {
     toggle: function () {
-      if (!audio.src || audio.src === location.href) loadTrack(0)
+      if (!audio.src || audio.src === location.href) {
+        loadTrack(0, safePlay)
+      } else if (audio.paused) {
+        safePlay()
+      } else {
+        audio.pause()
+      }
       cacheTrack(cur)
-      if (audio.paused)
-        audio.play().catch(function () {
-          _showToast("播放失败")
-        })
-      else audio.pause()
       _notify()
     },
     next: function () {
-      loadTrack(cur + 1)
-      audio.play().catch(function () {
-        _showToast("播放失败")
-      })
+      loadTrack(cur + 1, safePlay)
       _notify()
     },
     prev: function () {
-      loadTrack(cur - 1 + tracks.length)
-      audio.play().catch(function () {
-        _showToast("播放失败")
-      })
+      loadTrack(cur - 1 + tracks.length, safePlay)
       _notify()
     },
     onChange: function (fn) {
@@ -343,7 +335,16 @@
     return window.location.pathname.replace(/^\/|\/$/g, "") || "index"
   }
 
+  // 正文图片懒加载：文章切换时只拉视口内的图，大幅加快跳转
+  function lazyLoadImages() {
+    document.querySelectorAll(".page article img:not([loading])").forEach(function (img) {
+      img.setAttribute("loading", "lazy")
+      img.setAttribute("decoding", "async")
+    })
+  }
+
   document.addEventListener("nav", function () {
+    lazyLoadImages()
     injectHomeLink()
     hideNavItem("个人博客")
     // explorer 树可能晚于 nav 渲染，延迟重试
@@ -1572,7 +1573,6 @@
     hideNavItem("个人博客")
     initMobilePanel()
     bindHamburgerDelegate()
-    bindPreload()
     initCardSpotlight()
     restoreFontSize()
     restoreBg()
@@ -1641,6 +1641,7 @@
     )
 
     loadDailyQuote()
+    lazyLoadImages()
   }
 
   // ====================================================================
