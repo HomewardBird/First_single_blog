@@ -43,11 +43,120 @@
   audio.loop = false
   audio.playbackRate = 1.0
 
-  function loadTrack(i) {
-    cur = i % tracks.length
-    audio.src = getBp() + "/static/" + tracks[cur]
-    audio.load()
+  // ---- 浏览器缓存（Cache API）：只缓存实际播放的曲目 + 下一首，不做全量预载（会吃光带宽拖慢页面） ----
+  var _cacheName = "blog-music-v1"
+  var _objUrls = {} // 曲目索引 -> blob URL
+
+  function cacheSupported() {
+    return typeof window !== "undefined" && "caches" in window && !!window.isSecureContext
   }
+  function trackUrl(i) {
+    return getBp() + "/static/" + tracks[i]
+  }
+
+  // 从缓存取曲目（blob URL），未命中则回退网络地址
+  function getTrackSrc(i, cb) {
+    var u = trackUrl(i)
+    if (!cacheSupported()) {
+      cb(u)
+      return
+    }
+    if (_objUrls[i]) {
+      cb(_objUrls[i])
+      return
+    }
+    caches
+      .open(_cacheName)
+      .then(function (cache) {
+        return cache.match(u)
+      })
+      .then(function (res) {
+        if (!res) {
+          cb(u)
+          return
+        }
+        return res.blob().then(function (blob) {
+          try {
+            var obj = URL.createObjectURL(blob)
+            if (_objUrls[i]) URL.revokeObjectURL(_objUrls[i])
+            _objUrls[i] = obj
+            cb(obj)
+          } catch (e) {
+            cb(u)
+          }
+        })
+      })
+      .catch(function () {
+        cb(u)
+      })
+  }
+
+  // 后台缓存一首曲目（已缓存则跳过）
+  function cacheTrack(i) {
+    if (!cacheSupported()) return Promise.resolve(false)
+    var u = trackUrl(i)
+    return caches
+      .open(_cacheName)
+      .then(function (cache) {
+        return cache.match(u).then(function (res) {
+          if (res) return true
+          return fetch(u).then(function (r) {
+            if (!r.ok) throw Error("http " + r.status)
+            return cache.put(u, r).then(function () {
+              return true
+            })
+          })
+        })
+      })
+      .catch(function () {
+        return false
+      })
+  }
+
+  function loadTrack(i, cb) {
+    var want = ((i % tracks.length) + tracks.length) % tracks.length
+    cur = want
+    getTrackSrc(want, function (src) {
+      if (want !== cur) return // 期间用户已切歌，丢弃过期结果
+      audio.src = src
+      audio.load()
+      if (cb) cb() // 确保 src 设置完成后才 play，避免播放失败
+    })
+    // 提前缓存下一首，切歌时可直接用 blob
+    setTimeout(function () {
+      cacheTrack((want + 1) % tracks.length)
+    }, 1200)
+  }
+
+  // 播放看门狗：发出播放请求后长时间无进展（网络卡住）则自动跳过
+  var _watchdog = null
+  function clearWatchdog() {
+    if (_watchdog) {
+      clearTimeout(_watchdog)
+      _watchdog = null
+    }
+  }
+  function armWatchdog() {
+    clearWatchdog()
+    _watchdog = setTimeout(function () {
+      if (audio.paused || audio.ended) return
+      if (audio.readyState >= 2) return
+      _showToast("音频加载超时，跳过")
+      loadTrack(cur + 1, safePlay)
+      _notify()
+    }, 6000)
+  }
+  function safePlay() {
+    armWatchdog()
+    audio.play().catch(function () {
+      clearWatchdog()
+      _showToast("播放失败")
+    })
+  }
+  audio.addEventListener("playing", clearWatchdog)
+  audio.addEventListener("canplay", clearWatchdog)
+  audio.addEventListener("ended", clearWatchdog)
+  audio.addEventListener("pause", clearWatchdog)
 
   var _toastTimer = null
   function createToast(text, link, dur, cls) {
@@ -91,14 +200,13 @@
   }
 
   audio.addEventListener("ended", function () {
-    loadTrack(cur + 1)
-    audio.play().catch(function () {})
+    loadTrack(cur + 1, safePlay)
     _notify()
   })
   audio.addEventListener("error", function () {
-    loadTrack(cur + 1)
+    clearWatchdog()
+    loadTrack(cur + 1, safePlay)
     _showToast("音频加载失败，跳过")
-    audio.play().catch(function () {})
     _notify()
   })
 
@@ -118,26 +226,22 @@
 
   window.__music = {
     toggle: function () {
-      if (!audio.src || audio.src === location.href) loadTrack(0)
-      if (audio.paused)
-        audio.play().catch(function () {
-          _showToast("播放失败")
-        })
-      else audio.pause()
+      if (!audio.src || audio.src === location.href) {
+        loadTrack(0, safePlay)
+      } else if (audio.paused) {
+        safePlay()
+      } else {
+        audio.pause()
+      }
+      cacheTrack(cur)
       _notify()
     },
     next: function () {
-      loadTrack(cur + 1)
-      audio.play().catch(function () {
-        _showToast("播放失败")
-      })
+      loadTrack(cur + 1, safePlay)
       _notify()
     },
     prev: function () {
-      loadTrack(cur - 1 + tracks.length)
-      audio.play().catch(function () {
-        _showToast("播放失败")
-      })
+      loadTrack(cur - 1 + tracks.length, safePlay)
       _notify()
     },
     onChange: function (fn) {
@@ -231,7 +335,16 @@
     return window.location.pathname.replace(/^\/|\/$/g, "") || "index"
   }
 
+  // 正文图片懒加载：文章切换时只拉视口内的图，大幅加快跳转
+  function lazyLoadImages() {
+    document.querySelectorAll(".page article img:not([loading])").forEach(function (img) {
+      img.setAttribute("loading", "lazy")
+      img.setAttribute("decoding", "async")
+    })
+  }
+
   document.addEventListener("nav", function () {
+    lazyLoadImages()
     injectHomeLink()
     hideNavItem("个人博客")
     // explorer 树可能晚于 nav 渲染，延迟重试
@@ -476,6 +589,9 @@
         e.stopPropagation()
       })
       document.body.appendChild(menu)
+      var backdrop = document.createElement("div")
+      backdrop.id = "hamburger-backdrop"
+      document.body.appendChild(backdrop)
     }
     attachHandlers()
     if (window.__music) {
@@ -737,6 +853,8 @@
     var open = m.classList.toggle("open")
     var btn = document.querySelector("#hamburger-btn")
     if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false")
+    var bd = document.getElementById("hamburger-backdrop")
+    if (bd) bd.classList.toggle("open", open)
     if (open) {
       saveFocus()
       focusPanel(m)
@@ -823,6 +941,8 @@
   function closeHamburger() {
     var m = document.getElementById("hamburger-menu")
     if (m) m.classList.remove("open")
+    var bd = document.getElementById("hamburger-backdrop")
+    if (bd) bd.classList.remove("open")
     var btn = document.querySelector("#hamburger-btn")
     if (btn) btn.setAttribute("aria-expanded", "false")
     restoreFocus()
@@ -1411,6 +1531,39 @@
   })
 
   // ====================================================================
+  //  Card spotlight：鼠标跟随光晕（仅桌面 hover + 精确指针设备）
+  // ====================================================================
+  function initCardSpotlight() {
+    var fine = window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    if (!fine) return
+    // SPA 导航后 DOM 重建，需要重新注入光晕层
+    function ensureSpots() {
+      document.querySelectorAll(".glass-card, .shelf-card").forEach(function (card) {
+        if (!card.querySelector(".card-spot")) {
+          var s = document.createElement("span")
+          s.className = "card-spot"
+          card.appendChild(s)
+        }
+      })
+    }
+    ensureSpots()
+    document.addEventListener("nav", ensureSpots)
+    var ticking = false
+    document.addEventListener("pointermove", function (e) {
+      var card = e.target && e.target.closest ? e.target.closest(".glass-card, .shelf-card") : null
+      if (!card || !card.querySelector(".card-spot")) return
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(function () {
+        var r = card.getBoundingClientRect()
+        card.style.setProperty("--mx", (e.clientX - r.left).toFixed(1) + "px")
+        card.style.setProperty("--my", (e.clientY - r.top).toFixed(1) + "px")
+        ticking = false
+      })
+    })
+  }
+
+  // ====================================================================
   //  Init
   // ====================================================================
   function init() {
@@ -1420,6 +1573,7 @@
     hideNavItem("个人博客")
     initMobilePanel()
     bindHamburgerDelegate()
+    initCardSpotlight()
     restoreFontSize()
     restoreBg()
     restoreFontColor()
@@ -1467,7 +1621,27 @@
       }
     })
 
+    // 桌面端侧栏折叠兜底：capture 阶段拦截「探索」标题栏点击，
+    // 即使 explorer 插件脚本加载失败，折叠 / 展开依然可用。
+    // stopPropagation 保证插件自身的按钮监听不会被重复触发（不会双重切换）。
+    document.addEventListener(
+      "click",
+      function (e) {
+        var btn = e.target && e.target.closest ? e.target.closest(".desktop-explorer") : null
+        if (!btn) return
+        e.stopPropagation()
+        var explorer = btn.closest(".explorer")
+        if (!explorer) return
+        var collapsed = explorer.classList.toggle("collapsed")
+        explorer.setAttribute("aria-expanded", collapsed ? "false" : "true")
+        document.documentElement.classList.toggle("mobile-no-scroll", !collapsed)
+        updateScrollLock()
+      },
+      true,
+    )
+
     loadDailyQuote()
+    lazyLoadImages()
   }
 
   // ====================================================================
