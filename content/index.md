@@ -11,6 +11,7 @@ comments: false
 </header>
 
 <div class="welcome-pill">
+<div class="notice-header"><span class="notice-title">公告</span></div>
 <ul class="notice-list">
 <li class="notice-lead">站主不太会说漂亮话，欢迎你们的到来</li>
 <li>功能都集中在上方菜单栏中</li>
@@ -21,6 +22,17 @@ comments: false
 <div class="section-eyebrow">去逛逛</div>
 
 <div class="card-grid">
+<a href="/关于" class="glass-card card-accent-teal">
+<div class="card-icon">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+</div>
+<div class="card-title">网站简介</div>
+<div class="card-desc">关于我和这个安静的角落</div>
+<div class="card-preview">
+<div class="card-preview-item">一个记录我来过这世间的痕迹之地</div>
+</div>
+</a>
+
 <a href="/个人博客" class="glass-card card-primary card-accent-blue">
 <div class="card-icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
@@ -30,17 +42,6 @@ comments: false
 <div class="card-preview">
 <div class="card-preview-item">计算机入门指南</div>
 <div class="card-preview-item">随笔</div>
-</div>
-</a>
-
-<a href="/关于" class="glass-card card-accent-teal">
-<div class="card-icon">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
-</div>
-<div class="card-title">网站简介</div>
-<div class="card-desc">关于我和这个安静的角落</div>
-<div class="card-preview">
-<div class="card-preview-item">一个记录我来过这世间的痕迹之地</div>
 </div>
 </a>
 
