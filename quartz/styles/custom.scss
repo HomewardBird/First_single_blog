@@ -334,6 +334,13 @@ footer {
 }
 
 @media (min-width: 800px) and (max-width: 1199px) {
+  /* 平板区间：折叠 = 隐藏目录树，仅留标题栏 */
+  .explorer.collapsed .explorer-content {
+    display: none !important;
+  }
+  .explorer.collapsed {
+    flex: 0 1 auto !important;
+  }
   [data-slug="index"] #quartz-body {
     grid-template-rows: auto auto auto !important;
     grid-template-areas:
@@ -684,13 +691,13 @@ html body[data-bg-dark="true"] .content-meta {
   letter-spacing: 0.12em;
 }
 html body[data-slug="index"] h1.site-title {
-  color: #2b5c8f !important;
+  color: #223a5e !important;
 }
 /* 支持 background-clip:text 的浏览器使用渐变标题（不支持时回退纯色） */
 @supports (-webkit-background-clip: text) or (background-clip: text) {
   html body[data-slug="index"] h1.site-title {
-    color: #2b5c8f !important;
-    background: linear-gradient(135deg, #2b5c8f 0%, #7a6bc4 100%);
+    color: #223a5e !important;
+    background: linear-gradient(135deg, #223a5e 0%, #4f5aa0 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -751,19 +758,19 @@ html body[data-slug="index"] h1.site-title > a[href^="#"] {
 
 .friend-link {
   text-align: center;
-  margin: 1.1rem auto 0;
-  padding: 0;
+  margin: 3.75rem auto 0;
+  padding: 0 0 1.5rem;
   max-width: none;
   background: none;
   border: none;
   box-shadow: none;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   letter-spacing: 0.04em;
-  color: #4a4a4a;
-  opacity: 0.72;
+  color: #64748b;
+  opacity: 1;
   transition: opacity 0.25s ease;
   @include dark {
-    color: #b8b8b8;
+    color: #94a3b8;
   }
 }
 .friend-link:hover {
@@ -858,16 +865,17 @@ html body[data-slug="index"] h1.site-title > a[href^="#"] {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 2.25rem 1.75rem;
+  padding: 1.75rem 1.25rem;
   min-height: 160px;
   background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(18px) saturate(1.5);
   -webkit-backdrop-filter: blur(18px) saturate(1.5);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid transparent;
   border-radius: 18px;
   box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.15),
     0 18px 40px -12px rgba(31, 45, 61, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
     inset 0 0 18px rgba(255, 255, 255, 0.3);
   text-decoration: none !important;
   color: inherit;
@@ -879,21 +887,26 @@ html body[data-slug="index"] h1.site-title > a[href^="#"] {
     border-color 0.35s ease;
   @include dark {
     background: rgba(22, 22, 24, 0.45);
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border-color: transparent;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.22),
+      0 10px 30px rgba(0, 0, 0, 0.3);
   }
 }
 @media (hover: hover) {
   .glass-card:hover {
     transform: translateY(-6px);
     box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.2),
       0 20px 48px rgba(0, 0, 0, 0.16),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
       inset 0 0 18px rgba(255, 255, 255, 0.35);
-    border-color: rgba(0, 0, 0, 0.12);
+    border-color: transparent;
     @include dark {
-      border-color: rgba(255, 255, 255, 0.18);
-      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+      border-color: transparent;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.28),
+        0 20px 48px rgba(0, 0, 0, 0.45);
     }
   }
 }
@@ -1038,17 +1051,7 @@ html body[data-slug="个人博客"] .shelf-card:nth-child(3) {
   }
 }
 
-/* ====== 1px 高光描边（实色描边 + 顶部 inset 高光，兼容所有浏览器） ====== */
-.glass-card:not(.card-primary),
-.shelf-card {
-  border-color: rgba(0, 0, 0, 0.12) !important;
-}
-html[data-theme="dark"] .glass-card:not(.card-primary),
-html[saved-theme="dark"] .glass-card:not(.card-primary),
-html[data-theme="dark"] .shelf-card,
-html[saved-theme="dark"] .shelf-card {
-  border-color: rgba(255, 255, 255, 0.16) !important;
-}
+/* ====== 高光描边：box-shadow 外环（与主卡光环同技术，任何浏览器可见） ====== */
 
 /* ====== 噪点纹理（打破纯 CSS 渲染的塑料感） ====== */
 .glass-card::after,
@@ -1198,15 +1201,16 @@ html[saved-theme="dark"] .card-spot {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 2.2rem 1.8rem;
+  padding: 1.75rem 1.25rem;
   background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(18px) saturate(1.5);
   -webkit-backdrop-filter: blur(18px) saturate(1.5);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid transparent;
   border-radius: 16px;
   box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.15),
     0 18px 40px -12px rgba(31, 45, 61, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
     inset 0 0 18px rgba(255, 255, 255, 0.3);
   text-decoration: none !important;
   color: inherit;
@@ -1218,21 +1222,26 @@ html[saved-theme="dark"] .card-spot {
     border-color 0.35s ease;
   @include dark {
     background: rgba(22, 22, 24, 0.45);
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border-color: transparent;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.22),
+      0 10px 30px rgba(0, 0, 0, 0.3);
   }
 }
 @media (hover: hover) {
   .shelf-card:hover {
     transform: translateY(-6px);
     box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.2),
       0 20px 48px rgba(0, 0, 0, 0.16),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
       inset 0 0 18px rgba(255, 255, 255, 0.35);
-    border-color: rgba(0, 0, 0, 0.12);
+    border-color: transparent;
     @include dark {
-      border-color: rgba(255, 255, 255, 0.18);
-      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+      border-color: transparent;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.28),
+        0 20px 48px rgba(0, 0, 0, 0.45);
     }
   }
 }
@@ -1382,6 +1391,10 @@ html[saved-theme="dark"] .card-spot {
     padding: 0.6rem 1.2rem;
     font-size: 0.82rem;
     margin-bottom: 1.4rem;
+  }
+  .friend-link {
+    margin-top: 2rem;
+    padding-bottom: 1rem;
   }
   .random-quote::before,
   .random-quote::after {
@@ -2214,13 +2227,12 @@ html[saved-theme="dark"] .home-link {
 
 /* ====== 左侧栏：fixed 贴屏幕最左 + 折叠收缩 + 隐藏滚动条（PC） ====== */
 @media (min-width: 1200px) {
-  /* PC 顶栏只留右侧按钮，左侧导航按钮隐藏（移动端保留入口） */
+  /* PC 顶栏左侧按钮 = 折叠 / 展开侧栏（与移动端目录开关共用同一按钮） */
   #top-bar #nav-toggle-btn {
-    display: none !important;
+    display: flex !important;
   }
-  /* 隐藏后按钮组变为唯一子元素，强制靠右 */
   .top-bar-inner {
-    justify-content: flex-end !important;
+    justify-content: space-between !important;
   }
 
   /* 主布局呼吸间距（Quartz 默认 gap 仅 5px） */
