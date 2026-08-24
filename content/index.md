@@ -16,6 +16,7 @@ comments: false
 <li class="notice-lead">站主不太会说漂亮话，欢迎你们的到来</li>
 <li>功能都集中在上方菜单栏中</li>
 <li>若体验有问题，请联系站长</li>
+<li class="notice-contact">联系我：<a href="mailto:xgf09695@gmail.com">邮箱</a> · <a href="https://space.bilibili.com/1983285744" target="_blank" rel="noopener">B站</a></li>
 </ul>
 </div>
 

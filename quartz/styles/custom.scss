@@ -517,37 +517,6 @@ html[saved-theme="dark"] .hb-music-btn {
     font-size: 1.1rem;
     font-weight: 800;
   }
-
-  /* --- 首页：统一半透明遮罩包裹全部内容 --- */
-  [data-slug="index"] .home-wrapper {
-    background: rgba(255, 255, 255, 0.45);
-    border-radius: 16px;
-    margin: 0.75rem 0.75rem 2rem;
-    padding: 1.2rem 1rem 2.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    @include dark {
-      background: rgba(22, 22, 24, 0.4);
-      border-color: rgba(255, 255, 255, 0.06);
-    }
-  }
-
-  /* 卡片在遮罩内变透明，仅有分隔线 */
-  [data-slug="index"] .glass-card {
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    padding: 1rem 0.25rem;
-    box-shadow: none;
-    @include dark {
-      background: transparent;
-    }
-  }
-  [data-slug="index"] .glass-card + .glass-card {
-    border-top: 1px solid rgba(0, 0, 0, 0.07);
-    @include dark {
-      border-top-color: rgba(255, 255, 255, 0.06);
-    }
-  }
 }
 
 /* ====== 修复：字体颜色 / 背景 / 阅读模式选择器必须比深色模式规则更具体 ====== */
@@ -859,6 +828,23 @@ html body[data-slug="index"] h1.site-title > a[href^="#"] {
 .notice-list .notice-lead {
   font-weight: 600;
 }
+.notice-list .notice-contact {
+  margin-top: 0.15rem;
+}
+.notice-contact a {
+  color: var(--secondary);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.notice-contact a:hover {
+  color: var(--tertiary);
+  text-decoration: underline;
+}
+html[data-theme="dark"] .notice-contact a,
+html[saved-theme="dark"] .notice-contact a {
+  color: #8ab0d9;
+}
 
 .section-eyebrow {
   display: flex;
@@ -1095,9 +1081,8 @@ html body[data-slug="index"] .friend-link {
   }
 }
 
-/* 卡片逐个淡入（只动 opacity，不与中间卡抬高的 transform 冲突） */
-html body[data-slug="index"] .glass-card,
-html body[data-slug="个人博客"] .shelf-card {
+/* 首页卡片逐个淡入（只动 opacity，不与中间卡抬高的 transform 冲突） */
+html body[data-slug="index"] .glass-card {
   animation: home-fade 0.55s ease both;
 }
 html body[data-slug="index"] .glass-card:nth-child(1) {
@@ -1108,15 +1093,6 @@ html body[data-slug="index"] .glass-card:nth-child(2) {
 }
 html body[data-slug="index"] .glass-card:nth-child(3) {
   animation-delay: 0.32s;
-}
-html body[data-slug="个人博客"] .shelf-card:nth-child(1) {
-  animation-delay: 0.1s;
-}
-html body[data-slug="个人博客"] .shelf-card:nth-child(2) {
-  animation-delay: 0.18s;
-}
-html body[data-slug="个人博客"] .shelf-card:nth-child(3) {
-  animation-delay: 0.26s;
 }
 @keyframes home-fade {
   from {
@@ -1274,21 +1250,19 @@ html[saved-theme="dark"] .card-spot {
 .shelf-card {
   position: relative;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  text-align: center;
-  padding: 1.75rem 1.25rem;
+  gap: 1.2rem;
+  text-align: left;
+  padding: 1.4rem 1.5rem;
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(18px) saturate(1.5);
   -webkit-backdrop-filter: blur(18px) saturate(1.5);
-  border: 1px solid rgba(0, 0, 0, 0.25);
-  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
   box-shadow:
-    0 0 0 1px rgba(var(--card-ring, 0, 0, 0), 0.3),
-    0 6px 16px -4px rgba(0, 0, 0, 0.2),
-    0 18px 40px -12px rgba(31, 45, 61, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 0 18px rgba(255, 255, 255, 0.3);
+    0 6px 16px -4px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   text-decoration: none !important;
   color: inherit;
   overflow: hidden;
@@ -1299,27 +1273,20 @@ html[saved-theme="dark"] .card-spot {
     border-color 0.35s ease;
   @include dark {
     background: rgba(22, 22, 24, 0.45);
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow:
-      0 0 0 1px rgba(var(--card-ring, 255, 255, 255), 0.35),
-      0 10px 30px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   }
 }
 @media (hover: hover) {
   .shelf-card:hover {
-    transform: translateY(-6px);
+    transform: translateY(-4px);
     box-shadow:
-      0 0 0 1px rgba(var(--card-ring, 0, 0, 0), 0.38),
-      0 8px 20px -4px rgba(0, 0, 0, 0.22),
-      0 20px 48px rgba(0, 0, 0, 0.16),
-      inset 0 1px 0 rgba(255, 255, 255, 0.95),
-      inset 0 0 18px rgba(255, 255, 255, 0.35);
-    border-color: rgba(0, 0, 0, 0.32);
+      0 14px 32px -8px rgba(0, 0, 0, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.18);
     @include dark {
-      border-color: rgba(255, 255, 255, 0.4);
-      box-shadow:
-        0 0 0 1px rgba(var(--card-ring, 255, 255, 255), 0.45),
-        0 20px 48px rgba(0, 0, 0, 0.45);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
     }
   }
 }
@@ -1328,31 +1295,65 @@ html[saved-theme="dark"] .card-spot {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
   background: rgba(99, 116, 138, 0.12);
   color: var(--secondary);
-  margin-bottom: 1.1rem;
+  flex: none;
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   @include dark {
     background: rgba(99, 116, 138, 0.2);
   }
 }
 .shelf-icon svg {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
+}
+.shelf-body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ====== 书架三卡：图标差异化配色（行卡形态，区别于首页竖卡） ====== */
+.shelf-accent-blue .shelf-icon {
+  background: rgba(47, 109, 179, 0.12);
+  color: #2f6db3;
+}
+.shelf-accent-teal .shelf-icon {
+  background: rgba(13, 148, 136, 0.12);
+  color: #0d9488;
+}
+.shelf-accent-violet .shelf-icon {
+  background: rgba(124, 58, 237, 0.12);
+  color: #7c3aed;
+}
+html[data-theme="dark"] .shelf-accent-blue .shelf-icon,
+html[saved-theme="dark"] .shelf-accent-blue .shelf-icon {
+  background: rgba(109, 155, 208, 0.2);
+  color: #6d9bd0;
+}
+html[data-theme="dark"] .shelf-accent-teal .shelf-icon,
+html[saved-theme="dark"] .shelf-accent-teal .shelf-icon {
+  background: rgba(94, 199, 184, 0.2);
+  color: #5ec7b8;
+}
+html[data-theme="dark"] .shelf-accent-violet .shelf-icon,
+html[saved-theme="dark"] .shelf-accent-violet .shelf-icon {
+  background: rgba(161, 143, 214, 0.2);
+  color: #a18fd6;
 }
 @media (hover: hover) {
   .shelf-card:hover .shelf-icon {
-    transform: scale(1.12) rotate(4deg);
+    transform: scale(1.08) rotate(3deg);
   }
 }
 
 .shelf-title {
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  margin-bottom: 0.6rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
   color: var(--dark);
   @include dark {
     color: #e4e4e4;
@@ -1360,7 +1361,7 @@ html[saved-theme="dark"] .card-spot {
 }
 
 .shelf-desc {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--darkgray);
   opacity: 0.72;
   line-height: 1.6;
@@ -1417,23 +1418,31 @@ html[saved-theme="dark"] .card-spot {
     gap: 1rem;
   }
   .shelf-card {
-    padding: 1.6rem 1.3rem;
+    padding: 1.2rem 1.1rem;
+    gap: 1rem;
   }
   .shelf-icon {
-    width: 60px;
-    height: 60px;
+    width: 48px;
+    height: 48px;
   }
   .shelf-icon svg {
-    width: 28px;
-    height: 28px;
+    width: 22px;
+    height: 22px;
   }
   .shelf-title {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
+  }
+  .shelf-desc {
+    font-size: 0.82rem;
   }
 }
 @media (max-width: 480px) {
   .home-wrapper {
     padding: 0.3rem 0.8rem 2rem;
+  }
+  .card-grid {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
   }
   .site-title {
     font-size: 1.6rem;
@@ -1487,23 +1496,23 @@ html[saved-theme="dark"] .card-spot {
     display: none;
   }
   .shelf-card {
-    padding: 1.3rem 1rem;
-    border-radius: 16px;
+    padding: 1rem 0.9rem;
+    border-radius: 14px;
+    gap: 0.9rem;
   }
   .shelf-icon {
-    width: 54px;
-    height: 54px;
-    margin-bottom: 0.6rem;
+    width: 44px;
+    height: 44px;
   }
   .shelf-icon svg {
-    width: 25px;
-    height: 25px;
+    width: 20px;
+    height: 20px;
   }
   .shelf-title {
-    font-size: 1.05rem;
+    font-size: 1rem;
   }
   .shelf-desc {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
   }
 }
 
@@ -2186,6 +2195,10 @@ html[saved-theme="dark"] .hb-loop-btn.active {
   }
   .right.sidebar {
     padding: 0.9rem 0.8rem !important;
+  }
+  /* 空右栏（无目录/回链）不显示，避免出现悬浮玻璃长条 */
+  .right.sidebar:empty {
+    display: none !important;
   }
 }
 
