@@ -870,10 +870,10 @@ html body[data-slug="index"] h1.site-title > a[href^="#"] {
   background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(18px) saturate(1.5);
   -webkit-backdrop-filter: blur(18px) saturate(1.5);
-  border: 1px solid transparent;
+  border: 1px solid rgba(0, 0, 0, 0.25);
   border-radius: 18px;
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(var(--card-ring, 0, 0, 0), 0.3),
     0 18px 40px -12px rgba(31, 45, 61, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     inset 0 0 18px rgba(255, 255, 255, 0.3);
@@ -887,9 +887,9 @@ html body[data-slug="index"] h1.site-title > a[href^="#"] {
     border-color 0.35s ease;
   @include dark {
     background: rgba(22, 22, 24, 0.45);
-    border-color: transparent;
+    border-color: rgba(255, 255, 255, 0.3);
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.22),
+      0 0 0 1px rgba(var(--card-ring, 255, 255, 255), 0.35),
       0 10px 30px rgba(0, 0, 0, 0.3);
   }
 }
@@ -897,15 +897,15 @@ html body[data-slug="index"] h1.site-title > a[href^="#"] {
   .glass-card:hover {
     transform: translateY(-6px);
     box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.2),
+      0 0 0 1px rgba(var(--card-ring, 0, 0, 0), 0.38),
       0 20px 48px rgba(0, 0, 0, 0.16),
       inset 0 1px 0 rgba(255, 255, 255, 0.95),
       inset 0 0 18px rgba(255, 255, 255, 0.35);
-    border-color: transparent;
+    border-color: rgba(0, 0, 0, 0.32);
     @include dark {
-      border-color: transparent;
+      border-color: rgba(255, 255, 255, 0.4);
       box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.28),
+        0 0 0 1px rgba(var(--card-ring, 255, 255, 255), 0.45),
         0 20px 48px rgba(0, 0, 0, 0.45);
     }
   }
@@ -960,6 +960,35 @@ html[data-theme="dark"] .card-accent-violet .card-icon,
 html[saved-theme="dark"] .card-accent-violet .card-icon {
   background: rgba(161, 143, 214, 0.2);
   color: #a18fd6;
+}
+
+/* 三卡各自的彩色描边（--card-ring 驱动外环颜色，border 驱动实色描边） */
+.card-accent-blue {
+  border-color: rgba(47, 109, 179, 0.4) !important;
+  --card-ring: 47, 109, 179;
+}
+.card-accent-teal {
+  border-color: rgba(13, 148, 136, 0.4) !important;
+  --card-ring: 13, 148, 136;
+}
+.card-accent-violet {
+  border-color: rgba(124, 58, 237, 0.4) !important;
+  --card-ring: 124, 58, 237;
+}
+html[data-theme="dark"] .card-accent-blue,
+html[saved-theme="dark"] .card-accent-blue {
+  border-color: rgba(109, 155, 208, 0.45) !important;
+  --card-ring: 109, 155, 208;
+}
+html[data-theme="dark"] .card-accent-teal,
+html[saved-theme="dark"] .card-accent-teal {
+  border-color: rgba(94, 199, 184, 0.45) !important;
+  --card-ring: 94, 199, 184;
+}
+html[data-theme="dark"] .card-accent-violet,
+html[saved-theme="dark"] .card-accent-violet {
+  border-color: rgba(161, 143, 214, 0.45) !important;
+  --card-ring: 161, 143, 214;
 }
 
 /* 主卡（个人博客）：克制的光晕强调，仅桌面/平板 */
@@ -1205,10 +1234,10 @@ html[saved-theme="dark"] .card-spot {
   background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(18px) saturate(1.5);
   -webkit-backdrop-filter: blur(18px) saturate(1.5);
-  border: 1px solid transparent;
+  border: 1px solid rgba(0, 0, 0, 0.25);
   border-radius: 16px;
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(var(--card-ring, 0, 0, 0), 0.3),
     0 18px 40px -12px rgba(31, 45, 61, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     inset 0 0 18px rgba(255, 255, 255, 0.3);
@@ -1222,9 +1251,9 @@ html[saved-theme="dark"] .card-spot {
     border-color 0.35s ease;
   @include dark {
     background: rgba(22, 22, 24, 0.45);
-    border-color: transparent;
+    border-color: rgba(255, 255, 255, 0.3);
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.22),
+      0 0 0 1px rgba(var(--card-ring, 255, 255, 255), 0.35),
       0 10px 30px rgba(0, 0, 0, 0.3);
   }
 }
@@ -1232,15 +1261,15 @@ html[saved-theme="dark"] .card-spot {
   .shelf-card:hover {
     transform: translateY(-6px);
     box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.2),
+      0 0 0 1px rgba(var(--card-ring, 0, 0, 0), 0.38),
       0 20px 48px rgba(0, 0, 0, 0.16),
       inset 0 1px 0 rgba(255, 255, 255, 0.95),
       inset 0 0 18px rgba(255, 255, 255, 0.35);
-    border-color: transparent;
+    border-color: rgba(0, 0, 0, 0.32);
     @include dark {
-      border-color: transparent;
+      border-color: rgba(255, 255, 255, 0.4);
       box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.28),
+        0 0 0 1px rgba(var(--card-ring, 255, 255, 255), 0.45),
         0 20px 48px rgba(0, 0, 0, 0.45);
     }
   }
