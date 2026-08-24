@@ -197,9 +197,7 @@ body {
   z-index: -2;
   pointer-events: none;
   filter: blur(3px) brightness(1) contrast(0.98) saturate(0.85);
-  transition: opacity 0.25s ease;
-  opacity: 0;
-  will-change: opacity;
+  display: none; /* 非当前主题的图直接不渲染 = 不下载（配合 loading=lazy 节省近一半带宽） */
 }
 
 /* 白天模式：提亮 + 降饱和，避免插画上盖白蒙版导致的“蒙灰感” */
@@ -210,26 +208,26 @@ body {
 
 /* 移动端：亮/暗切换（light_bg / dark_bg） */
 #bg-image-light {
-  opacity: 1;
+  display: block;
 }
 #bg-image-dark {
-  opacity: 0;
+  display: none;
 }
 html[data-theme="dark"] #bg-image-light,
 html[saved-theme="dark"] #bg-image-light {
-  opacity: 0;
+  display: none;
 }
 html[data-theme="dark"] #bg-image-dark,
 html[saved-theme="dark"] #bg-image-dark {
-  opacity: 1;
+  display: block;
 }
 
 /* PC：统一用 light.jpg（dark 素材未授权） */
 #bg-image-light-pc {
-  opacity: 1;
+  display: block;
 }
 #bg-image-dark-pc {
-  opacity: 0;
+  display: none;
 }
 
 @media (max-width: 768px) {
