@@ -10,6 +10,9 @@ async function mouseEnterHandler(
   { clientX, clientY }: { clientX: number; clientY: number },
 ) {
   const link = (activeAnchor = this)
+  if (!link.isConnected) {
+    return
+  }
   if (link.dataset.noPopover === "true") {
     return
   }
@@ -124,6 +127,21 @@ function clearActivePopover() {
   const allPopoverElements = document.querySelectorAll(".popover")
   allPopoverElements.forEach((popoverElement) => popoverElement.classList.remove("active-popover"))
 }
+
+// 页面滚动时关闭浮层，避免固定定位的浮层残留在错误位置（如左上角）
+// capture 阶段拦截，popover 内部滚动不触发关闭
+window.addEventListener(
+  "scroll",
+  (e) => {
+    const target = e.target as HTMLElement | Document
+    if (target instanceof HTMLElement && target.closest(".popover")) return
+    clearActivePopover()
+  },
+  { capture: true, passive: true },
+)
+
+// SPA 导航后关闭所有浮层，防止旧浮层残留在 0,0 等过期位置
+document.addEventListener("nav", clearActivePopover)
 
 function setupPopovers() {
   const links = [...document.querySelectorAll("a.internal")] as HTMLAnchorElement[]
