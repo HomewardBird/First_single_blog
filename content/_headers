@@ -1,0 +1,42 @@
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+/static/scripts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/images/*
+  Cache-Control: public, max-age=86400
+
+/*.webp
+  Cache-Control: public, max-age=86400
+/*.png
+  Cache-Control: public, max-age=86400
+/*.jpg
+  Cache-Control: public, max-age=86400
+/*.jpeg
+  Cache-Control: public, max-age=86400
+/*.gif
+  Cache-Control: public, max-age=86400
+/*.svg
+  Cache-Control: public, max-age=86400
+/*.ico
+  Cache-Control: public, max-age=86400
+
+/*.m4a
+  Cache-Control: public, max-age=86400
+/*.mp3
+  Cache-Control: public, max-age=86400
+
+/static/katex/*
+  Cache-Control: public, max-age=86400
+
+/static/contentIndex.json
+  Cache-Control: public, max-age=0, must-revalidate
+/quotes.json
+  Cache-Control: public, max-age=0, must-revalidate

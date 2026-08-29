@@ -183,7 +183,7 @@ body {
   }
 }
 
-/* ====== 全屏图片背景 ====== */
+/* ====== 全屏图片背景（Blur-up 渐进加载） ====== */
 #bg-image-light,
 #bg-image-dark,
 #bg-image-light-pc,
@@ -193,16 +193,35 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
   z-index: -2;
   pointer-events: none;
-  filter: blur(3px) brightness(1) contrast(0.98) saturate(0.85);
   display: none; /* 非当前主题的图直接不渲染 = 不下载（配合 loading=lazy 节省近一半带宽） */
+}
+.bg-layer img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* 极小模糊占位图（~1KB）：先渲染，高清图就绪后淡入覆盖 */
+.bg-layer .bg-thumb {
+  transform: scale(1.12);
+  filter: blur(6px) brightness(1) contrast(0.98) saturate(0.85);
+}
+.bg-layer .bg-full {
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  filter: blur(3px) brightness(1) contrast(0.98) saturate(0.85);
+}
+.bg-layer .bg-full.loaded {
+  opacity: 1;
 }
 
 /* 白天模式：提亮 + 降饱和，避免插画上盖白蒙版导致的“蒙灰感” */
-#bg-image-light,
-#bg-image-light-pc {
+#bg-image-light .bg-full,
+#bg-image-light-pc .bg-full {
   filter: blur(3px) brightness(1.1) contrast(0.98) saturate(0.72);
 }
 
@@ -1287,6 +1306,16 @@ html[saved-theme="dark"] .card-spot {
   }
 }
 
+/* ====== 卡片按压反馈：按下瞬间缩小，松手沿 0.35s 回弹曲线弹回 ======
+ * 按压过渡必须极短（0.06s）：快速点击时也能在松手前完成缩小，
+ * 可见的"手感"主要来自松手后的弹性回弹动画（不会被导航打断前已经触发）。
+ */
+.glass-card:active,
+.shelf-card:active {
+  transform: scale(0.97) translateY(0);
+  transition: transform 0.06s ease;
+}
+
 .shelf-icon {
   display: inline-flex;
   align-items: center;
@@ -1509,150 +1538,6 @@ html[saved-theme="dark"] .shelf-accent-violet .shelf-icon {
   }
   .shelf-desc {
     font-size: 0.78rem;
-  }
-}
-
-/* ====== 音乐悬浮球 ====== */
-#floating-controls {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  z-index: 999;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-#music-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  background: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease,
-    background 0.3s ease;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
-  color: var(--dark);
-  line-height: 1;
-  padding: 0;
-}
-
-html[data-theme="dark"] #music-btn,
-html[saved-theme="dark"] #music-btn {
-  background: rgba(22, 22, 24, 0.55);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: #ccc;
-}
-
-@media (hover: hover) {
-  #music-btn:hover {
-    transform: scale(1.08);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
-  }
-}
-
-#music-btn.playing {
-  background: rgba(255, 255, 255, 0.38);
-  border-color: rgba(140, 155, 180, 0.5);
-  animation: music-pulse 2s ease-in-out infinite;
-}
-
-html[data-theme="dark"] #music-btn.playing,
-html[saved-theme="dark"] #music-btn.playing {
-  background: rgba(22, 22, 24, 0.72);
-}
-
-#music-btn.loading {
-  color: transparent;
-  position: relative;
-}
-
-#music-btn.loading::after {
-  content: "";
-  position: absolute;
-  inset: 9px;
-  border: 2px solid transparent;
-  border-top-color: var(--dark);
-  border-radius: 50%;
-  animation: music-spin 0.6s linear infinite;
-}
-
-html[data-theme="dark"] #music-btn.loading::after,
-html[saved-theme="dark"] #music-btn.loading::after {
-  border-top-color: #ccc;
-}
-
-#track-label {
-  font-size: 0.78rem;
-  color: var(--dark);
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(4px);
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-html[data-theme="dark"] #track-label,
-html[saved-theme="dark"] #track-label {
-  color: #d4d4d4;
-}
-
-#track-label.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-@keyframes music-pulse {
-  0%,
-  100% {
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
-  }
-  50% {
-    box-shadow: 0 4px 30px rgba(120, 150, 190, 0.35);
-  }
-}
-
-@keyframes music-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* 移动端 */
-@media (max-width: 480px) {
-  #floating-controls {
-    bottom: 0.8rem;
-    right: 0.8rem;
-  }
-  #music-btn {
-    width: 40px;
-    height: 40px;
-    font-size: 0.9rem;
-  }
-}
-
-@media (min-width: 481px) and (max-width: 800px) {
-  #floating-controls {
-    bottom: 1rem;
-    right: 1rem;
-  }
-  #music-btn {
-    width: 40px;
-    height: 40px;
-    font-size: 1rem;
   }
 }
 
@@ -2679,6 +2564,116 @@ html.lb-lock body {
   #lightbox-controls button {
     width: 40px;
     height: 40px;
+  }
+}
+
+/* ====== 移动端 GPU 降级：低端机去掉实时 backdrop-filter，改用高不透明度纯色 ======
+ * backdrop-filter 在滚动时每帧重采样背景，低端手机会掉帧发热。
+ * 半径减到 8px 仍是实时模糊，治标不治本；移动端直接禁用并提高底色不透明度（视觉差异极小）。
+ */
+@media (max-width: 768px) {
+  .glass-card,
+  .shelf-card,
+  .welcome-pill,
+  #hamburger-menu,
+  .search > .search-container,
+  .sidebar.left:has(.explorer:not(.collapsed)) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .glass-card,
+  .shelf-card,
+  .welcome-pill {
+    background: rgba(255, 255, 255, 0.86);
+    @include dark {
+      background: rgba(22, 22, 24, 0.74);
+    }
+  }
+
+  .sidebar.left:has(.explorer:not(.collapsed)) {
+    background: rgba(255, 255, 255, 0.92) !important;
+    @include dark {
+      background: rgba(22, 22, 24, 0.88) !important;
+    }
+  }
+
+  #hamburger-menu {
+    background: rgba(255, 255, 255, 0.94);
+    @include dark {
+      background: rgba(22, 22, 24, 0.92);
+    }
+  }
+
+  .search > .search-container {
+    background: rgba(248, 246, 244, 0.85);
+    @include dark {
+      background: rgba(22, 22, 24, 0.85);
+    }
+  }
+}
+
+/* ====== 回到顶部按钮（平时完全不可见，滚动超一屏才淡入） ====== */
+#back-to-top {
+  position: fixed;
+  right: max(1.2rem, env(safe-area-inset-right, 0px));
+  bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px));
+  z-index: 9500;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--dark);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease,
+    visibility 0.25s ease,
+    background 0.2s ease;
+  @include dark {
+    background: rgba(22, 22, 24, 0.72);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #d4d4d4;
+  }
+}
+#back-to-top.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+@media (hover: hover) {
+  #back-to-top:hover {
+    background: rgba(255, 255, 255, 0.95);
+    @include dark {
+      background: rgba(22, 22, 24, 0.9);
+    }
+  }
+}
+/* 移动端遵循 GPU 降级原则：去 backdrop-filter，纯色半透明 */
+@media (max-width: 768px) {
+  #back-to-top {
+    width: 38px;
+    height: 38px;
+    right: max(0.9rem, env(safe-area-inset-right, 0px));
+    bottom: calc(0.9rem + env(safe-area-inset-bottom, 0px));
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.9);
+    @include dark {
+      background: rgba(22, 22, 24, 0.85);
+    }
   }
 }
 

@@ -367,8 +367,24 @@
     })
   }
 
+  // 壁纸 Blur-up：高清背景图加载完成后淡入并隐藏模糊占位
+  function setupBgBlurUp() {
+    document.querySelectorAll(".bg-layer").forEach(function (layer) {
+      var full = layer.querySelector(".bg-full")
+      var thumb = layer.querySelector(".bg-thumb")
+      if (!full || full.classList.contains("loaded")) return
+      var onLoad = function () {
+        full.classList.add("loaded")
+        if (thumb) thumb.style.opacity = "0"
+      }
+      if (full.complete && full.naturalWidth > 0) onLoad()
+      else full.addEventListener("load", onLoad)
+    })
+  }
+
   document.addEventListener("nav", function () {
     lazyLoadImages()
+    setupBgBlurUp()
     injectHomeLink()
     hideNavItem("个人博客")
     // explorer 树可能晚于 nav 渲染，延迟重试
@@ -1646,11 +1662,45 @@
   }
 
   // ====================================================================
+  //  回到顶部按钮：滚动超过一屏才淡入，平时完全不可见，不干扰阅读
+  // ====================================================================
+  function initBackToTop() {
+    if (document.getElementById("back-to-top")) return
+    var btn = document.createElement("button")
+    btn.id = "back-to-top"
+    btn.type = "button"
+    btn.setAttribute("aria-label", "回到顶部")
+    btn.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg>'
+    document.body.appendChild(btn)
+    var shown = false
+    function onScroll() {
+      var y = window.scrollY || document.documentElement.scrollTop || 0
+      var show = y > 500
+      if (show !== shown) {
+        shown = show
+        btn.classList.toggle("show", show)
+      }
+    }
+    btn.addEventListener("click", function () {
+      try {
+        window.scrollTo({ top: 0, behavior: "smooth" })
+      } catch (e) {
+        window.scrollTo(0, 0)
+      }
+    })
+    window.addEventListener("scroll", onScroll, { passive: true })
+    document.addEventListener("nav", onScroll)
+    onScroll()
+  }
+
+  // ====================================================================
   //  Init
   // ====================================================================
   function init() {
     getBp()
     registerSW()
+    initBackToTop()
     rebuildUI()
     injectHomeLink()
     hideNavItem("个人博客")
@@ -1725,6 +1775,7 @@
 
     loadDailyQuote()
     lazyLoadImages()
+    setupBgBlurUp()
   }
 
   // ====================================================================

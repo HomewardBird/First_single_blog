@@ -74,7 +74,18 @@ export function pageResources(
   })
 
   const contentIndexPath = joinSegments(baseDir, "static/contentIndex.json")
-  const contentIndexScript = `const fetchData = fetch("${contentIndexPath}").then(data => data.json())`
+  // 延迟到浏览器空闲时再下载搜索索引（112K），避免抢占首屏资源；
+  // 搜索打开前最多等 3 秒（requestIdleCallback 兜底），已缓存的直接秒回
+  const contentIndexScript = `const fetchData = new Promise(function (resolve) {
+  var load = function () {
+    resolve(fetch("${contentIndexPath}").then(function (r) { return r.json() }))
+  }
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(load, { timeout: 3000 })
+  } else {
+    setTimeout(load, 1500)
+  }
+})`
 
   const resources: StaticResources = {
     css: [
