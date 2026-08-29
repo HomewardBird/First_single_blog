@@ -8,10 +8,46 @@ export function CustomElements({ basePath }: { basePath: string }) {
         </div>
         <div class="loader-text">安巢鸟的个人网站</div>
       </div>
-      <img id="bg-image-light" src={`${basePath}/static/light_bg.jpg`} alt="" loading="lazy" />
-      <img id="bg-image-dark" src={`${basePath}/static/dark_bg.jpg`} alt="" loading="lazy" />
-      <img id="bg-image-light-pc" src={`${basePath}/static/light.jpg`} alt="" loading="lazy" />
-      <img id="bg-image-dark-pc" src={`${basePath}/static/dark.jpg`} alt="" loading="lazy" />
+      <div id="bg-image-light" class="bg-layer">
+        <img class="bg-thumb" src={`${basePath}/static/blur/light_bg.jpg`} alt="" loading="eager" />
+        <img
+          class="bg-full"
+          src={`${basePath}/static/light_bg.jpg`}
+          alt=""
+          loading="lazy"
+          fetchPriority="high"
+        />
+      </div>
+      <div id="bg-image-dark" class="bg-layer">
+        <img class="bg-thumb" src={`${basePath}/static/blur/dark_bg.jpg`} alt="" loading="eager" />
+        <img
+          class="bg-full"
+          src={`${basePath}/static/dark_bg.jpg`}
+          alt=""
+          loading="lazy"
+          fetchPriority="high"
+        />
+      </div>
+      <div id="bg-image-light-pc" class="bg-layer">
+        <img class="bg-thumb" src={`${basePath}/static/blur/light.jpg`} alt="" loading="eager" />
+        <img
+          class="bg-full"
+          src={`${basePath}/static/light.jpg`}
+          alt=""
+          loading="lazy"
+          fetchPriority="high"
+        />
+      </div>
+      <div id="bg-image-dark-pc" class="bg-layer">
+        <img class="bg-thumb" src={`${basePath}/static/blur/dark.jpg`} alt="" loading="eager" />
+        <img
+          class="bg-full"
+          src={`${basePath}/static/dark.jpg`}
+          alt=""
+          loading="lazy"
+          fetchPriority="high"
+        />
+      </div>
       <div id="bg-overlay"></div>
       <div id="top-bar">
         <div class="top-bar-inner">

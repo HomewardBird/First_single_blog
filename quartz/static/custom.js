@@ -113,6 +113,32 @@
       })
   }
 
+  // 仅在浏览器空闲时预取下一首；慢速网络 / 省流模式下跳过，
+  // 避免整首下载抢占带宽、拖慢页面图片与文章加载
+  function prefetchNextTrack() {
+    if (!cacheSupported()) return
+    try {
+      var conn =
+        navigator.connection || navigator.mozConnection || navigator.webkitConnection
+      if (
+        conn &&
+        (conn.saveData || conn.effectiveType === "slow-2g" || conn.effectiveType === "2g")
+      )
+        return
+    } catch (e) {}
+    var rq =
+      window.requestIdleCallback ||
+      function (fn) {
+        return setTimeout(fn, 4000)
+      }
+    rq(
+      function () {
+        cacheTrack((cur + 1) % tracks.length)
+      },
+      { timeout: 6000 },
+    )
+  }
+
   function loadTrack(i, cb) {
     var want = ((i % tracks.length) + tracks.length) % tracks.length
     cur = want
@@ -122,10 +148,8 @@
       audio.load()
       if (cb) cb() // 确保 src 设置完成后才 play，避免播放失败
     })
-    // 提前缓存下一首，切歌时可直接用 blob
-    setTimeout(function () {
-      cacheTrack((want + 1) % tracks.length)
-    }, 1200)
+    // 提前缓存下一首，切歌时可直接用 blob（空闲时进行，避免抢带宽）
+    prefetchNextTrack()
   }
 
   // 播放看门狗：发出播放请求后长时间无进展（网络卡住）则自动跳过
@@ -343,8 +367,24 @@
     })
   }
 
+  // 壁纸 Blur-up：高清背景图加载完成后淡入并隐藏模糊占位
+  function setupBgBlurUp() {
+    document.querySelectorAll(".bg-layer").forEach(function (layer) {
+      var full = layer.querySelector(".bg-full")
+      var thumb = layer.querySelector(".bg-thumb")
+      if (!full || full.classList.contains("loaded")) return
+      var onLoad = function () {
+        full.classList.add("loaded")
+        if (thumb) thumb.style.opacity = "0"
+      }
+      if (full.complete && full.naturalWidth > 0) onLoad()
+      else full.addEventListener("load", onLoad)
+    })
+  }
+
   document.addEventListener("nav", function () {
     lazyLoadImages()
+    setupBgBlurUp()
     injectHomeLink()
     hideNavItem("个人博客")
     // explorer 树可能晚于 nav 渲染，延迟重试
@@ -1172,6 +1212,36 @@
     var nx = document.querySelector('#lightbox [data-act="next"]')
     if (p) p.disabled = n < 2
     if (nx) nx.disabled = n < 2
+    // 图片未加载完成时禁用缩放 / 旋转 / 1:1，避免在空图上操作
+    var el = document.getElementById("lightbox-img")
+    var ready = !!el && !el.hasAttribute("data-lb-error") && el.naturalWidth > 0
+    document
+      .querySelectorAll(
+        '#lightbox [data-act="zoomin"], #lightbox [data-act="zoomout"], #lightbox [data-act="fit"], #lightbox [data-act="rotl"], #lightbox [data-act="rotr"]',
+      )
+      .forEach(function (b) {
+        b.disabled = !ready
+      })
+  }
+
+  // 图片加载超时提示（弱网下避免用户对着空白界面干等）
+  var _lbLoadTimer = null
+  function clearLbTimer() {
+    if (_lbLoadTimer) {
+      clearTimeout(_lbLoadTimer)
+      _lbLoadTimer = null
+    }
+  }
+  function lbArmTimer() {
+    clearLbTimer()
+    _lbLoadTimer = setTimeout(function () {
+      _lbLoadTimer = null
+      if (!_lbOpen) return
+      var el = document.getElementById("lightbox-img")
+      if (el && !el.hasAttribute("data-lb-error") && el.naturalWidth === 0) {
+        showToast("图片加载超时，请检查网络（点击空白处可关闭）")
+      }
+    }, 10000)
   }
 
   function lbShow() {
@@ -1187,7 +1257,9 @@
       el.src = src
       el.removeAttribute("data-lb-error")
       if (loader) loader.classList.add("show")
+      lbArmTimer()
     } else {
+      clearLbTimer()
       if (loader) loader.classList.remove("show")
     }
     el.alt = img.alt || ""
@@ -1361,6 +1433,7 @@
     if (!_lbOpen) return
     _lbOpen = false
     _lbG = null
+    clearLbTimer()
     _lb.classList.remove("open")
     document.documentElement.classList.remove("lb-lock")
     restoreFocus()
@@ -1378,7 +1451,7 @@
           '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>',
         ) +
         "</button>",
-      '<div id="lightbox-stage"><img id="lightbox-img" alt="" loading="eager"><div id="lightbox-loader" aria-hidden="true"></div></div>',
+      '<div id="lightbox-stage"><img id="lightbox-img" alt="" loading="eager" decoding="async"><div id="lightbox-loader" aria-hidden="true"></div></div>',
       '<div id="lightbox-bar">',
       '<span id="lightbox-count"></span>',
       '<div id="lightbox-controls">',
@@ -1430,6 +1503,7 @@
 
     img.addEventListener("load", function () {
       if (!_lbOpen) return
+      clearLbTimer()
       img.removeAttribute("data-lb-error")
       var loader = document.getElementById("lightbox-loader")
       if (loader) loader.classList.remove("show")
@@ -1438,13 +1512,16 @@
         lbComputeFit()
         lbReset(true)
       }
+      lbUpdateUI()
     })
 
     img.addEventListener("error", function () {
       if (!_lbOpen) return
+      clearLbTimer()
       img.setAttribute("data-lb-error", "1")
       var loader = document.getElementById("lightbox-loader")
       if (loader) loader.classList.remove("show")
+      lbUpdateUI()
       showToast("图片加载失败")
     })
 
@@ -1467,6 +1544,13 @@
     stage.addEventListener("pointermove", lbPointerMove)
     stage.addEventListener("pointerup", lbPointerUp)
     stage.addEventListener("pointercancel", lbPointerUp)
+
+    // 老浏览器（无 PointerEvent）兜底：点击空白处关闭灯箱，避免界面无响应
+    if (!window.PointerEvent) {
+      stage.addEventListener("click", function () {
+        if (_lbOpen) lbClose()
+      })
+    }
   }
 
   // 打开灯箱：事件委托，SPA 导航后依然有效
@@ -1564,10 +1648,59 @@
   }
 
   // ====================================================================
+  //  Service Worker：缓存页面 / 图片 / 静态资源，弱网下跳转和图片显著变快
+  // ====================================================================
+  var _swRegistered = false
+  function registerSW() {
+    if (_swRegistered) return
+    _swRegistered = true
+    if (!("serviceWorker" in navigator) || !window.isSecureContext) return
+    if (location.hostname === "localhost" || location.hostname === "127.0.0.1") return
+    navigator.serviceWorker
+      .register(getBp() + "/sw.js")
+      .catch(function () {})
+  }
+
+  // ====================================================================
+  //  回到顶部按钮：滚动超过一屏才淡入，平时完全不可见，不干扰阅读
+  // ====================================================================
+  function initBackToTop() {
+    if (document.getElementById("back-to-top")) return
+    var btn = document.createElement("button")
+    btn.id = "back-to-top"
+    btn.type = "button"
+    btn.setAttribute("aria-label", "回到顶部")
+    btn.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg>'
+    document.body.appendChild(btn)
+    var shown = false
+    function onScroll() {
+      var y = window.scrollY || document.documentElement.scrollTop || 0
+      var show = y > 500
+      if (show !== shown) {
+        shown = show
+        btn.classList.toggle("show", show)
+      }
+    }
+    btn.addEventListener("click", function () {
+      try {
+        window.scrollTo({ top: 0, behavior: "smooth" })
+      } catch (e) {
+        window.scrollTo(0, 0)
+      }
+    })
+    window.addEventListener("scroll", onScroll, { passive: true })
+    document.addEventListener("nav", onScroll)
+    onScroll()
+  }
+
+  // ====================================================================
   //  Init
   // ====================================================================
   function init() {
     getBp()
+    registerSW()
+    initBackToTop()
     rebuildUI()
     injectHomeLink()
     hideNavItem("个人博客")
@@ -1642,6 +1775,7 @@
 
     loadDailyQuote()
     lazyLoadImages()
+    setupBgBlurUp()
   }
 
   // ====================================================================

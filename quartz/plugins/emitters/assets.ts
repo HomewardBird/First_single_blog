@@ -1,4 +1,4 @@
-import { FilePath, joinSegments, slugifyFilePath } from "../../util/path"
+import { FilePath, getFileExtension, joinSegments, slugifyFilePath } from "../../util/path"
 import { QuartzEmitterPlugin, QuartzPageTypePluginInstance } from "../types"
 import path from "path"
 import fs from "fs"
@@ -34,7 +34,9 @@ const filesToCopy = async (argv: Argv, cfg: QuartzConfig, excludeExtensions: Set
 const copyFile = async (argv: Argv, fp: FilePath) => {
   const src = joinSegments(argv.directory, fp) as FilePath
 
-  const name = slugifyFilePath(fp)
+  // .html 资源（如 Google 站点验证文件）保留原文件名：
+  // slugifyFilePath 会硬编码去掉 .html 扩展名，导致验证 URL 404
+  const name = getFileExtension(fp) === ".html" ? fp : slugifyFilePath(fp)
   const dest = joinSegments(argv.output, name) as FilePath
 
   const dir = path.dirname(dest) as FilePath
