@@ -745,6 +745,12 @@
       backdrop.id = "hamburger-backdrop"
       document.body.appendChild(backdrop)
     }
+    if (!document.getElementById("sidebar-backdrop")) {
+      var sidebarBackdrop = document.createElement("div")
+      sidebarBackdrop.id = "sidebar-backdrop"
+      sidebarBackdrop.setAttribute("aria-hidden", "true")
+      document.body.appendChild(sidebarBackdrop)
+    }
     attachHandlers()
     if (window.__music) {
       var st = window.__music.getState()
@@ -818,6 +824,33 @@
   }
 
   function attachHandlers() {
+    var sidebar = document.querySelector(".left.sidebar")
+    if (sidebar) {
+      var sidebarCloseBtn = sidebar.querySelector("#sidebar-close-btn")
+      if (!sidebarCloseBtn) {
+        sidebarCloseBtn = document.createElement("button")
+        sidebarCloseBtn.id = "sidebar-close-btn"
+        sidebarCloseBtn.type = "button"
+        sidebarCloseBtn.className = "sidebar-close-btn"
+        sidebarCloseBtn.setAttribute("aria-label", "关闭导航")
+        sidebarCloseBtn.textContent = "✕"
+        sidebar.insertBefore(sidebarCloseBtn, sidebar.firstChild)
+      }
+      if (!_handlerSet.has(sidebarCloseBtn)) {
+        _handlerSet.add(sidebarCloseBtn)
+        sidebarCloseBtn.addEventListener("click", function (e) {
+          e.stopPropagation()
+          closeSidebar()
+        })
+      }
+    }
+    var sidebarBackdrop = document.getElementById("sidebar-backdrop")
+    if (sidebarBackdrop && !_handlerSet.has(sidebarBackdrop)) {
+      _handlerSet.add(sidebarBackdrop)
+      sidebarBackdrop.addEventListener("click", function () {
+        closeSidebar()
+      })
+    }
     document.querySelectorAll(".hb-font-btn").forEach(function (b) {
       b.addEventListener("click", function () {
         setFontSize(this.dataset.sz)
@@ -985,6 +1018,7 @@
   function setNavToggleIcon(open) {
     var btn = document.getElementById("nav-toggle-btn")
     if (!btn) return
+    btn.classList.toggle("is-open", !!open)
     btn.innerHTML = open ? _navToggleSVG.close : _navToggleSVG.menu
     btn.setAttribute("aria-label", open ? "关闭导航" : "导航")
   }
@@ -995,6 +1029,13 @@
     var open = !!(sidebar && sidebar.classList.contains("open"))
     setNavToggleIcon(open)
   }
+  function setSidebarBackdrop(open) {
+    var bd = document.getElementById("sidebar-backdrop")
+    if (!bd) return
+    bd.classList.toggle("open", !!open)
+    bd.setAttribute("aria-hidden", open ? "false" : "true")
+  }
+
   function toggleMobileExplorer(forceOpen) {
     var exp = document.querySelector(".explorer")
     var sidebar = document.querySelector(".left.sidebar")
@@ -1025,6 +1066,7 @@
       restoreFocus()
     }
     setNavToggleIcon(open)
+    setSidebarBackdrop(open)
     updateScrollLock()
     return true
   }
@@ -1193,7 +1235,27 @@
   }
   function closeSidebar() {
     var s = document.querySelector(".left.sidebar")
+    var exp = document.querySelector(".explorer")
+    if (isMobileUI()) {
+      if (exp) {
+        exp.classList.add("collapsed")
+        exp.setAttribute("aria-expanded", "false")
+        var content = exp.querySelector(".explorer-content")
+        if (content) {
+          content.removeAttribute("role")
+          content.removeAttribute("aria-modal")
+        }
+      }
+      if (s) s.classList.remove("open")
+      document.documentElement.classList.remove("mobile-no-scroll")
+      setSidebarBackdrop(false)
+      restoreFocus()
+      setNavToggleIcon(false)
+      updateScrollLock()
+      return
+    }
     if (s) s.classList.remove("open")
+    setSidebarBackdrop(false)
     syncNavToggleIcon()
     updateScrollLock()
   }
@@ -1782,18 +1844,22 @@
     ensureSpots()
     document.addEventListener("nav", ensureSpots)
     var ticking = false
-    document.addEventListener("pointermove", function (e) {
-      var card = e.target && e.target.closest ? e.target.closest(".glass-card, .shelf-card") : null
-      if (!card || !card.querySelector(".card-spot")) return
-      if (ticking) return
-      ticking = true
-      requestAnimationFrame(function () {
-        var r = card.getBoundingClientRect()
-        card.style.setProperty("--mx", (e.clientX - r.left).toFixed(1) + "px")
-        card.style.setProperty("--my", (e.clientY - r.top).toFixed(1) + "px")
-        ticking = false
-      })
-    })
+    document.addEventListener(
+      "pointermove",
+      function (e) {
+        var card = e.target && e.target.closest ? e.target.closest(".glass-card, .shelf-card") : null
+        if (!card || !card.querySelector(".card-spot")) return
+        if (ticking) return
+        ticking = true
+        requestAnimationFrame(function () {
+          var r = card.getBoundingClientRect()
+          card.style.setProperty("--mx", (e.clientX - r.left).toFixed(1) + "px")
+          card.style.setProperty("--my", (e.clientY - r.top).toFixed(1) + "px")
+          ticking = false
+        })
+      },
+      { passive: true },
+    )
   }
 
   // ====================================================================
