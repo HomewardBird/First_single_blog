@@ -1894,6 +1894,48 @@
   }
 
   // ====================================================================
+  //  首页自适应锁屏：内容一屏放得下 → 锁死不滚动；放不下 → 放开滚动
+  //  （测量 .home-wrapper 高度，塞得下才给 html/body 加 home-locked 类）
+  // ====================================================================
+  var _homeFitTicking = false
+  var _homeFitLast = null
+  function homeFitCheck() {
+    if (_homeFitTicking) return
+    _homeFitTicking = true
+    requestAnimationFrame(function () {
+      _homeFitTicking = false
+      var wrap =
+        getSlug() === "index" ? document.querySelector(".home-wrapper") : null
+      var tablet =
+        window.matchMedia && window.matchMedia("(min-width: 800px)").matches
+      // 顶栏 44px + 少量容差；offsetHeight 不受入场动画 transform 影响。
+      // 底部 padding 是空白区域，不计入"内容高度"，否则差几像素也会误判放不下。
+      var needed = Infinity
+      if (wrap) {
+        var pb = 0
+        try {
+          pb = parseFloat(window.getComputedStyle(wrap).paddingBottom) || 0
+        } catch (e) {}
+        needed = wrap.offsetHeight - pb + 52
+      }
+      var fits = !!(tablet && wrap && needed <= window.innerHeight)
+      var changed = fits !== _homeFitLast
+      _homeFitLast = fits
+      if (changed) {
+        if (window.console && console.log) {
+          console.log(
+            "[home-fit] " + (fits ? "锁定(不滚动)" : "放开(可滚动)") +
+              " 内容高=" + (wrap ? wrap.offsetHeight : "?") +
+              "px 视口高=" + window.innerHeight + "px",
+          )
+        }
+      }
+      document.documentElement.classList.toggle("home-locked", fits)
+      document.body.classList.toggle("home-locked", fits)
+    })
+  }
+
+  // ====================================================================
   //  Init
   // ====================================================================
   function init() {
@@ -1914,6 +1956,22 @@
     restoreBg()
     restoreFontColor()
     restoreLock()
+
+    homeFitCheck()
+    window.addEventListener("load", homeFitCheck)
+    window.addEventListener("resize", homeFitCheck)
+    window.addEventListener("scroll", homeFitCheck, { passive: true })
+    document.addEventListener("nav", homeFitCheck)
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready
+        .then(function () {
+          homeFitCheck()
+        })
+        .catch(function () {})
+    }
+    // 兜底：延迟再测两次，防止字体/懒加载导致的布局抖动被早期测量错过
+    setTimeout(homeFitCheck, 300)
+    setTimeout(homeFitCheck, 1200)
 
     // 不等 window.load：首帧渲染后立即用低优先级预载另一主题的图，
     // 首次切主题时基本已缓存，不会卡。
