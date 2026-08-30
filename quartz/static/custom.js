@@ -1698,7 +1698,7 @@
 
   // ====================================================================
   //  背景图空闲预载：首屏只下载当前主题的图（display:none 的图层不下载），
-  //  页面加载完成后空闲时预载另一主题的图，切主题时直接命中缓存、秒换不卡。
+  //  尽早用低优先级预载另一主题的图，切主题时直接命中缓存、秒换不卡。
   // ====================================================================
   var _bgPreloaded = false
   function preloadOtherThemeBg() {
@@ -1706,28 +1706,26 @@
     _bgPreloaded = true
     var dark = isDark()
     var isMobile = window.matchMedia && window.matchMedia("(max-width: 768px)").matches
-    var curId, otherId
-    if (isMobile) {
-      curId = dark ? "bg-image-dark" : "bg-image-light"
-      otherId = dark ? "bg-image-light" : "bg-image-dark"
-    } else {
-      curId = dark ? "bg-image-dark-pc" : "bg-image-light-pc"
-      otherId = dark ? "bg-image-light-pc" : "bg-image-dark-pc"
-    }
+    var otherId = isMobile
+      ? dark
+        ? "bg-image-light"
+        : "bg-image-dark"
+      : dark
+        ? "bg-image-light-pc"
+        : "bg-image-dark-pc"
     var other = document.getElementById(otherId)
     if (!other) return
     var full = other.querySelector(".bg-full")
     var thumb = other.querySelector(".bg-thumb")
-    if (full && full.getAttribute("src")) {
-      var img = new Image()
-      img.src = full.getAttribute("src")
-    }
-    if (thumb && thumb.getAttribute("src")) {
-      var tImg = new Image()
-      tImg.src = thumb.getAttribute("src")
-    }
-    // 延迟预载也能保证：切主题后 setBg 只改 opacity，display 由 CSS 切换，
-    // 此时另一主题的图已在缓存中，浏览器直接显示，无网络等待。
+    ;[full, thumb].forEach(function (img) {
+      if (img && img.getAttribute("src")) {
+        var pre = new Image()
+        pre.fetchPriority = "low"
+        pre.src = img.getAttribute("src")
+      }
+    })
+    // 预载后切主题：display 由 CSS 切换，setBg 只改 opacity，
+    // 另一主题的图已在浏览器缓存中，无网络等待。
   }
 
   // ====================================================================
@@ -1748,14 +1746,14 @@
     restoreFontColor()
     restoreLock()
 
+    // 不等 window.load：首帧渲染后立即用低优先级预载另一主题的图，
+    // 首次切主题时基本已缓存，不会卡。
     var rq =
       window.requestIdleCallback ||
       function (fn) {
-        setTimeout(fn, 4000)
+        setTimeout(fn, 2000)
       }
-    window.addEventListener("load", function () {
-      rq(preloadOtherThemeBg, { timeout: 6000 })
-    })
+    rq(preloadOtherThemeBg, { timeout: 2500 })
 
     var slug = getSlug()
     if (localStorage.getItem(LOCK_KEY) !== "true" && slug !== "index") {
