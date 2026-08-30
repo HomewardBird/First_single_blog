@@ -91,21 +91,82 @@
       })
   }
 
-  // 后台缓存一首曲目（已缓存则跳过）
+  // 后台缓存一首曲目（已缓存则跳过），并修剪旧曲目防止缓存无限膨胀。
+  // 注意：cacheTrack(当前曲) 与 cacheTrack(下一首) 可能并发调用，
+  // 共享 __recent 元数据 + 跨删除会互相覆盖，必须串行化。
+  var _cacheQ = Promise.resolve()
+  var _recentMax = 6
+  function pruneMusicCache(keep, cache) {
+    var META = "__recent"
+    return cache
+      .match(META)
+      .then(function (r) {
+        if (!r) return []
+        return r.json()
+      })
+      .catch(function () {
+        return []
+      })
+      .then(function (recent) {
+        recent = recent.filter(function (x) {
+          return x !== keep
+        })
+        recent.unshift(keep)
+        if (recent.length > _recentMax) recent.length = _recentMax
+        var stale = []
+        for (var i = 0; i < tracks.length; i++) {
+          if (i !== keep && recent.indexOf(i) === -1) {
+            stale.push(i)
+          }
+        }
+        return Promise.all(
+          stale.map(function (i) {
+            if (_objUrls[i]) {
+              URL.revokeObjectURL(_objUrls[i])
+              delete _objUrls[i]
+            }
+            return cache.delete(trackUrl(i)).catch(function () {})
+          }),
+        ).then(function () {
+          return cache.put(
+            META,
+            new Response(JSON.stringify(recent), {
+              headers: { "Content-Type": "application/json" },
+            }),
+          )
+        })
+      })
+  }
   function cacheTrack(i) {
+    _cacheQ = _cacheQ
+      .catch(function () {})
+      .then(function () {
+        return doCacheTrack(i)
+      })
+    return _cacheQ
+  }
+  function doCacheTrack(i) {
     if (!cacheSupported()) return Promise.resolve(false)
     var u = trackUrl(i)
     return caches
       .open(_cacheName)
       .then(function (cache) {
         return cache.match(u).then(function (res) {
-          if (res) return true
-          return fetch(u).then(function (r) {
-            if (!r.ok) throw Error("http " + r.status)
-            return cache.put(u, r).then(function () {
-              return true
+          var put = res
+            ? Promise.resolve(true)
+            : fetch(u).then(function (r) {
+                if (!r.ok) throw Error("http " + r.status)
+                return cache.put(u, r).then(function () {
+                  return true
+                })
+              })
+          return put
+            .then(function () {
+              return pruneMusicCache(i, cache)
             })
-          })
+            .catch(function () {
+              return false
+            })
         })
       })
       .catch(function () {
@@ -1871,6 +1932,9 @@
   // ====================================================================
   //  Prev / Next chapter
   // ====================================================================
+  // ====================================================================
+  //  上一章 / 下一章：读取 contentIndex（115KB），校园网卡死时必须有超时兜底
+  // ====================================================================
   var _ci = null
   function loadCI() {
     if (_ci) return Promise.resolve(_ci)
@@ -1885,15 +1949,22 @@
           return null
         })
     }
-    return fetch(getBp() + "/static/contentIndex.json")
+    var ctrl = new AbortController()
+    var tm = setTimeout(function () {
+      ctrl.abort()
+    }, 10000)
+    return fetch(getBp() + "/static/contentIndex.json", { signal: ctrl.signal })
       .then(function (r) {
+        if (!r.ok) throw Error()
         return r.json()
       })
       .then(function (d) {
+        clearTimeout(tm)
         _ci = d.content || d
         return _ci
       })
       .catch(function () {
+        clearTimeout(tm)
         return null
       })
   }
