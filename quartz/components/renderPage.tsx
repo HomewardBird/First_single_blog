@@ -393,7 +393,7 @@ export function renderPage(
   if (loader) {
     if (!loaded && document.readyState !== 'complete') {
       loader.classList.add('show');
-      window.addEventListener('load', function() { setTimeout(hide, 200); });
+      document.addEventListener('DOMContentLoaded', function() { setTimeout(hide, 400); });
       setTimeout(hide, 5000);
     }
     window.__qzt_loaded = true;

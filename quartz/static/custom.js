@@ -91,21 +91,82 @@
       })
   }
 
-  // 后台缓存一首曲目（已缓存则跳过）
+  // 后台缓存一首曲目（已缓存则跳过），并修剪旧曲目防止缓存无限膨胀。
+  // 注意：cacheTrack(当前曲) 与 cacheTrack(下一首) 可能并发调用，
+  // 共享 __recent 元数据 + 跨删除会互相覆盖，必须串行化。
+  var _cacheQ = Promise.resolve()
+  var _recentMax = 6
+  function pruneMusicCache(keep, cache) {
+    var META = "__recent"
+    return cache
+      .match(META)
+      .then(function (r) {
+        if (!r) return []
+        return r.json()
+      })
+      .catch(function () {
+        return []
+      })
+      .then(function (recent) {
+        recent = recent.filter(function (x) {
+          return x !== keep
+        })
+        recent.unshift(keep)
+        if (recent.length > _recentMax) recent.length = _recentMax
+        var stale = []
+        for (var i = 0; i < tracks.length; i++) {
+          if (i !== keep && recent.indexOf(i) === -1) {
+            stale.push(i)
+          }
+        }
+        return Promise.all(
+          stale.map(function (i) {
+            if (_objUrls[i]) {
+              URL.revokeObjectURL(_objUrls[i])
+              delete _objUrls[i]
+            }
+            return cache.delete(trackUrl(i)).catch(function () {})
+          }),
+        ).then(function () {
+          return cache.put(
+            META,
+            new Response(JSON.stringify(recent), {
+              headers: { "Content-Type": "application/json" },
+            }),
+          )
+        })
+      })
+  }
   function cacheTrack(i) {
+    _cacheQ = _cacheQ
+      .catch(function () {})
+      .then(function () {
+        return doCacheTrack(i)
+      })
+    return _cacheQ
+  }
+  function doCacheTrack(i) {
     if (!cacheSupported()) return Promise.resolve(false)
     var u = trackUrl(i)
     return caches
       .open(_cacheName)
       .then(function (cache) {
         return cache.match(u).then(function (res) {
-          if (res) return true
-          return fetch(u).then(function (r) {
-            if (!r.ok) throw Error("http " + r.status)
-            return cache.put(u, r).then(function () {
-              return true
+          var put = res
+            ? Promise.resolve(true)
+            : fetch(u).then(function (r) {
+                if (!r.ok) throw Error("http " + r.status)
+                return cache.put(u, r).then(function () {
+                  return true
+                })
+              })
+          return put
+            .then(function () {
+              return pruneMusicCache(i, cache)
             })
-          })
+            .catch(function () {
+              return false
+            })
         })
       })
       .catch(function () {
@@ -632,6 +693,37 @@
   }
 
   // ====================================================================
+  //  首帧提速：把当前主题激活图层的背景大图从 lazy 提升为 eager。
+  //  HTML 里统一 lazy 是为了不让隐藏主题的图下载；这里只提升激活那张，
+  //  让全图下载提前 ~1.2s（懒加载调度延迟），弱网下背景淡入显著提前。
+  // ====================================================================
+  function boostActiveBg() {
+    var dark = isDark()
+    var mobile = window.matchMedia && window.matchMedia("(max-width: 768px)").matches
+    var id = mobile ? (dark ? "bg-image-dark" : "bg-image-light") : (dark ? "bg-image-dark-pc" : "bg-image-light-pc")
+    var layer = document.getElementById(id)
+    if (!layer) return
+    var full = layer.querySelector(".bg-full")
+    if (full && full.getAttribute("loading") === "lazy") {
+      full.loading = "eager"
+    }
+  }
+
+  // ====================================================================
+  //  移动端浏览器主题色：跟随亮/暗主题，顶栏/状态栏不再闪白
+  // ====================================================================
+  var _themeColors = { light: "#faf8f8", dark: "#161618" }
+  function syncThemeColor() {
+    var m = document.querySelector('meta[name="theme-color"]')
+    if (!m) {
+      m = document.createElement("meta")
+      m.setAttribute("name", "theme-color")
+      document.head.appendChild(m)
+    }
+    m.setAttribute("content", isDark() ? _themeColors.dark : _themeColors.light)
+  }
+
+  // ====================================================================
   //  Top bar + hamburger menu
   // ====================================================================
   function rebuildUI() {
@@ -652,6 +744,12 @@
       var backdrop = document.createElement("div")
       backdrop.id = "hamburger-backdrop"
       document.body.appendChild(backdrop)
+    }
+    if (!document.getElementById("sidebar-backdrop")) {
+      var sidebarBackdrop = document.createElement("div")
+      sidebarBackdrop.id = "sidebar-backdrop"
+      sidebarBackdrop.setAttribute("aria-hidden", "true")
+      document.body.appendChild(sidebarBackdrop)
     }
     attachHandlers()
     if (window.__music) {
@@ -689,6 +787,10 @@
       .join("")
 
     return [
+      '<div class="hb-header">',
+      '<div class="hb-title">设置</div>',
+      '<button id="hamburger-close-btn" class="hb-close-btn" type="button" aria-label="关闭菜单">✕</button>',
+      "</div>",
       '<div class="hb-section"><div class="hb-title">🔅 外观</div>',
       '<div class="hb-sub">字体大小</div><div class="hb-row">',
       fHtml,
@@ -712,7 +814,7 @@
       '<div class="hb-volume-row">',
       '<span class="hb-vol-icon">🔊</span>',
       '<input type="range" class="hb-vol-slider" min="0" max="1" step="0.05" value="1">',
-      '<span class="hb-vol-label">1.0</span>',
+      '<span class="hb-vol-label">1.00</span>',
       "</div>",
       '<div class="hb-loop-row">',
       '<button class="hb-loop-btn" title="循环模式">🔁</button>',
@@ -722,6 +824,33 @@
   }
 
   function attachHandlers() {
+    var sidebar = document.querySelector(".left.sidebar")
+    if (sidebar) {
+      var sidebarCloseBtn = sidebar.querySelector("#sidebar-close-btn")
+      if (!sidebarCloseBtn) {
+        sidebarCloseBtn = document.createElement("button")
+        sidebarCloseBtn.id = "sidebar-close-btn"
+        sidebarCloseBtn.type = "button"
+        sidebarCloseBtn.className = "sidebar-close-btn"
+        sidebarCloseBtn.setAttribute("aria-label", "关闭导航")
+        sidebarCloseBtn.textContent = "✕"
+        sidebar.insertBefore(sidebarCloseBtn, sidebar.firstChild)
+      }
+      if (!_handlerSet.has(sidebarCloseBtn)) {
+        _handlerSet.add(sidebarCloseBtn)
+        sidebarCloseBtn.addEventListener("click", function (e) {
+          e.stopPropagation()
+          closeSidebar()
+        })
+      }
+    }
+    var sidebarBackdrop = document.getElementById("sidebar-backdrop")
+    if (sidebarBackdrop && !_handlerSet.has(sidebarBackdrop)) {
+      _handlerSet.add(sidebarBackdrop)
+      sidebarBackdrop.addEventListener("click", function () {
+        closeSidebar()
+      })
+    }
     document.querySelectorAll(".hb-font-btn").forEach(function (b) {
       b.addEventListener("click", function () {
         setFontSize(this.dataset.sz)
@@ -740,6 +869,14 @@
     document.querySelectorAll(".hb-lock-btn").forEach(function (b) {
       b.addEventListener("click", toggleLock)
     })
+    var closeBtn = document.getElementById("hamburger-close-btn")
+    if (closeBtn && !_handlerSet.has(closeBtn)) {
+      _handlerSet.add(closeBtn)
+      closeBtn.addEventListener("click", function (e) {
+        e.stopPropagation()
+        closeHamburger()
+      })
+    }
     ;[
       [
         ".hb-music-play",
@@ -872,7 +1009,33 @@
     }
   }
 
-  // 移动端：展开 / 收起 explorer 目录（全屏面板）
+  // 移动端：顶栏导航按钮 ☰ / ✕ 切换（抽屉打开时变成关闭按钮）
+  var _navToggleSVG = {
+    menu: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="15" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="15" y2="18"></line></svg>',
+    close:
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>',
+  }
+  function setNavToggleIcon(open) {
+    var btn = document.getElementById("nav-toggle-btn")
+    if (!btn) return
+    btn.classList.toggle("is-open", !!open)
+    btn.innerHTML = open ? _navToggleSVG.close : _navToggleSVG.menu
+    btn.setAttribute("aria-label", open ? "关闭导航" : "导航")
+  }
+  // 图标状态跟随目录栏真实展开状态（任何关闭路径后都要调用，避免残留 ✕）
+  function syncNavToggleIcon() {
+    if (!isMobileUI()) return
+    var sidebar = document.querySelector(".left.sidebar")
+    var open = !!(sidebar && sidebar.classList.contains("open"))
+    setNavToggleIcon(open)
+  }
+  function setSidebarBackdrop(open) {
+    var bd = document.getElementById("sidebar-backdrop")
+    if (!bd) return
+    bd.classList.toggle("open", !!open)
+    bd.setAttribute("aria-hidden", open ? "false" : "true")
+  }
+
   function toggleMobileExplorer(forceOpen) {
     var exp = document.querySelector(".explorer")
     var sidebar = document.querySelector(".left.sidebar")
@@ -902,6 +1065,8 @@
       document.documentElement.classList.remove("mobile-no-scroll")
       restoreFocus()
     }
+    setNavToggleIcon(open)
+    setSidebarBackdrop(open)
     updateScrollLock()
     return true
   }
@@ -1014,7 +1179,11 @@
     var menuOpen = document.getElementById("hamburger-menu")?.classList.contains("open")
     var explorerOpen =
       isMobileUI() && document.querySelector(".explorer")?.classList.contains("collapsed") === false
-    document.body.style.overflow = sidebarOpen || menuOpen || explorerOpen ? "hidden" : ""
+    var locked = sidebarOpen || menuOpen || explorerOpen
+    document.body.style.overflow = locked ? "hidden" : ""
+    // 必须同时锁 html：body 的 overflow 不会传递给视口（Quartz 源码注释已说明），
+    // 否则抽屉内滚动/触摸仍会带动主页滚动
+    document.documentElement.style.overflow = locked ? "hidden" : ""
   }
 
   // ====================================================================
@@ -1060,12 +1229,34 @@
   // 移动端初始化：目录面板默认收起（否则插件默认展开导致首屏被面板盖住）
   function initMobilePanel() {
     if (!isMobileUI()) return
+    setNavToggleIcon(false)
     var exp = document.querySelector(".explorer")
     if (exp && !exp.classList.contains("collapsed")) toggleMobileExplorer(false)
   }
   function closeSidebar() {
     var s = document.querySelector(".left.sidebar")
+    var exp = document.querySelector(".explorer")
+    if (isMobileUI()) {
+      if (exp) {
+        exp.classList.add("collapsed")
+        exp.setAttribute("aria-expanded", "false")
+        var content = exp.querySelector(".explorer-content")
+        if (content) {
+          content.removeAttribute("role")
+          content.removeAttribute("aria-modal")
+        }
+      }
+      if (s) s.classList.remove("open")
+      document.documentElement.classList.remove("mobile-no-scroll")
+      setSidebarBackdrop(false)
+      restoreFocus()
+      setNavToggleIcon(false)
+      updateScrollLock()
+      return
+    }
     if (s) s.classList.remove("open")
+    setSidebarBackdrop(false)
+    syncNavToggleIcon()
     updateScrollLock()
   }
   // Esc 统一关闭：设置面板 / 侧边栏 / 移动端目录
@@ -1653,18 +1844,22 @@
     ensureSpots()
     document.addEventListener("nav", ensureSpots)
     var ticking = false
-    document.addEventListener("pointermove", function (e) {
-      var card = e.target && e.target.closest ? e.target.closest(".glass-card, .shelf-card") : null
-      if (!card || !card.querySelector(".card-spot")) return
-      if (ticking) return
-      ticking = true
-      requestAnimationFrame(function () {
-        var r = card.getBoundingClientRect()
-        card.style.setProperty("--mx", (e.clientX - r.left).toFixed(1) + "px")
-        card.style.setProperty("--my", (e.clientY - r.top).toFixed(1) + "px")
-        ticking = false
-      })
-    })
+    document.addEventListener(
+      "pointermove",
+      function (e) {
+        var card = e.target && e.target.closest ? e.target.closest(".glass-card, .shelf-card") : null
+        if (!card || !card.querySelector(".card-spot")) return
+        if (ticking) return
+        ticking = true
+        requestAnimationFrame(function () {
+          var r = card.getBoundingClientRect()
+          card.style.setProperty("--mx", (e.clientX - r.left).toFixed(1) + "px")
+          card.style.setProperty("--my", (e.clientY - r.top).toFixed(1) + "px")
+          ticking = false
+        })
+      },
+      { passive: true },
+    )
   }
 
   // ====================================================================
@@ -1716,6 +1911,47 @@
   document.addEventListener("nav", bttOnScroll)
 
   // ====================================================================
+  //  阅读进度条：顶部细条显示文章阅读进度
+  //  注意：SPA 导航会 micromorph 整个 <body>，进度条节点会被清掉，
+  //  所以 nav 时也要幂等重建（ensureReadingProgress）。
+  // ====================================================================
+  var _rpTicking = false
+  function rpOnScroll() {
+    if (_rpTicking) return
+    _rpTicking = true
+    requestAnimationFrame(function () {
+      var h = document.documentElement
+      var max = h.scrollHeight - h.clientHeight
+      var p = max > 0 ? window.scrollY / max : 0
+      var bar = document.getElementById("reading-progress")
+      if (bar) bar.style.width = Math.min(100, Math.max(0, p * 100)).toFixed(2) + "%"
+      _rpTicking = false
+    })
+  }
+  function ensureReadingProgress() {
+    var slug = getSlug()
+    try {
+      slug = decodeURIComponent(slug)
+    } catch (e) {}
+    slug = slug.replace(/\.html$/, "")
+    var noBar = ["index", "个人博客", "关于", "留言", "tags"]
+    var isArticle =
+      slug !== "404" && !slug.endsWith("/index") && noBar.indexOf(slug.split("/")[0]) === -1
+    var el = document.getElementById("reading-progress")
+    if (isArticle) {
+      if (!el) {
+        var d = document.createElement("div")
+        d.id = "reading-progress"
+        document.body.appendChild(d)
+      }
+    } else if (el && el.parentNode) {
+      el.parentNode.removeChild(el)
+    }
+  }
+  window.addEventListener("scroll", rpOnScroll, { passive: true })
+  document.addEventListener("nav", ensureReadingProgress)
+
+  // ====================================================================
   //  背景图空闲预载：首屏只下载当前主题的图（display:none 的图层不下载），
   //  尽早用低优先级预载另一主题的图，切主题时直接命中缓存、秒换不卡。
   // ====================================================================
@@ -1748,12 +1984,58 @@
   }
 
   // ====================================================================
+  //  首页自适应锁屏：内容一屏放得下 → 锁死不滚动；放不下 → 放开滚动
+  //  （测量 .home-wrapper 高度，塞得下才给 html/body 加 home-locked 类）
+  // ====================================================================
+  var _homeFitTicking = false
+  var _homeFitLast = null
+  function homeFitCheck() {
+    if (_homeFitTicking) return
+    _homeFitTicking = true
+    requestAnimationFrame(function () {
+      _homeFitTicking = false
+      var wrap =
+        getSlug() === "index" ? document.querySelector(".home-wrapper") : null
+      var tablet =
+        window.matchMedia && window.matchMedia("(min-width: 800px)").matches
+      // 顶栏 44px + 少量容差；offsetHeight 不受入场动画 transform 影响。
+      // 底部 padding 是空白区域，不计入"内容高度"，否则差几像素也会误判放不下。
+      var needed = Infinity
+      if (wrap) {
+        var pb = 0
+        try {
+          pb = parseFloat(window.getComputedStyle(wrap).paddingBottom) || 0
+        } catch (e) {}
+        needed = wrap.offsetHeight - pb + 52
+      }
+      var fits = !!(tablet && wrap && needed <= window.innerHeight)
+      var changed = fits !== _homeFitLast
+      _homeFitLast = fits
+      if (changed) {
+        if (window.console && console.log) {
+          console.log(
+            "[home-fit] " + (fits ? "锁定(不滚动)" : "放开(可滚动)") +
+              " 内容高=" + (wrap ? wrap.offsetHeight : "?") +
+              "px 视口高=" + window.innerHeight + "px",
+          )
+        }
+      }
+      document.documentElement.classList.toggle("home-locked", fits)
+      document.body.classList.toggle("home-locked", fits)
+    })
+  }
+
+  // ====================================================================
   //  Init
   // ====================================================================
   function init() {
     getBp()
     registerSW()
     initBackToTop()
+    ensureReadingProgress()
+    boostActiveBg()
+    syncThemeColor()
+    document.addEventListener("themechange", syncThemeColor)
     rebuildUI()
     injectHomeLink()
     hideNavItem("个人博客")
@@ -1764,6 +2046,22 @@
     restoreBg()
     restoreFontColor()
     restoreLock()
+
+    homeFitCheck()
+    window.addEventListener("load", homeFitCheck)
+    window.addEventListener("resize", homeFitCheck)
+    window.addEventListener("scroll", homeFitCheck, { passive: true })
+    document.addEventListener("nav", homeFitCheck)
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready
+        .then(function () {
+          homeFitCheck()
+        })
+        .catch(function () {})
+    }
+    // 兜底：延迟再测两次，防止字体/懒加载导致的布局抖动被早期测量错过
+    setTimeout(homeFitCheck, 300)
+    setTimeout(homeFitCheck, 1200)
 
     // 不等 window.load：首帧渲染后立即用低优先级预载另一主题的图，
     // 首次切主题时基本已缓存，不会卡。
@@ -1843,6 +2141,9 @@
   // ====================================================================
   //  Prev / Next chapter
   // ====================================================================
+  // ====================================================================
+  //  上一章 / 下一章：读取 contentIndex（115KB），校园网卡死时必须有超时兜底
+  // ====================================================================
   var _ci = null
   function loadCI() {
     if (_ci) return Promise.resolve(_ci)
@@ -1857,15 +2158,22 @@
           return null
         })
     }
-    return fetch(getBp() + "/static/contentIndex.json")
+    var ctrl = new AbortController()
+    var tm = setTimeout(function () {
+      ctrl.abort()
+    }, 10000)
+    return fetch(getBp() + "/static/contentIndex.json", { signal: ctrl.signal })
       .then(function (r) {
+        if (!r.ok) throw Error()
         return r.json()
       })
       .then(function (d) {
+        clearTimeout(tm)
         _ci = d.content || d
         return _ci
       })
       .catch(function () {
+        clearTimeout(tm)
         return null
       })
   }

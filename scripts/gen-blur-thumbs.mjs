@@ -8,7 +8,7 @@ import sharp from "sharp"
 const SRC = "quartz/static"
 const OUT = join(SRC, "blur")
 const FILES = ["light_bg.webp", "dark_bg.webp", "light.webp", "dark.webp"]
-const WIDTH = 48
+const WIDTH = 192
 
 mkdirSync(OUT, { recursive: true })
 for (const f of FILES) {

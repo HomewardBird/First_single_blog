@@ -193,6 +193,12 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
+  /* 平板/移动浏览器：地址栏随滚动收起/展开会让 100%（动态视口）高度实时变化，
+     object-fit:cover 因此反复缩放，背景忽大忽小；改用大视口高度固定尺寸 */
+  height: 100vh;
+  height: 100lvh;
+  /* 提升为独立合成层：滚动时背景不再参与重排重绘 */
+  transform: translateZ(0);
   z-index: -2;
   pointer-events: none;
   display: none; /* 非当前主题的图直接不渲染 = 不下载（配合 loading=lazy 节省近一半带宽） */
@@ -208,12 +214,12 @@ body {
 /* 极小模糊占位图（~1KB）：先渲染，高清图就绪后淡入覆盖 */
 .bg-layer .bg-thumb {
   transform: scale(1.12);
-  filter: blur(6px) brightness(1) contrast(0.98) saturate(0.85);
+  filter: blur(6px) contrast(0.98) saturate(0.85);
 }
 .bg-layer .bg-full {
   opacity: 0;
   transition: opacity 0.8s ease;
-  filter: blur(3px) brightness(1) contrast(0.98) saturate(0.85);
+  filter: blur(3px) contrast(0.98) saturate(0.85);
 }
 .bg-layer .bg-full.loaded {
   opacity: 1;
@@ -223,6 +229,12 @@ body {
 #bg-image-light .bg-full,
 #bg-image-light-pc .bg-full {
   filter: blur(3px) brightness(1.1) contrast(0.98) saturate(0.72);
+}
+
+/* 背景图层图片：不受正文 img 全局 margin 影响（否则顶部露出 16px 白条） */
+.bg-layer img {
+  margin: 0 !important;
+  border-radius: 0;
 }
 
 /* 移动端：亮/暗切换（light_bg / dark_bg） */
@@ -388,6 +400,95 @@ footer {
   }
 }
 
+/* ====== 首页（平板/桌面）：内容放得下 → 锁死不滚动；放不下 → 放开滚动 ====== */
+/* .home-locked 由 JS（homeFitCheck）自动加上/移除：测量首页内容高度，
+   一屏放得下则锁定整页不滚动（目录栏栏内滚动），放不下则不加锁，页面可滚动、内容不被切割。 */
+@media (min-width: 800px) {
+  /* Quartz 默认给 html 设了 overflow-x:hidden，body 的 overflow 不会传递给视口，
+     必须同时锁住 html 才能真正禁止页面滚动 */
+  html.home-locked {
+    overflow: hidden;
+  }
+  html body[data-slug="index"].home-locked {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  body[data-slug="index"].home-locked .page > #quartz-body {
+    height: calc(100dvh - 44px);
+    grid-template-rows: minmax(0, 1fr) auto auto !important;
+  }
+  /* 左栏目录：始终撑满剩余高度并栏内滚动，不参与撑高页面 */
+  body[data-slug="index"] .left.sidebar {
+    height: calc(100dvh - 44px);
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+@media (min-width: 1200px) {
+  body[data-slug="index"].home-locked .page > #quartz-body {
+    grid-template-rows: minmax(0, 1fr) auto !important;
+  }
+}
+
+/* ====== 首页矮屏适配：窗口高度不足时压缩留白、卡片改双列，保证一屏放下不被切割 ====== */
+@media (min-width: 800px) and (max-height: 900px) {
+  html body[data-slug="index"] .home-wrapper {
+    padding: 0.75rem 1.5rem 1.5rem;
+  }
+  html body[data-slug="index"] .home-header {
+    margin-bottom: 1.2rem;
+  }
+  html body[data-slug="index"] h1.site-title {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  html body[data-slug="index"] .random-quote {
+    font-size: 1rem;
+  }
+  html body[data-slug="index"] .welcome-pill {
+    padding: 0.75rem 1.2rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  html body[data-slug="index"] .notice-header {
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.35rem;
+  }
+  html body[data-slug="index"] .section-eyebrow {
+    margin-bottom: 1rem;
+  }
+  html body[data-slug="index"] .card-grid {
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  html body[data-slug="index"] .glass-card {
+    min-height: 120px;
+    padding: 1rem 0.9rem;
+  }
+  html body[data-slug="index"] .card-icon {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 0.7rem;
+  }
+  html body[data-slug="index"] .card-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  html body[data-slug="index"] .friend-link {
+    margin-top: 1.5rem;
+    padding: 0.5rem 1.2rem;
+  }
+}
+/* 平板窄栏（801-1199）在矮屏时卡片单列放不下，改双列 */
+@media (min-width: 800px) and (max-width: 1199px) and (max-height: 900px) {
+  html body[data-slug="index"] .card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* ====== 非首页：内容区加毛玻璃背景 ====== */
 /* 背景图自带 filter: blur 静态模糊，内容面板不再叠加 backdrop-filter（大区域动态模糊极耗性能） */
 body:not([data-slug="index"]) .center {
@@ -496,7 +597,7 @@ html[saved-theme="dark"] .hb-music-btn {
 
   /* --- 顶部导航栏：全宽半透明 --- */
   .sidebar.left {
-    background: rgba(255, 255, 255, 0.6) !important;
+    background: rgba(255, 255, 255, 0.88) !important;
     margin: 0 !important;
     border-radius: 0;
     border: none;
@@ -504,36 +605,23 @@ html[saved-theme="dark"] .hb-music-btn {
     width: 100% !important;
     max-width: 100% !important;
     padding: 0.5rem 1rem !important;
+    /* sticky 会创建层叠上下文，抽屉的 z-index 被关在里面；
+       提升侧栏本身层级，保证全屏抽屉盖在正文之上（低于顶栏 10010） */
+    z-index: 10005;
     @include dark {
-      background: rgba(22, 22, 24, 0.65) !important;
+      background: rgba(22, 22, 24, 0.92) !important;
       border-bottom-color: rgba(255, 255, 255, 0.06);
     }
   }
 
-  /* Explorer 打开时：全屏毛玻璃覆盖 */
-  .sidebar.left:has(.explorer:not(.collapsed)) {
-    background: rgba(255, 255, 255, 0.68) !important;
-    -webkit-backdrop-filter: blur(24px) !important;
-    backdrop-filter: blur(24px) !important;
-    border-bottom: none;
-    padding: 1rem !important;
-    position: fixed !important;
-    top: 36px !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    z-index: 10000 !important;
-    height: calc(100dvh - 36px) !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
+  /* Explorer 抽屉（插件原生全屏滑入面板）：接近不透明的底色，
+     背景图不穿透，弱机不做 backdrop-filter */
+  .explorer .explorer-content {
+    background: rgba(250, 248, 248, 0.97);
   }
-
-  .sidebar.left:has(.explorer:not(.collapsed)) {
-    @include dark {
-      background: rgba(22, 22, 24, 0.9) !important;
-    }
+  html[data-theme="dark"] .explorer .explorer-content,
+  html[saved-theme="dark"] .explorer .explorer-content {
+    background: rgba(22, 22, 24, 0.97);
   }
 
   .page-title a {
@@ -759,8 +847,6 @@ html body[data-slug="index"] h1.site-title > a[href^="#"] {
   padding: 0.7rem 1.6rem;
   max-width: fit-content;
   background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 999px;
   box-shadow: 0 6px 20px rgba(31, 45, 61, 0.06);
@@ -798,8 +884,6 @@ html body[data-slug="index"] h1.site-title > a[href^="#"] {
   padding: 1rem 1.6rem;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.35);
   box-shadow: 0 6px 20px rgba(31, 45, 61, 0.06);
   font-size: 0.9rem;
@@ -922,8 +1006,6 @@ html[saved-theme="dark"] .notice-contact a {
   padding: 1.75rem 1.25rem;
   min-height: 160px;
   background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(18px) saturate(1.5);
-  -webkit-backdrop-filter: blur(18px) saturate(1.5);
   border: 1px solid rgba(0, 0, 0, 0.25);
   border-radius: 18px;
   box-shadow:
@@ -1047,33 +1129,46 @@ html[saved-theme="dark"] .card-accent-violet {
   --card-ring: 161, 143, 214;
 }
 
-/* 主卡（个人博客）：克制的光晕强调，仅桌面/平板 */
+/* 主卡与副卡保持同一套玻璃卡片语法：主卡仅轻微前置，其他两张稍后，视觉统一且不抢镜头 */
 @media (min-width: 801px) {
+  .card-grid {
+    align-items: flex-start;
+  }
+
   .glass-card.card-primary {
-    border-color: rgba(47, 109, 179, 0.4);
+    position: relative;
+    z-index: 2;
+    margin-top: -6px;
+    border-color: rgba(47, 109, 179, 0.5);
     box-shadow:
-      0 18px 40px -12px rgba(31, 45, 61, 0.14),
-      0 0 0 1px rgba(47, 109, 179, 0.25),
-      inset 0 1px 0 rgba(255, 255, 255, 0.85),
-      inset 0 0 18px rgba(255, 255, 255, 0.32);
+      0 10px 20px -12px rgba(31, 45, 61, 0.16),
+      0 0 0 1px rgba(47, 109, 179, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 0 12px rgba(255, 255, 255, 0.25);
     @include dark {
-      border-color: rgba(109, 155, 208, 0.35);
+      border-color: rgba(109, 155, 208, 0.45);
       box-shadow:
-        0 12px 40px rgba(0, 0, 0, 0.35),
-        0 0 0 1px rgba(109, 155, 208, 0.2);
+        0 8px 20px rgba(0, 0, 0, 0.24),
+        0 0 0 1px rgba(109, 155, 208, 0.16);
     }
+  }
+
+  .glass-card:not(.card-primary) {
+    margin-top: 6px;
+    opacity: 0.98;
   }
 }
 
-/* 中间卡微抬高，打破齐头排队（仅桌面/平板） */
-@media (min-width: 801px) {
-  .glass-card:nth-child(2) {
-    transform: translateY(-8px);
-  }
-  @media (hover: hover) {
-    .glass-card:nth-child(2):hover {
-      transform: translateY(-14px);
-    }
+@media (prefers-reduced-motion: reduce) {
+  html body[data-slug="index"] .glass-card,
+  html body[data-slug="index"] .home-header,
+  html body[data-slug="index"] .welcome-pill,
+  html body[data-slug="index"] .section-eyebrow,
+  html body[data-slug="index"] .friend-link,
+  .glass-card,
+  .card-icon {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
@@ -1096,7 +1191,7 @@ html body[data-slug="index"] .friend-link {
 @keyframes home-rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -1104,9 +1199,11 @@ html body[data-slug="index"] .friend-link {
   }
 }
 
-/* 首页卡片逐个淡入（只动 opacity，不与中间卡抬高的 transform 冲突） */
+/* 首页卡片淡入：仅 opacity，且只在首屏使用；不加 transform / blur，避免额外重绘 */
 html body[data-slug="index"] .glass-card {
-  animation: home-fade 0.55s ease both;
+  opacity: 0;
+  animation: home-fade 0.45s ease forwards;
+  will-change: opacity;
 }
 html body[data-slug="index"] .glass-card:nth-child(1) {
   animation-delay: 0.16s;
@@ -1136,8 +1233,8 @@ html body[data-slug="index"] .glass-card:nth-child(3) {
   inset: 0;
   border-radius: inherit;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.55'/></svg>");
-  background-size: 140px 140px;
-  opacity: 0.035;
+  background-size: 180px 180px;
+  opacity: 0.02;
   pointer-events: none;
   z-index: 1;
 }
@@ -1279,8 +1376,6 @@ html[saved-theme="dark"] .card-spot {
   text-align: left;
   padding: 1.4rem 1.5rem;
   background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(18px) saturate(1.5);
-  -webkit-backdrop-filter: blur(18px) saturate(1.5);
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 14px;
   box-shadow:
@@ -1550,25 +1645,27 @@ html[saved-theme="dark"] .shelf-accent-violet .shelf-icon {
 }
 
 /* ====== 固定顶栏 ====== */
-#top-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 44px;
-  z-index: 10010;
-  background: rgba(255, 255, 255, 0.65);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
-  transition:
-    background 0.3s ease,
-    border-color 0.3s ease;
-}
+ #top-bar {
+   position: fixed;
+   top: 0;
+   left: 0;
+   right: 0;
+   height: 44px;
+   z-index: 10010;
+   background: rgba(255, 255, 255, 0.55);
+   -webkit-backdrop-filter: blur(14px);
+   backdrop-filter: blur(14px);
+   border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+   transition:
+     background 0.3s ease,
+     border-color 0.3s ease;
+ }
 
-html[data-theme="dark"] #top-bar,
-html[saved-theme="dark"] #top-bar {
-  background: rgba(22, 22, 24, 0.65);
-  border-bottom-color: rgba(255, 255, 255, 0.06);
-}
+ html[data-theme="dark"] #top-bar,
+ html[saved-theme="dark"] #top-bar {
+   background: rgba(22, 22, 24, 0.55);
+   border-bottom-color: rgba(255, 255, 255, 0.06);
+ }
 
 .top-bar-inner {
   display: flex;
@@ -1640,10 +1737,9 @@ html[saved-theme="dark"] .hamburger-line {
   width: 300px;
   max-height: calc(100vh - 60px);
   overflow-y: auto;
+  overscroll-behavior: contain;
   z-index: 10013;
   background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 14px;
   padding: 0.8rem;
@@ -1656,10 +1752,53 @@ html[saved-theme="dark"] .hamburger-line {
     transform 0.25s ease;
 }
 
+.hb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.12);
+}
+
+.hb-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--dark);
+}
+
+.hb-close-btn {
+  border: none;
+  background: rgba(128, 128, 128, 0.08);
+  color: var(--dark);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.hb-close-btn:hover {
+  background: rgba(128, 128, 128, 0.16);
+}
+
 html[data-theme="dark"] #hamburger-menu,
 html[saved-theme="dark"] #hamburger-menu {
   background: rgba(22, 22, 24, 0.88);
   border-color: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="dark"] .hb-title,
+html[saved-theme="dark"] .hb-title,
+html[data-theme="dark"] .hb-close-btn,
+html[saved-theme="dark"] .hb-close-btn {
+  color: #ebebec;
 }
 
 #hamburger-menu.open {
@@ -1856,26 +1995,31 @@ html[saved-theme="dark"] .hb-lock-btn.locked {
 /* ====== 移动端适配 ====== */
 @media (max-width: 800px) {
   #top-bar {
-    height: 36px;
+    height: 44px;
   }
   #top-bar .top-bar-inner {
     /* no pointer-events hack: mobile-explorer is above top-bar via z-index */
   }
   .page > #quartz-body {
-    margin-top: 36px;
+    margin-top: 44px;
   }
   #hamburger-menu {
-    top: 36px;
+    top: 44px;
     left: 0;
     right: 0;
     width: 100%;
     max-width: none;
-    height: calc(100dvh - 36px);
-    max-height: calc(100dvh - 36px);
+    height: calc(100vh - 44px);
+    height: calc(100dvh - 44px);
+    max-height: calc(100vh - 44px);
+    max-height: calc(100dvh - 44px);
     border-radius: 0;
     border: none;
     box-shadow: none;
     background: rgba(255, 255, 255, 0.97);
+    /* content-box 下 width:100% + padding 会让菜单超出视口右边缘，
+       音量标签被挤出屏幕（只能看到 1.）；必须 border-box */
+    box-sizing: border-box !important;
   }
   html[data-theme="dark"] #hamburger-menu,
   html[saved-theme="dark"] #hamburger-menu {
@@ -1893,19 +2037,22 @@ html[saved-theme="dark"] .hb-lock-btn.locked {
 
 @media (max-width: 480px) {
   #top-bar {
-    height: 32px;
+    height: 44px;
   }
   .page > #quartz-body {
-    margin-top: 32px;
+    margin-top: 44px;
   }
   .sidebar.left:has(.explorer:not(.collapsed)) {
-    top: 32px !important;
-    height: calc(100dvh - 32px) !important;
+    top: 44px !important;
+    height: calc(100vh - 44px) !important;
+    height: calc(100dvh - 44px) !important;
   }
   #hamburger-menu {
-    top: 32px;
-    height: calc(100dvh - 32px);
-    max-height: calc(100dvh - 32px);
+    top: 44px;
+    height: calc(100vh - 44px);
+    height: calc(100dvh - 44px);
+    max-height: calc(100vh - 44px);
+    max-height: calc(100dvh - 44px);
     padding: 0.6rem;
   }
   .top-bar-title {
@@ -2006,8 +2153,15 @@ html[saved-theme="dark"] .search > .search-container {
 .hb-vol-label {
   font-size: 0.72rem;
   color: var(--gray);
-  min-width: 2.2em;
+  display: inline-block;
+  min-width: 3.4em;
+  width: 3.4em;
   text-align: right;
+  white-space: nowrap;
+  overflow: visible !important;
+  flex-shrink: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Segoe UI", monospace;
+  font-variant-numeric: tabular-nums;
 }
 html[data-theme="dark"] .hb-vol-slider,
 html[saved-theme="dark"] .hb-vol-slider {
@@ -2333,6 +2487,16 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light {
   display: inline;
 }
 
+#nav-toggle-btn.is-open {
+  background: rgba(128, 128, 128, 0.08);
+  border: 1px solid rgba(128, 128, 128, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.sidebar-close-btn {
+  display: none;
+}
+
 /* 调整顶栏内边距适应新按钮 */
 .top-bar-inner {
   padding: 0 0.5rem;
@@ -2344,30 +2508,127 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light {
 }
 
 /* ====== 移动端适配 ====== */
+#sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 12, 0.62);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 10004;
+}
+
+#sidebar-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 @media (max-width: 800px) {
+  .sidebar-close-btn {
+    display: inline-flex !important;
+    align-self: flex-end;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    margin: 0 0 0.15rem auto;
+    border: 1px solid rgba(128, 128, 128, 0.16);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    color: var(--dark);
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    z-index: 1;
+  }
+  .sidebar-close-btn:hover {
+    background: rgba(128, 128, 128, 0.08);
+    border-color: rgba(128, 128, 128, 0.2);
+    transform: translateY(-1px);
+  }
   .left.sidebar {
     position: fixed !important;
-    top: 36px !important;
+    top: 44px !important;
     left: -100vw !important;
     width: 100vw !important;
     max-width: 100vw !important;
-    height: calc(100dvh - 36px) !important;
+    /* dvh 不支持时退化为 vh，保证抽屉始终盖满全屏（否则高度失效=内容高度，下方主页露出可点） */
+    height: calc(100vh - 44px) !important;
+    height: calc(100dvh - 44px) !important;
     border-right: none !important;
+    /* 阻止抽屉内滚动穿透到下方主页（滚动链终止于本元素） */
+    overscroll-behavior: contain !important;
+    /* 框架的移动端规则把侧栏改成横向排列（flex-direction:row），
+       导致抽屉打开后标题/目录乱窜；抽屉必须竖排、可滚动 */
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0.6rem !important;
+    overflow-y: auto !important;
+    padding: 0.8rem 1.2rem 2rem !important;
+    z-index: 10005 !important;
   }
   .left.sidebar.open {
     left: 0 !important;
+  }
+  html[data-theme="dark"] .sidebar-close-btn,
+  html[saved-theme="dark"] .sidebar-close-btn {
+    color: #ebebec;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+  html[data-theme="dark"] .sidebar-close-btn:hover,
+  html[saved-theme="dark"] .sidebar-close-btn:hover {
+    background: rgba(255, 255, 255, 0.09);
   }
 }
 @media (max-width: 480px) {
   .left.sidebar {
     position: fixed !important;
-    top: 32px !important;
+    top: 44px !important;
     left: -100vw !important;
-    height: calc(100dvh - 32px) !important;
+    height: calc(100vh - 44px) !important;
+    height: calc(100dvh - 44px) !important;
   }
   .left.sidebar.open {
     left: 0 !important;
   }
+}
+
+/* ====== 移动端：禁用插件原生 explorer 抽屉，统一使用侧栏抽屉 ======
+ * 插件抽屉（inset:0 全屏滑入）与自定义侧栏抽屉（left:-100vw → 0）
+ * 会同时打开、双层覆盖，产生"标题居中/内容挤顶/难以关闭"的诡异排版。
+ * 这里把插件抽屉改为普通文档流，只保留侧栏抽屉一个全屏导航层。 */
+@media (max-width: 800px) {
+  .explorer .explorer-content {
+    position: static !important;
+    inset: auto !important;
+    z-index: auto !important;
+    transform: none !important;
+    visibility: visible !important;
+    overflow-y: auto !important;
+    margin-top: 0 !important;
+    padding: 0.5rem 0 1rem !important;
+  }
+  /* 侧栏抽屉本身：接近不透明底色，背景图不穿透 */
+  .left.sidebar {
+    background: rgba(250, 248, 248, 0.98) !important;
+    z-index: 10005 !important;
+  }
+  html[data-theme="dark"] .left.sidebar,
+  html[saved-theme="dark"] .left.sidebar {
+    background: rgba(22, 22, 24, 0.98) !important;
+  }
+}
+
+/* ====== 移除 OverflowList 底部渐隐遮罩（滚动提示效果） ====== */
+ul.overflow.gradient-active,
+ol.overflow.gradient-active {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
 }
 
 /* ====== 移动端面板：恢复内容顺序（插件 order:-1 / margin:auto 干扰布局） ====== */
@@ -2376,6 +2637,15 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light {
     order: 0 !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
+    /* 插件移动端规则把 explorer 压成 ~50px 并裁剪内容（overflow:hidden +
+       align-self:flex-start），目录只显示“半行字”；必须占满宽度并完整展开 */
+    align-self: stretch !important;
+    flex: none !important;
+    flex-shrink: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    width: 100% !important;
   }
 }
 
@@ -2683,6 +2953,29 @@ html.lb-lock body {
       background: rgba(22, 22, 24, 0.85);
     }
   }
+}
+
+/* ====== 锚点跳转不被固定顶栏遮挡 ====== */
+h1[id],
+h2[id],
+h3[id],
+h4[id],
+h5[id],
+h6[id] {
+  scroll-margin-top: 4.5rem;
+}
+
+/* ====== 阅读进度条 ====== */
+#reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 3px;
+  z-index: 12000;
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--secondary), var(--tertiary));
+  transition: width 0.12s linear;
 }
 
 /* ====== 适配减少动效偏好 ====== */

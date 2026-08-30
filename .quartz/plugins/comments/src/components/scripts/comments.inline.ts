@@ -114,17 +114,13 @@ if (typeof document !== "undefined") {
     if (!giscusContainer) {
       return;
     }
-
-    giscusTimeout = setTimeout(() => {
-      const container = document.querySelector(".giscus") as HTMLElement | null;
-      if (container && !container.querySelector("iframe.giscus-frame")) {
-        container.style.display = "none";
-      }
-    }, 8000);
-    addCleanup(() => { if (giscusTimeout) { clearTimeout(giscusTimeout); giscusTimeout = null; } });
+    if (giscusContainer.querySelector("iframe.giscus-frame")) {
+      return;
+    }
 
     // 懒加载：滚动到评论区附近才注入 giscus client.js，
-    // 避免切页 / 首屏每次都请求 giscus.app 拖慢加载
+    // 避免切页 / 首屏每次都请求 giscus.app 拖慢加载；
+    // 进入评论区可视范围即自动加载，无需用户点击
     if ("IntersectionObserver" in window) {
       const observer = new IntersectionObserver(
         (entries) => {

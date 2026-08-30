@@ -203,6 +203,11 @@ plugins:
       group: toolbar
   - source: github:quartz-community/breadcrumbs
     enabled: true
+    options:
+      rootName: 主页
+      spacerSymbol: "❯"
+      resolveFrontmatterTitle: true
+      showCurrentPage: true
     layout:
       position: beforeBody
       priority: 5
