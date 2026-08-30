@@ -8,10 +8,22 @@
  *  - 音频（mp3/m4a 等）：不拦截，交给页面内的 Cache API 处理（Range 请求直接走网络）
  *  - 更新缓存版本时只需改 VERSION
  */
-var VERSION = "v3"
+var VERSION = "v4"
 var CACHE_NAME = "homewardbird-site-" + VERSION
 
-var PRECACHE_URLS = ["/", "/quotes.json", "/static/contentIndex.json"]
+var PRECACHE_URLS = [
+  "/",
+  "/quotes.json",
+  "/static/contentIndex.json",
+  "/static/blur/light_bg.webp?v=3",
+  "/static/blur/dark_bg.webp?v=3",
+  "/static/blur/light.webp?v=3",
+  "/static/blur/dark.webp?v=3",
+  "/static/light_bg.webp?v=3",
+  "/static/dark_bg.webp?v=3",
+  "/static/light.webp?v=3",
+  "/static/dark.webp?v=3",
+]
 
 self.addEventListener("install", function (event) {
   event.waitUntil(

@@ -1716,6 +1716,33 @@
   document.addEventListener("nav", bttOnScroll)
 
   // ====================================================================
+  //  阅读进度条：顶部细条显示文章阅读进度
+  //  注意：SPA 导航会 micromorph 整个 <body>，进度条节点会被清掉，
+  //  所以 nav 时也要幂等重建（ensureReadingProgress）。
+  // ====================================================================
+  var _rpTicking = false
+  function rpOnScroll() {
+    if (_rpTicking) return
+    _rpTicking = true
+    requestAnimationFrame(function () {
+      var h = document.documentElement
+      var max = h.scrollHeight - h.clientHeight
+      var p = max > 0 ? window.scrollY / max : 0
+      var bar = document.getElementById("reading-progress")
+      if (bar) bar.style.width = Math.min(100, Math.max(0, p * 100)).toFixed(2) + "%"
+      _rpTicking = false
+    })
+  }
+  function ensureReadingProgress() {
+    if (document.getElementById("reading-progress")) return
+    var el = document.createElement("div")
+    el.id = "reading-progress"
+    document.body.appendChild(el)
+  }
+  window.addEventListener("scroll", rpOnScroll, { passive: true })
+  document.addEventListener("nav", ensureReadingProgress)
+
+  // ====================================================================
   //  背景图空闲预载：首屏只下载当前主题的图（display:none 的图层不下载），
   //  尽早用低优先级预载另一主题的图，切主题时直接命中缓存、秒换不卡。
   // ====================================================================
@@ -1754,6 +1781,7 @@
     getBp()
     registerSW()
     initBackToTop()
+    ensureReadingProgress()
     rebuildUI()
     injectHomeLink()
     hideNavItem("个人博客")
