@@ -208,12 +208,12 @@ body {
 /* 极小模糊占位图（~1KB）：先渲染，高清图就绪后淡入覆盖 */
 .bg-layer .bg-thumb {
   transform: scale(1.12);
-  filter: blur(6px) brightness(1) contrast(0.98) saturate(0.85);
+  filter: contrast(0.98) saturate(0.85);
 }
 .bg-layer .bg-full {
   opacity: 0;
   transition: opacity 0.8s ease;
-  filter: blur(3px) brightness(1) contrast(0.98) saturate(0.85);
+  filter: contrast(0.98) saturate(0.85);
 }
 .bg-layer .bg-full.loaded {
   opacity: 1;
@@ -222,7 +222,7 @@ body {
 /* 白天模式：提亮 + 降饱和，避免插画上盖白蒙版导致的“蒙灰感” */
 #bg-image-light .bg-full,
 #bg-image-light-pc .bg-full {
-  filter: blur(3px) brightness(1.1) contrast(0.98) saturate(0.72);
+  filter: brightness(1.1) contrast(0.98) saturate(0.72);
 }
 
 /* 移动端：亮/暗切换（light_bg / dark_bg） */
@@ -510,11 +510,9 @@ html[saved-theme="dark"] .hb-music-btn {
     }
   }
 
-  /* Explorer 打开时：全屏毛玻璃覆盖 */
+  /* Explorer 打开时：全屏半透明覆盖 */
   .sidebar.left:has(.explorer:not(.collapsed)) {
     background: rgba(255, 255, 255, 0.68) !important;
-    -webkit-backdrop-filter: blur(24px) !important;
-    backdrop-filter: blur(24px) !important;
     border-bottom: none;
     padding: 1rem !important;
     position: fixed !important;
@@ -759,8 +757,6 @@ html body[data-slug="index"] h1.site-title > a[href^="#"] {
   padding: 0.7rem 1.6rem;
   max-width: fit-content;
   background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 999px;
   box-shadow: 0 6px 20px rgba(31, 45, 61, 0.06);
@@ -798,8 +794,6 @@ html body[data-slug="index"] h1.site-title > a[href^="#"] {
   padding: 1rem 1.6rem;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.35);
   box-shadow: 0 6px 20px rgba(31, 45, 61, 0.06);
   font-size: 0.9rem;
@@ -922,8 +916,6 @@ html[saved-theme="dark"] .notice-contact a {
   padding: 1.75rem 1.25rem;
   min-height: 160px;
   background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(18px) saturate(1.5);
-  -webkit-backdrop-filter: blur(18px) saturate(1.5);
   border: 1px solid rgba(0, 0, 0, 0.25);
   border-radius: 18px;
   box-shadow:
@@ -1279,8 +1271,6 @@ html[saved-theme="dark"] .card-spot {
   text-align: left;
   padding: 1.4rem 1.5rem;
   background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(18px) saturate(1.5);
-  -webkit-backdrop-filter: blur(18px) saturate(1.5);
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 14px;
   box-shadow:
@@ -1642,8 +1632,6 @@ html[saved-theme="dark"] .hamburger-line {
   overflow-y: auto;
   z-index: 10013;
   background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 14px;
   padding: 0.8rem;
