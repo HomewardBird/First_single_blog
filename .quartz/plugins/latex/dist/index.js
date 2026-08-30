@@ -233911,12 +233911,35 @@ var Latex = (opts) => {
       switch (engine) {
         case "katex":
           return {
-            css: [{ content: "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" }],
             js: [
               {
-                src: "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js",
                 loadTime: "afterDOMReady",
-                contentType: "external"
+                contentType: "inline",
+                script: `(function () {
+  var KATEX_CSS = "/static/katex/katex.min.css"
+  var KATEX_JS = "/static/katex/copy-tex.min.js"
+  var loaded = false
+  function ensureKatex() {
+    if (loaded) return
+    if (!document.querySelector(".katex")) return
+    loaded = true
+    if (!document.querySelector('link[href="' + KATEX_CSS + '"]')) {
+      var link = document.createElement("link")
+      link.rel = "stylesheet"
+      link.href = KATEX_CSS
+      document.head.appendChild(link)
+    }
+    if (!document.querySelector('script[src="' + KATEX_JS + '"]')) {
+      var script = document.createElement("script")
+      script.src = KATEX_JS
+      script.async = true
+      document.head.appendChild(script)
+    }
+  }
+  document.addEventListener("DOMContentLoaded", ensureKatex)
+  document.addEventListener("nav", ensureKatex)
+  ensureKatex()
+})()`
               }
             ]
           };

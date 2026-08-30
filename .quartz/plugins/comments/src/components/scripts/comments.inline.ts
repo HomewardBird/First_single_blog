@@ -68,27 +68,11 @@ const addCleanup = (fn: () => void) => {
 if (typeof document !== "undefined") {
   let giscusTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  const setupComments = () => {
-    cleanup.forEach((fn) => fn());
-    cleanup.length = 0;
-
-    if (giscusTimeout) { clearTimeout(giscusTimeout); giscusTimeout = null; }
-
-    const slug = document.body.getAttribute("data-slug");
-    if (slug === "index") return;
-
+  const injectGiscus = () => {
     const giscusContainer = document.querySelector(".giscus") as GiscusElement;
-    if (!giscusContainer) {
-      return;
-    }
-
-    giscusTimeout = setTimeout(() => {
-      const container = document.querySelector(".giscus") as HTMLElement | null;
-      if (container && !container.querySelector("iframe.giscus-frame")) {
-        container.style.display = "none";
-      }
-    }, 8000);
-    addCleanup(() => { if (giscusTimeout) { clearTimeout(giscusTimeout); giscusTimeout = null; } });
+    if (!giscusContainer) return;
+    if (giscusContainer.querySelector("iframe.giscus-frame")) return;
+    if (giscusContainer.querySelector('script[src*="giscus.app"]')) return;
 
     const giscusScript = document.createElement("script");
     giscusScript.src = "https://giscus.app/client.js";
@@ -115,6 +99,47 @@ if (typeof document !== "undefined") {
     const themeChangeHandler = changeTheme;
     document.addEventListener("themechange", themeChangeHandler);
     addCleanup(() => document.removeEventListener("themechange", themeChangeHandler));
+  };
+
+  const setupComments = () => {
+    cleanup.forEach((fn) => fn());
+    cleanup.length = 0;
+
+    if (giscusTimeout) { clearTimeout(giscusTimeout); giscusTimeout = null; }
+
+    const slug = document.body.getAttribute("data-slug");
+    if (slug === "index") return;
+
+    const giscusContainer = document.querySelector(".giscus") as GiscusElement;
+    if (!giscusContainer) {
+      return;
+    }
+
+    giscusTimeout = setTimeout(() => {
+      const container = document.querySelector(".giscus") as HTMLElement | null;
+      if (container && !container.querySelector("iframe.giscus-frame")) {
+        container.style.display = "none";
+      }
+    }, 8000);
+    addCleanup(() => { if (giscusTimeout) { clearTimeout(giscusTimeout); giscusTimeout = null; } });
+
+    // 懒加载：滚动到评论区附近才注入 giscus client.js，
+    // 避免切页 / 首屏每次都请求 giscus.app 拖慢加载
+    if ("IntersectionObserver" in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            observer.disconnect();
+            injectGiscus();
+          }
+        },
+        { rootMargin: "600px 0px" },
+      );
+      observer.observe(giscusContainer);
+      addCleanup(() => observer.disconnect());
+    } else {
+      injectGiscus();
+    }
   };
 
   document.addEventListener("nav", setupComments);

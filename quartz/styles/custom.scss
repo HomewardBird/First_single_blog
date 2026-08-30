@@ -241,12 +241,20 @@ html[saved-theme="dark"] #bg-image-dark {
   display: block;
 }
 
-/* PC：统一用 light.jpg（dark 素材未授权） */
+/* PC：亮/暗切换（light.jpg / dark.webp） */
 #bg-image-light-pc {
   display: block;
 }
 #bg-image-dark-pc {
   display: none;
+}
+html[data-theme="dark"] #bg-image-light-pc,
+html[saved-theme="dark"] #bg-image-light-pc {
+  display: none;
+}
+html[data-theme="dark"] #bg-image-dark-pc,
+html[saved-theme="dark"] #bg-image-dark-pc {
+  display: block;
 }
 
 @media (max-width: 768px) {

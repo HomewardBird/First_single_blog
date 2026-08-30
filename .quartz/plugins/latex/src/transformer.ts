@@ -69,13 +69,38 @@ export const Latex: QuartzTransformerPlugin<Partial<LatexOptions>> = (opts) => {
     externalResources() {
       switch (engine) {
         case "katex":
+          // 懒加载：只有页面真正包含 .katex 元素时才注入 KaTeX 的 CSS / 复制脚本，
+          // 无公式页面不再白白请求这两份资源。
           return {
-            css: [{ content: "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" }],
             js: [
               {
-                src: "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js",
                 loadTime: "afterDOMReady",
-                contentType: "external",
+                contentType: "inline",
+                script: `(function () {
+  var KATEX_CSS = "/static/katex/katex.min.css"
+  var KATEX_JS = "/static/katex/copy-tex.min.js"
+  var loaded = false
+  function ensureKatex() {
+    if (loaded) return
+    if (!document.querySelector(".katex")) return
+    loaded = true
+    if (!document.querySelector('link[href="' + KATEX_CSS + '"]')) {
+      var link = document.createElement("link")
+      link.rel = "stylesheet"
+      link.href = KATEX_CSS
+      document.head.appendChild(link)
+    }
+    if (!document.querySelector('script[src="' + KATEX_JS + '"]')) {
+      var script = document.createElement("script")
+      script.src = KATEX_JS
+      script.async = true
+      document.head.appendChild(script)
+    }
+  }
+  document.addEventListener("DOMContentLoaded", ensureKatex)
+  document.addEventListener("nav", ensureKatex)
+  ensureKatex()
+})()`,
               },
             ],
           };

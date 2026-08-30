@@ -118,8 +118,7 @@
   function prefetchNextTrack() {
     if (!cacheSupported()) return
     try {
-      var conn =
-        navigator.connection || navigator.mozConnection || navigator.webkitConnection
+      var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection
       if (
         conn &&
         (conn.saveData || conn.effectiveType === "slow-2g" || conn.effectiveType === "2g")
@@ -152,7 +151,8 @@
     prefetchNextTrack()
   }
 
-  // 播放看门狗：发出播放请求后长时间无进展（网络卡住）则自动跳过
+  // 播放看门狗：发出播放请求后长时间无进展（网络卡住）则自动跳过。
+  // 大文件 + 弱网下 6 秒远远不够（可能还在缓冲），给足 20 秒并区分提示。
   var _watchdog = null
   function clearWatchdog() {
     if (_watchdog) {
@@ -165,7 +165,22 @@
     _watchdog = setTimeout(function () {
       if (audio.paused || audio.ended) return
       if (audio.readyState >= 2) return
-      _showToast("音频加载超时，跳过")
+      var waited = 20000
+      var buf = audio.buffered
+      var hasProgress = buf && buf.length > 0 && buf.end(buf.length - 1) > 0.5
+      if (hasProgress) {
+        // 有实际下载进度，再给 20 秒（大文件弱网首载就是慢）
+        _showToast("音乐加载中，网络较慢请稍候…")
+        _watchdog = setTimeout(function () {
+          if (audio.paused || audio.ended) return
+          if (audio.readyState >= 2) return
+          _showToast("音频加载超时，已跳过")
+          loadTrack(cur + 1, safePlay)
+          _notify()
+        }, waited)
+        return
+      }
+      _showToast("音频加载超时，已跳过")
       loadTrack(cur + 1, safePlay)
       _notify()
     }, 6000)
@@ -173,6 +188,9 @@
   function safePlay() {
     armWatchdog()
     audio.play().catch(function () {
+      // play() 在缓冲不足时会 reject（AbortError），不是真失败，
+      // 交给看门狗继续等待缓冲，避免误报"播放失败"
+      if (audio.readyState < 2) return
       clearWatchdog()
       _showToast("播放失败")
     })
@@ -387,6 +405,8 @@
     setupBgBlurUp()
     injectHomeLink()
     hideNavItem("个人博客")
+    // SPA 导航会 micromorph 整个 <body>，重建被清掉的回到顶部按钮
+    initBackToTop()
     // explorer 树可能晚于 nav 渲染，延迟重试
     setTimeout(function () {
       hideNavItem("个人博客")
@@ -523,9 +543,9 @@
         diP = document.getElementById("bg-image-dark-pc")
       if (li) li.style.opacity = dark ? "0" : "1"
       if (di) di.style.opacity = dark ? "1" : "0"
-      // PC：暗色模式也保持 light.jpg
-      if (liP) liP.style.opacity = "1"
-      if (diP) diP.style.opacity = "0"
+      // PC：亮/暗各用一张图（light.webp / dark.webp）
+      if (liP) liP.style.opacity = dark ? "0" : "1"
+      if (diP) diP.style.opacity = dark ? "1" : "0"
       ov.style.background = ""
       ov.style.backdropFilter = ""
       ov.style.webkitBackdropFilter = ""
@@ -1656,14 +1676,25 @@
     _swRegistered = true
     if (!("serviceWorker" in navigator) || !window.isSecureContext) return
     if (location.hostname === "localhost" || location.hostname === "127.0.0.1") return
-    navigator.serviceWorker
-      .register(getBp() + "/sw.js")
-      .catch(function () {})
+    navigator.serviceWorker.register(getBp() + "/sw.js").catch(function () {})
   }
 
   // ====================================================================
   //  回到顶部按钮：滚动超过一屏才淡入，平时完全不可见，不干扰阅读
+  //  注意：SPA 导航会 micromorph 整个 <body>，直接挂在 body 上的节点
+  //  会被清掉，所以 nav 时也要重新创建（initBackToTop 幂等）。
   // ====================================================================
+  var _bttShown = false
+  function bttOnScroll() {
+    var btn = document.getElementById("back-to-top")
+    if (!btn) return
+    var y = window.scrollY || document.documentElement.scrollTop || 0
+    var show = y > 500
+    if (show !== _bttShown) {
+      _bttShown = show
+      btn.classList.toggle("show", show)
+    }
+  }
   function initBackToTop() {
     if (document.getElementById("back-to-top")) return
     var btn = document.createElement("button")
@@ -1673,15 +1704,6 @@
     btn.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg>'
     document.body.appendChild(btn)
-    var shown = false
-    function onScroll() {
-      var y = window.scrollY || document.documentElement.scrollTop || 0
-      var show = y > 500
-      if (show !== shown) {
-        shown = show
-        btn.classList.toggle("show", show)
-      }
-    }
     btn.addEventListener("click", function () {
       try {
         window.scrollTo({ top: 0, behavior: "smooth" })
@@ -1689,9 +1711,40 @@
         window.scrollTo(0, 0)
       }
     })
-    window.addEventListener("scroll", onScroll, { passive: true })
-    document.addEventListener("nav", onScroll)
-    onScroll()
+  }
+  window.addEventListener("scroll", bttOnScroll, { passive: true })
+  document.addEventListener("nav", bttOnScroll)
+
+  // ====================================================================
+  //  背景图空闲预载：首屏只下载当前主题的图（display:none 的图层不下载），
+  //  尽早用低优先级预载另一主题的图，切主题时直接命中缓存、秒换不卡。
+  // ====================================================================
+  var _bgPreloaded = false
+  function preloadOtherThemeBg() {
+    if (_bgPreloaded) return
+    _bgPreloaded = true
+    var dark = isDark()
+    var isMobile = window.matchMedia && window.matchMedia("(max-width: 768px)").matches
+    var otherId = isMobile
+      ? dark
+        ? "bg-image-light"
+        : "bg-image-dark"
+      : dark
+        ? "bg-image-light-pc"
+        : "bg-image-dark-pc"
+    var other = document.getElementById(otherId)
+    if (!other) return
+    var full = other.querySelector(".bg-full")
+    var thumb = other.querySelector(".bg-thumb")
+    ;[full, thumb].forEach(function (img) {
+      if (img && img.getAttribute("src")) {
+        var pre = new Image()
+        pre.fetchPriority = "low"
+        pre.src = img.getAttribute("src")
+      }
+    })
+    // 预载后切主题：display 由 CSS 切换，setBg 只改 opacity，
+    // 另一主题的图已在浏览器缓存中，无网络等待。
   }
 
   // ====================================================================
@@ -1711,6 +1764,15 @@
     restoreBg()
     restoreFontColor()
     restoreLock()
+
+    // 不等 window.load：首帧渲染后立即用低优先级预载另一主题的图，
+    // 首次切主题时基本已缓存，不会卡。
+    var rq =
+      window.requestIdleCallback ||
+      function (fn) {
+        setTimeout(fn, 2000)
+      }
+    rq(preloadOtherThemeBg, { timeout: 2500 })
 
     var slug = getSlug()
     if (localStorage.getItem(LOCK_KEY) !== "true" && slug !== "index") {
@@ -1902,8 +1964,8 @@
         diP = document.getElementById("bg-image-dark-pc")
       if (li) li.style.opacity = dark ? "0" : "1"
       if (di) di.style.opacity = dark ? "1" : "0"
-      if (liP) liP.style.opacity = "1"
-      if (diP) diP.style.opacity = "0"
+      if (liP) liP.style.opacity = dark ? "0" : "1"
+      if (diP) diP.style.opacity = dark ? "1" : "0"
     }
     var fc = localStorage.getItem(FONT_COLOR_KEY)
     if (fc === "auto" || !fc) setFontColor("auto")

@@ -3,10 +3,12 @@
  * 策略：
  *  - 站内所有 GET 请求（页面 HTML、css/js、图片、json）：stale-while-revalidate
  *    —— 先读缓存秒开，后台再用网络更新，再次访问几乎无延迟
+ *  - 安装时解析首页 HTML，把其引用的 css/js 一并预缓存，
+ *    二次进入时 HTML + 全部静态资源都命中缓存 → 秒开
  *  - 音频（mp3/m4a 等）：不拦截，交给页面内的 Cache API 处理（Range 请求直接走网络）
  *  - 更新缓存版本时只需改 VERSION
  */
-var VERSION = "v1"
+var VERSION = "v2"
 var CACHE_NAME = "homewardbird-site-" + VERSION
 
 var PRECACHE_URLS = ["/", "/quotes.json", "/static/contentIndex.json"]
@@ -16,9 +18,36 @@ self.addEventListener("install", function (event) {
     caches
       .open(CACHE_NAME)
       .then(function (cache) {
-        return cache.addAll(PRECACHE_URLS)
+        return cache.addAll(PRECACHE_URLS).catch(function () {})
       })
-      .catch(function () {}),
+      .then(function () {
+        // 预缓存首页引用的 css/js（文件名带 hash，每次构建会变，
+        // 所以安装时动态解析首页 HTML 提取，而不是写死）
+        return fetch("/", { cache: "no-store" })
+          .then(function (res) {
+            if (!res.ok) return
+            return res.text()
+          })
+          .then(function (html) {
+            if (!html) return
+            var urls = []
+            var re = /(?:href|src)="([^"]+\.(?:css|js))"/g
+            var m
+            while ((m = re.exec(html))) urls.push(m[1])
+            if (!urls.length) return
+            return caches.open(CACHE_NAME).then(function (cache) {
+              var abs = urls.map(function (u) {
+                return u.charAt(0) === "/" ? u : new URL(u, self.location.origin).pathname
+              })
+              return Promise.allSettled(
+                abs.map(function (u) {
+                  return cache.add(u)
+                }),
+              )
+            })
+          })
+          .catch(function () {})
+      }),
   )
   self.skipWaiting()
 })
