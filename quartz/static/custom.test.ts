@@ -108,6 +108,16 @@ describe("topbar 交互", () => {
     assert.ok(!t.isMenuOpen(), "点击外部关闭")
   })
 
+  test("右侧菜单：顶部关闭按钮可直接关闭", () => {
+    const t = setup()
+    t.click("#hamburger-btn")
+    assert.ok(t.isMenuOpen(), "面板打开")
+    const closeBtn = t.document.querySelector("#hamburger-close-btn")
+    assert.ok(closeBtn, "存在关闭按钮")
+    t.click("#hamburger-close-btn")
+    assert.ok(!t.isMenuOpen(), "点击关闭按钮后关闭")
+  })
+
   test("SPA 导航后绑定不丢失", () => {
     const t = setup()
     const bodyHtml = HTML.match(/<body>[\s\S]*<\/body>/)![0].replace(/<\/?body>/g, "")

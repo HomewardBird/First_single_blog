@@ -781,6 +781,10 @@
       .join("")
 
     return [
+      '<div class="hb-header">',
+      '<div class="hb-title">设置</div>',
+      '<button id="hamburger-close-btn" class="hb-close-btn" type="button" aria-label="关闭菜单">✕</button>',
+      "</div>",
       '<div class="hb-section"><div class="hb-title">🔅 外观</div>',
       '<div class="hb-sub">字体大小</div><div class="hb-row">',
       fHtml,
@@ -832,6 +836,14 @@
     document.querySelectorAll(".hb-lock-btn").forEach(function (b) {
       b.addEventListener("click", toggleLock)
     })
+    var closeBtn = document.getElementById("hamburger-close-btn")
+    if (closeBtn && !_handlerSet.has(closeBtn)) {
+      _handlerSet.add(closeBtn)
+      closeBtn.addEventListener("click", function (e) {
+        e.stopPropagation()
+        closeHamburger()
+      })
+    }
     ;[
       [
         ".hb-music-play",
