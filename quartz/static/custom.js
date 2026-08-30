@@ -151,7 +151,8 @@
     prefetchNextTrack()
   }
 
-  // 播放看门狗：发出播放请求后长时间无进展（网络卡住）则自动跳过
+  // 播放看门狗：发出播放请求后长时间无进展（网络卡住）则自动跳过。
+  // 大文件 + 弱网下 6 秒远远不够（可能还在缓冲），给足 20 秒并区分提示。
   var _watchdog = null
   function clearWatchdog() {
     if (_watchdog) {
@@ -164,7 +165,22 @@
     _watchdog = setTimeout(function () {
       if (audio.paused || audio.ended) return
       if (audio.readyState >= 2) return
-      _showToast("音频加载超时，跳过")
+      var waited = 20000
+      var buf = audio.buffered
+      var hasProgress = buf && buf.length > 0 && buf.end(buf.length - 1) > 0.5
+      if (hasProgress) {
+        // 有实际下载进度，再给 20 秒（大文件弱网首载就是慢）
+        _showToast("音乐加载中，网络较慢请稍候…")
+        _watchdog = setTimeout(function () {
+          if (audio.paused || audio.ended) return
+          if (audio.readyState >= 2) return
+          _showToast("音频加载超时，已跳过")
+          loadTrack(cur + 1, safePlay)
+          _notify()
+        }, waited)
+        return
+      }
+      _showToast("音频加载超时，已跳过")
       loadTrack(cur + 1, safePlay)
       _notify()
     }, 6000)
@@ -172,6 +188,9 @@
   function safePlay() {
     armWatchdog()
     audio.play().catch(function () {
+      // play() 在缓冲不足时会 reject（AbortError），不是真失败，
+      // 交给看门狗继续等待缓冲，避免误报"播放失败"
+      if (audio.readyState < 2) return
       clearWatchdog()
       _showToast("播放失败")
     })
