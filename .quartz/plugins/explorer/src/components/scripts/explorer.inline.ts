@@ -164,6 +164,41 @@ async function buildFileTrie(dataFns) {
 // Render generation to prevent race conditions
 let currentRenderGeneration = 0;
 
+// Cache the built trie and rendered tree HTML across navigations.
+// The sidebar tree is identical on every page, so rebuilding it node-by-node
+// on each nav is pure waste (the main cause of janky page switches).
+// We only need to re-apply: saved folder state + active file highlight + scroll.
+let cachedTrie = null;
+let cachedTreeHtml = null;
+let cachedDataFnsKey = null;
+
+function applyActiveAndState(explorerUl, currentSlug, savedState) {
+  const simplifiedCurrentSlug = simplifySlug(currentSlug);
+
+  // Active file highlight
+  const links = explorerUl.querySelectorAll("a.nav-file-title");
+  for (const link of links) {
+    const isActive = link.getAttribute("href") === resolveBasePath(currentSlug);
+    link.classList.toggle("active", isActive);
+    link.classList.toggle("is-active", isActive);
+  }
+
+  // Saved folder collapse state (defaults: collapsed), with folders that
+  // are a prefix of the current slug forced open
+  const containers = explorerUl.querySelectorAll(".folder-container");
+  for (const folderContainer of containers) {
+    const outer = folderContainer.nextElementSibling;
+    if (!outer) continue;
+    const path = folderContainer.dataset.folderpath;
+    const isCollapsed = savedState[path] !== undefined ? savedState[path] : true;
+    const simpleFolderPath = simplifySlug(path);
+    const isPrefix =
+      simpleFolderPath &&
+      simpleFolderPath === simplifiedCurrentSlug.slice(0, simpleFolderPath.length);
+    outer.classList.toggle("open", !isCollapsed || isPrefix);
+  }
+}
+
 // Render the file tree
 function renderTree(node, container, currentSlug, folderBehavior, savedState, pathPrefix = "") {
   const folderTemplate = document.getElementById("template-folder");
@@ -237,10 +272,8 @@ function renderTree(node, container, currentSlug, folderBehavior, savedState, pa
 async function handleNavOrRender(e) {
   const thisGeneration = ++currentRenderGeneration;
   try {
-    console.log("[Explorer] Nav event received, generation:", thisGeneration);
     const currentSlug = (e.detail?.url || "").replace(/^\/+/, "");
     const allExplorers = document.querySelectorAll("div.explorer");
-    console.log("[Explorer] Found", allExplorers.length, "explorers");
 
     const savedState = {};
     try {
@@ -252,6 +285,18 @@ async function handleNavOrRender(e) {
       console.error("[Explorer] Error loading saved state:", e);
     }
 
+    const firstExplorer = allExplorers[0];
+    const dataFns = firstExplorer?.dataset.dataFns || null;
+    const dataFnsKey = dataFns || "";
+
+    // Only rebuild the tree when the data functions config changes;
+    // otherwise reuse the cached trie (content index never changes mid-session)
+    if (!cachedTrie || cachedDataFnsKey !== dataFnsKey) {
+      cachedDataFnsKey = dataFnsKey;
+      cachedTrie = await buildFileTrie(dataFns);
+      cachedTreeHtml = null;
+    }
+
     for (const explorer of allExplorers) {
       const explorerUl = explorer.querySelector(".explorer-ul");
       if (!explorerUl) {
@@ -259,46 +304,31 @@ async function handleNavOrRender(e) {
         continue;
       }
 
-      // Clear existing content
-      explorerUl.innerHTML = '<li class="overflow-end"></li>';
-
-      // Get data functions configuration
-      const dataFns = explorer.dataset.dataFns;
       const folderBehavior = explorer.dataset.behavior || "collapse";
 
-      // Build and render the tree
-      console.log("[Explorer] Starting tree build...");
-      const trie = await buildFileTrie(dataFns);
-
-      // Check if another nav event started while we were fetching
-      if (thisGeneration === currentRenderGeneration) {
-        console.log("[Explorer] Render generation is current, rendering tree");
-        console.log("[Explorer] Trie result:", trie ? "success" : "null");
-        if (trie && trie.children && trie.children.length > 0) {
-          // Clear again before rendering to ensure clean state
-          explorerUl.innerHTML = '<li class="overflow-end"></li>';
-
-          console.log("[Explorer] Rendering", trie.children.length, "children");
-          for (const child of trie.children) {
-            renderTree(child, explorerUl, currentSlug, folderBehavior, savedState, "");
-          }
-          console.log("[Explorer] Render complete, final list length:", explorerUl.children.length);
-        } else {
-          console.warn("[Explorer] No trie or empty children");
+      if (!cachedTreeHtml && cachedTrie && cachedTrie.children && cachedTrie.children.length > 0) {
+        explorerUl.innerHTML = '<li class="overflow-end"></li>';
+        for (const child of cachedTrie.children) {
+          renderTree(child, explorerUl, currentSlug, folderBehavior, savedState, "");
         }
+        cachedTreeHtml = explorerUl.innerHTML;
+      } else if (cachedTreeHtml) {
+        explorerUl.innerHTML = cachedTreeHtml;
+      }
 
-        // restore scrollTop position or scroll to active element
-        const scrollTop = sessionStorage.getItem("explorerScrollTop");
-        if (scrollTop) {
-          explorerUl.scrollTop = parseInt(scrollTop, 10);
-        } else {
-          const activeElement = explorerUl.querySelector(".active");
-          if (activeElement) {
-            activeElement.scrollIntoView({ behavior: "smooth" });
-          }
-        }
+      if (cachedTrie && cachedTrie.children && cachedTrie.children.length > 0) {
+        applyActiveAndState(explorerUl, currentSlug, savedState);
+      }
+
+      // restore scrollTop position or scroll to active element
+      const scrollTop = sessionStorage.getItem("explorerScrollTop");
+      if (scrollTop) {
+        explorerUl.scrollTop = parseInt(scrollTop, 10);
       } else {
-        console.log("[Explorer] Stale render generation, skipping tree render");
+        const activeElement = explorerUl.querySelector(".active");
+        if (activeElement) {
+          activeElement.scrollIntoView({ behavior: "smooth" });
+        }
       }
 
       // Always set up event listeners, regardless of render generation

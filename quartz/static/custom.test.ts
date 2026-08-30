@@ -167,8 +167,33 @@ describe("焦点管理", () => {
   })
 })
 
-describe("quotes 缓存", () => {
-  test("quotes 加载失败回退文案", async () => {
+describe("回到顶部按钮", () => {
+  test("SPA 导航后重建（micromorph 会清掉 body 上的按钮）", () => {
+    const t = setup()
+    const btn = () => t.document.getElementById("back-to-top")
+    assert.ok(btn(), "首次加载即创建按钮")
+    // 模拟 SPA 导航：micromorph 用服务端新 body 替换当前 body
+    const bodyHtml = HTML.match(/<body>[\s\S]*<\/body>/)![0].replace(/<\/?body>/g, "")
+    for (let i = 0; i < 3; i++) {
+      t.document.body.innerHTML = bodyHtml
+      t.document.dispatchEvent(new t.window.UIEvent("nav"))
+    }
+    assert.ok(btn(), "多次导航后按钮被重建")
+  })
+
+  test("滚动超过一屏才显示，回顶后隐藏", () => {
+    const t = setup()
+    const btn = () => t.document.getElementById("back-to-top")!
+    Object.defineProperty(t.window, "scrollY", { value: 800, configurable: true })
+    t.window.dispatchEvent(new t.window.Event("scroll"))
+    assert.ok(btn().classList.contains("show"), "滚动 800px 后显示")
+    Object.defineProperty(t.window, "scrollY", { value: 0, configurable: true })
+    t.window.dispatchEvent(new t.window.Event("scroll"))
+    assert.ok(!btn().classList.contains("show"), "回到顶部后隐藏")
+  })
+})
+
+describe("quotes 缓存", () => {  test("quotes 加载失败回退文案", async () => {
     const t = setup()
     // jsdom 中 fetch 不可用（或 404），应回退到欢迎文案而非抛错
     await new Promise((r) => setTimeout(r, 30))

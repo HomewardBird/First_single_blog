@@ -410,14 +410,16 @@ export const ComponentResources: QuartzEmitterPlugin = () => {
         include: Features.MediaQueries,
       }).code.toString()
 
+      // Merge all component CSS into a single file to cut ~18 requests down to 1.
+      // This matters most for the first visit on slow networks: each <link> costs
+      // a full round-trip (DNS/TLS/TTFB) even when the files are small.
       const cssStringToFilename = new Map<string, string>()
-      for (const cssString of componentResources.componentCssStrings) {
-        if (cssStringToFilename.has(cssString)) continue
-
-        const wrapped = `@layer quartz-base {\n${cssString}\n}`
+      const componentCssStrings = [...componentResources.componentCssStrings]
+      if (componentCssStrings.length > 0) {
+        const merged = componentCssStrings.map((s) => `@layer quartz-base {\n${s}\n}`).join("\n")
         const minified = transform({
           filename: "component.css",
-          code: Buffer.from(wrapped),
+          code: Buffer.from(merged),
           minify: true,
           targets: lightningTargets,
           include: Features.MediaQueries,
@@ -426,7 +428,10 @@ export const ComponentResources: QuartzEmitterPlugin = () => {
         const hash = hashContent(minified)
         const slug = `component-${hash}`
         const filename = `${slug}.css`
-        cssStringToFilename.set(cssString, filename)
+
+        for (const cssString of componentCssStrings) {
+          cssStringToFilename.set(cssString, filename)
+        }
 
         yield write({
           ctx,
