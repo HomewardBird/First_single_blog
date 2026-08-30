@@ -8,7 +8,7 @@
  *  - 音频（mp3/m4a 等）：不拦截，交给页面内的 Cache API 处理（Range 请求直接走网络）
  *  - 更新缓存版本时只需改 VERSION
  */
-var VERSION = "v2"
+var VERSION = "v3"
 var CACHE_NAME = "homewardbird-site-" + VERSION
 
 var PRECACHE_URLS = ["/", "/quotes.json", "/static/contentIndex.json"]

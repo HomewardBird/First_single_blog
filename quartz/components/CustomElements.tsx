@@ -11,43 +11,43 @@ export function CustomElements({ basePath }: { basePath: string }) {
       <div id="bg-image-light" class="bg-layer">
         <img
           class="bg-thumb"
-          src={`${basePath}/static/blur/light_bg.webp`}
+          src={`${basePath}/static/blur/light_bg.webp?v=3`}
           alt=""
           loading="eager"
         />
         <img
           class="bg-full"
-          src={`${basePath}/static/light_bg.webp`}
+          src={`${basePath}/static/light_bg.webp?v=3`}
           alt=""
           loading="lazy"
           fetchPriority="high"
         />
       </div>
       <div id="bg-image-dark" class="bg-layer">
-        <img class="bg-thumb" src={`${basePath}/static/blur/dark_bg.webp`} alt="" loading="eager" />
+        <img class="bg-thumb" src={`${basePath}/static/blur/dark_bg.webp?v=3`} alt="" loading="eager" />
         <img
           class="bg-full"
-          src={`${basePath}/static/dark_bg.webp`}
+          src={`${basePath}/static/dark_bg.webp?v=3`}
           alt=""
           loading="lazy"
           fetchPriority="high"
         />
       </div>
       <div id="bg-image-light-pc" class="bg-layer">
-        <img class="bg-thumb" src={`${basePath}/static/blur/light.webp`} alt="" loading="eager" />
+        <img class="bg-thumb" src={`${basePath}/static/blur/light.webp?v=3`} alt="" loading="eager" />
         <img
           class="bg-full"
-          src={`${basePath}/static/light.webp`}
+          src={`${basePath}/static/light.webp?v=3`}
           alt=""
           loading="lazy"
           fetchPriority="high"
         />
       </div>
       <div id="bg-image-dark-pc" class="bg-layer">
-        <img class="bg-thumb" src={`${basePath}/static/blur/dark.webp`} alt="" loading="eager" />
+        <img class="bg-thumb" src={`${basePath}/static/blur/dark.webp?v=3`} alt="" loading="eager" />
         <img
           class="bg-full"
-          src={`${basePath}/static/dark.webp`}
+          src={`${basePath}/static/dark.webp?v=3`}
           alt=""
           loading="lazy"
           fetchPriority="high"
