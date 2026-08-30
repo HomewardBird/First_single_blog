@@ -193,6 +193,12 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
+  /* 平板/移动浏览器：地址栏随滚动收起/展开会让 100%（动态视口）高度实时变化，
+     object-fit:cover 因此反复缩放，背景忽大忽小；改用大视口高度固定尺寸 */
+  height: 100vh;
+  height: 100lvh;
+  /* 提升为独立合成层：滚动时背景不再参与重排重绘 */
+  transform: translateZ(0);
   z-index: -2;
   pointer-events: none;
   display: none; /* 非当前主题的图直接不渲染 = 不下载（配合 loading=lazy 节省近一半带宽） */
