@@ -1722,6 +1722,7 @@ html[saved-theme="dark"] .hamburger-line {
   width: 300px;
   max-height: calc(100vh - 60px);
   overflow-y: auto;
+  overscroll-behavior: contain;
   z-index: 10013;
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -1950,7 +1951,9 @@ html[saved-theme="dark"] .hb-lock-btn.locked {
     right: 0;
     width: 100%;
     max-width: none;
+    height: calc(100vh - 44px);
     height: calc(100dvh - 44px);
+    max-height: calc(100vh - 44px);
     max-height: calc(100dvh - 44px);
     border-radius: 0;
     border: none;
@@ -1983,11 +1986,14 @@ html[saved-theme="dark"] .hb-lock-btn.locked {
   }
   .sidebar.left:has(.explorer:not(.collapsed)) {
     top: 44px !important;
+    height: calc(100vh - 44px) !important;
     height: calc(100dvh - 44px) !important;
   }
   #hamburger-menu {
     top: 44px;
+    height: calc(100vh - 44px);
     height: calc(100dvh - 44px);
+    max-height: calc(100vh - 44px);
     max-height: calc(100dvh - 44px);
     padding: 0.6rem;
   }
@@ -2441,8 +2447,12 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light {
     left: -100vw !important;
     width: 100vw !important;
     max-width: 100vw !important;
+    /* dvh 不支持时退化为 vh，保证抽屉始终盖满全屏（否则高度失效=内容高度，下方主页露出可点） */
+    height: calc(100vh - 44px) !important;
     height: calc(100dvh - 44px) !important;
     border-right: none !important;
+    /* 阻止抽屉内滚动穿透到下方主页（滚动链终止于本元素） */
+    overscroll-behavior: contain !important;
     /* 框架的移动端规则把侧栏改成横向排列（flex-direction:row），
        导致抽屉打开后标题/目录乱窜；抽屉必须竖排、可滚动 */
     flex-direction: column !important;
@@ -2461,6 +2471,7 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light {
     position: fixed !important;
     top: 44px !important;
     left: -100vw !important;
+    height: calc(100vh - 44px) !important;
     height: calc(100dvh - 44px) !important;
   }
   .left.sidebar.open {

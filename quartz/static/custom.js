@@ -976,6 +976,13 @@
     btn.innerHTML = open ? _navToggleSVG.close : _navToggleSVG.menu
     btn.setAttribute("aria-label", open ? "关闭导航" : "导航")
   }
+  // 图标状态跟随目录栏真实展开状态（任何关闭路径后都要调用，避免残留 ✕）
+  function syncNavToggleIcon() {
+    if (!isMobileUI()) return
+    var sidebar = document.querySelector(".left.sidebar")
+    var open = !!(sidebar && sidebar.classList.contains("open"))
+    setNavToggleIcon(open)
+  }
   function toggleMobileExplorer(forceOpen) {
     var exp = document.querySelector(".explorer")
     var sidebar = document.querySelector(".left.sidebar")
@@ -1118,7 +1125,11 @@
     var menuOpen = document.getElementById("hamburger-menu")?.classList.contains("open")
     var explorerOpen =
       isMobileUI() && document.querySelector(".explorer")?.classList.contains("collapsed") === false
-    document.body.style.overflow = sidebarOpen || menuOpen || explorerOpen ? "hidden" : ""
+    var locked = sidebarOpen || menuOpen || explorerOpen
+    document.body.style.overflow = locked ? "hidden" : ""
+    // 必须同时锁 html：body 的 overflow 不会传递给视口（Quartz 源码注释已说明），
+    // 否则抽屉内滚动/触摸仍会带动主页滚动
+    document.documentElement.style.overflow = locked ? "hidden" : ""
   }
 
   // ====================================================================
@@ -1171,6 +1182,7 @@
   function closeSidebar() {
     var s = document.querySelector(".left.sidebar")
     if (s) s.classList.remove("open")
+    syncNavToggleIcon()
     updateScrollLock()
   }
   // Esc 统一关闭：设置面板 / 侧边栏 / 移动端目录
