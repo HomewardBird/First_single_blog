@@ -1861,6 +1861,9 @@ html[saved-theme="dark"] .hb-lock-btn.locked {
     border: none;
     box-shadow: none;
     background: rgba(255, 255, 255, 0.97);
+    /* content-box 下 width:100% + padding 会让菜单超出视口右边缘，
+       音量标签被挤出屏幕（只能看到 1.）；必须 border-box */
+    box-sizing: border-box !important;
   }
   html[data-theme="dark"] #hamburger-menu,
   html[saved-theme="dark"] #hamburger-menu {
