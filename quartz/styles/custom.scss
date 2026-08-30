@@ -208,12 +208,12 @@ body {
 /* 极小模糊占位图（~1KB）：先渲染，高清图就绪后淡入覆盖 */
 .bg-layer .bg-thumb {
   transform: scale(1.12);
-  filter: contrast(0.98) saturate(0.85);
+  filter: blur(6px) contrast(0.98) saturate(0.85);
 }
 .bg-layer .bg-full {
   opacity: 0;
   transition: opacity 0.8s ease;
-  filter: contrast(0.98) saturate(0.85);
+  filter: blur(3px) contrast(0.98) saturate(0.85);
 }
 .bg-layer .bg-full.loaded {
   opacity: 1;
@@ -222,7 +222,13 @@ body {
 /* 白天模式：提亮 + 降饱和，避免插画上盖白蒙版导致的“蒙灰感” */
 #bg-image-light .bg-full,
 #bg-image-light-pc .bg-full {
-  filter: brightness(1.1) contrast(0.98) saturate(0.72);
+  filter: blur(3px) brightness(1.1) contrast(0.98) saturate(0.72);
+}
+
+/* 背景图层图片：不受正文 img 全局 margin 影响（否则顶部露出 16px 白条） */
+.bg-layer img {
+  margin: 0 !important;
+  border-radius: 0;
 }
 
 /* 移动端：亮/暗切换（light_bg / dark_bg） */
@@ -496,7 +502,7 @@ html[saved-theme="dark"] .hb-music-btn {
 
   /* --- 顶部导航栏：全宽半透明 --- */
   .sidebar.left {
-    background: rgba(255, 255, 255, 0.6) !important;
+    background: rgba(255, 255, 255, 0.88) !important;
     margin: 0 !important;
     border-radius: 0;
     border: none;
@@ -504,34 +510,23 @@ html[saved-theme="dark"] .hb-music-btn {
     width: 100% !important;
     max-width: 100% !important;
     padding: 0.5rem 1rem !important;
+    /* sticky 会创建层叠上下文，抽屉的 z-index 被关在里面；
+       提升侧栏本身层级，保证全屏抽屉盖在正文之上（低于顶栏 10010） */
+    z-index: 10005;
     @include dark {
-      background: rgba(22, 22, 24, 0.65) !important;
+      background: rgba(22, 22, 24, 0.92) !important;
       border-bottom-color: rgba(255, 255, 255, 0.06);
     }
   }
 
-  /* Explorer 打开时：全屏半透明覆盖 */
-  .sidebar.left:has(.explorer:not(.collapsed)) {
-    background: rgba(255, 255, 255, 0.68) !important;
-    border-bottom: none;
-    padding: 1rem !important;
-    position: fixed !important;
-    top: 36px !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    z-index: 10000 !important;
-    height: calc(100dvh - 36px) !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
+  /* Explorer 抽屉（插件原生全屏滑入面板）：接近不透明的底色，
+     背景图不穿透，弱机不做 backdrop-filter */
+  .explorer .explorer-content {
+    background: rgba(250, 248, 248, 0.97);
   }
-
-  .sidebar.left:has(.explorer:not(.collapsed)) {
-    @include dark {
-      background: rgba(22, 22, 24, 0.9) !important;
-    }
+  html[data-theme="dark"] .explorer .explorer-content,
+  html[saved-theme="dark"] .explorer .explorer-content {
+    background: rgba(22, 22, 24, 0.97);
   }
 
   .page-title a {
@@ -1540,25 +1535,27 @@ html[saved-theme="dark"] .shelf-accent-violet .shelf-icon {
 }
 
 /* ====== 固定顶栏 ====== */
-#top-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 44px;
-  z-index: 10010;
-  background: rgba(255, 255, 255, 0.65);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
-  transition:
-    background 0.3s ease,
-    border-color 0.3s ease;
-}
+ #top-bar {
+   position: fixed;
+   top: 0;
+   left: 0;
+   right: 0;
+   height: 44px;
+   z-index: 10010;
+   background: rgba(255, 255, 255, 0.55);
+   -webkit-backdrop-filter: blur(14px);
+   backdrop-filter: blur(14px);
+   border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+   transition:
+     background 0.3s ease,
+     border-color 0.3s ease;
+ }
 
-html[data-theme="dark"] #top-bar,
-html[saved-theme="dark"] #top-bar {
-  background: rgba(22, 22, 24, 0.65);
-  border-bottom-color: rgba(255, 255, 255, 0.06);
-}
+ html[data-theme="dark"] #top-bar,
+ html[saved-theme="dark"] #top-bar {
+   background: rgba(22, 22, 24, 0.55);
+   border-bottom-color: rgba(255, 255, 255, 0.06);
+ }
 
 .top-bar-inner {
   display: flex;
@@ -1844,22 +1841,22 @@ html[saved-theme="dark"] .hb-lock-btn.locked {
 /* ====== 移动端适配 ====== */
 @media (max-width: 800px) {
   #top-bar {
-    height: 36px;
+    height: 44px;
   }
   #top-bar .top-bar-inner {
     /* no pointer-events hack: mobile-explorer is above top-bar via z-index */
   }
   .page > #quartz-body {
-    margin-top: 36px;
+    margin-top: 44px;
   }
   #hamburger-menu {
-    top: 36px;
+    top: 44px;
     left: 0;
     right: 0;
     width: 100%;
     max-width: none;
-    height: calc(100dvh - 36px);
-    max-height: calc(100dvh - 36px);
+    height: calc(100dvh - 44px);
+    max-height: calc(100dvh - 44px);
     border-radius: 0;
     border: none;
     box-shadow: none;
@@ -1881,19 +1878,19 @@ html[saved-theme="dark"] .hb-lock-btn.locked {
 
 @media (max-width: 480px) {
   #top-bar {
-    height: 32px;
+    height: 44px;
   }
   .page > #quartz-body {
-    margin-top: 32px;
+    margin-top: 44px;
   }
   .sidebar.left:has(.explorer:not(.collapsed)) {
-    top: 32px !important;
-    height: calc(100dvh - 32px) !important;
+    top: 44px !important;
+    height: calc(100dvh - 44px) !important;
   }
   #hamburger-menu {
-    top: 32px;
-    height: calc(100dvh - 32px);
-    max-height: calc(100dvh - 32px);
+    top: 44px;
+    height: calc(100dvh - 44px);
+    max-height: calc(100dvh - 44px);
     padding: 0.6rem;
   }
   .top-bar-title {
@@ -1994,8 +1991,15 @@ html[saved-theme="dark"] .search > .search-container {
 .hb-vol-label {
   font-size: 0.72rem;
   color: var(--gray);
-  min-width: 2.2em;
+  display: inline-block;
+  min-width: 3.4em;
+  width: 3.4em;
   text-align: right;
+  white-space: nowrap;
+  overflow: visible !important;
+  flex-shrink: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Segoe UI", monospace;
+  font-variant-numeric: tabular-nums;
 }
 html[data-theme="dark"] .hb-vol-slider,
 html[saved-theme="dark"] .hb-vol-slider {
@@ -2335,12 +2339,20 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light {
 @media (max-width: 800px) {
   .left.sidebar {
     position: fixed !important;
-    top: 36px !important;
+    top: 44px !important;
     left: -100vw !important;
     width: 100vw !important;
     max-width: 100vw !important;
-    height: calc(100dvh - 36px) !important;
+    height: calc(100dvh - 44px) !important;
     border-right: none !important;
+    /* 框架的移动端规则把侧栏改成横向排列（flex-direction:row），
+       导致抽屉打开后标题/目录乱窜；抽屉必须竖排、可滚动 */
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0.6rem !important;
+    overflow-y: auto !important;
+    padding: 0.8rem 1.2rem 2rem !important;
   }
   .left.sidebar.open {
     left: 0 !important;
@@ -2349,13 +2361,46 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light {
 @media (max-width: 480px) {
   .left.sidebar {
     position: fixed !important;
-    top: 32px !important;
+    top: 44px !important;
     left: -100vw !important;
-    height: calc(100dvh - 32px) !important;
+    height: calc(100dvh - 44px) !important;
   }
   .left.sidebar.open {
     left: 0 !important;
   }
+}
+
+/* ====== 移动端：禁用插件原生 explorer 抽屉，统一使用侧栏抽屉 ======
+ * 插件抽屉（inset:0 全屏滑入）与自定义侧栏抽屉（left:-100vw → 0）
+ * 会同时打开、双层覆盖，产生"标题居中/内容挤顶/难以关闭"的诡异排版。
+ * 这里把插件抽屉改为普通文档流，只保留侧栏抽屉一个全屏导航层。 */
+@media (max-width: 800px) {
+  .explorer .explorer-content {
+    position: static !important;
+    inset: auto !important;
+    z-index: auto !important;
+    transform: none !important;
+    visibility: visible !important;
+    overflow-y: auto !important;
+    margin-top: 0 !important;
+    padding: 0.5rem 0 1rem !important;
+  }
+  /* 侧栏抽屉本身：接近不透明底色，背景图不穿透 */
+  .left.sidebar {
+    background: rgba(250, 248, 248, 0.98) !important;
+    z-index: 10005 !important;
+  }
+  html[data-theme="dark"] .left.sidebar,
+  html[saved-theme="dark"] .left.sidebar {
+    background: rgba(22, 22, 24, 0.98) !important;
+  }
+}
+
+/* ====== 移除 OverflowList 底部渐隐遮罩（滚动提示效果） ====== */
+ul.overflow.gradient-active,
+ol.overflow.gradient-active {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
 }
 
 /* ====== 移动端面板：恢复内容顺序（插件 order:-1 / margin:auto 干扰布局） ====== */
@@ -2364,6 +2409,15 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light {
     order: 0 !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
+    /* 插件移动端规则把 explorer 压成 ~50px 并裁剪内容（overflow:hidden +
+       align-self:flex-start），目录只显示“半行字”；必须占满宽度并完整展开 */
+    align-self: stretch !important;
+    flex: none !important;
+    flex-shrink: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    width: 100% !important;
   }
 }
 

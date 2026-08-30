@@ -693,6 +693,37 @@
   }
 
   // ====================================================================
+  //  首帧提速：把当前主题激活图层的背景大图从 lazy 提升为 eager。
+  //  HTML 里统一 lazy 是为了不让隐藏主题的图下载；这里只提升激活那张，
+  //  让全图下载提前 ~1.2s（懒加载调度延迟），弱网下背景淡入显著提前。
+  // ====================================================================
+  function boostActiveBg() {
+    var dark = isDark()
+    var mobile = window.matchMedia && window.matchMedia("(max-width: 768px)").matches
+    var id = mobile ? (dark ? "bg-image-dark" : "bg-image-light") : (dark ? "bg-image-dark-pc" : "bg-image-light-pc")
+    var layer = document.getElementById(id)
+    if (!layer) return
+    var full = layer.querySelector(".bg-full")
+    if (full && full.getAttribute("loading") === "lazy") {
+      full.loading = "eager"
+    }
+  }
+
+  // ====================================================================
+  //  移动端浏览器主题色：跟随亮/暗主题，顶栏/状态栏不再闪白
+  // ====================================================================
+  var _themeColors = { light: "#faf8f8", dark: "#161618" }
+  function syncThemeColor() {
+    var m = document.querySelector('meta[name="theme-color"]')
+    if (!m) {
+      m = document.createElement("meta")
+      m.setAttribute("name", "theme-color")
+      document.head.appendChild(m)
+    }
+    m.setAttribute("content", isDark() ? _themeColors.dark : _themeColors.light)
+  }
+
+  // ====================================================================
   //  Top bar + hamburger menu
   // ====================================================================
   function rebuildUI() {
@@ -773,7 +804,7 @@
       '<div class="hb-volume-row">',
       '<span class="hb-vol-icon">🔊</span>',
       '<input type="range" class="hb-vol-slider" min="0" max="1" step="0.05" value="1">',
-      '<span class="hb-vol-label">1.0</span>',
+      '<span class="hb-vol-label">1.00</span>',
       "</div>",
       '<div class="hb-loop-row">',
       '<button class="hb-loop-btn" title="循环模式">🔁</button>',
@@ -933,7 +964,18 @@
     }
   }
 
-  // 移动端：展开 / 收起 explorer 目录（全屏面板）
+  // 移动端：顶栏导航按钮 ☰ / ✕ 切换（抽屉打开时变成关闭按钮）
+  var _navToggleSVG = {
+    menu: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="15" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="15" y2="18"></line></svg>',
+    close:
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>',
+  }
+  function setNavToggleIcon(open) {
+    var btn = document.getElementById("nav-toggle-btn")
+    if (!btn) return
+    btn.innerHTML = open ? _navToggleSVG.close : _navToggleSVG.menu
+    btn.setAttribute("aria-label", open ? "关闭导航" : "导航")
+  }
   function toggleMobileExplorer(forceOpen) {
     var exp = document.querySelector(".explorer")
     var sidebar = document.querySelector(".left.sidebar")
@@ -963,6 +1005,7 @@
       document.documentElement.classList.remove("mobile-no-scroll")
       restoreFocus()
     }
+    setNavToggleIcon(open)
     updateScrollLock()
     return true
   }
@@ -1121,6 +1164,7 @@
   // 移动端初始化：目录面板默认收起（否则插件默认展开导致首屏被面板盖住）
   function initMobilePanel() {
     if (!isMobileUI()) return
+    setNavToggleIcon(false)
     var exp = document.querySelector(".explorer")
     if (exp && !exp.classList.contains("collapsed")) toggleMobileExplorer(false)
   }
@@ -1795,10 +1839,24 @@
     })
   }
   function ensureReadingProgress() {
-    if (document.getElementById("reading-progress")) return
-    var el = document.createElement("div")
-    el.id = "reading-progress"
-    document.body.appendChild(el)
+    var slug = getSlug()
+    try {
+      slug = decodeURIComponent(slug)
+    } catch (e) {}
+    slug = slug.replace(/\.html$/, "")
+    var noBar = ["index", "个人博客", "关于", "留言", "tags"]
+    var isArticle =
+      slug !== "404" && !slug.endsWith("/index") && noBar.indexOf(slug.split("/")[0]) === -1
+    var el = document.getElementById("reading-progress")
+    if (isArticle) {
+      if (!el) {
+        var d = document.createElement("div")
+        d.id = "reading-progress"
+        document.body.appendChild(d)
+      }
+    } else if (el && el.parentNode) {
+      el.parentNode.removeChild(el)
+    }
   }
   window.addEventListener("scroll", rpOnScroll, { passive: true })
   document.addEventListener("nav", ensureReadingProgress)
@@ -1843,6 +1901,9 @@
     registerSW()
     initBackToTop()
     ensureReadingProgress()
+    boostActiveBg()
+    syncThemeColor()
+    document.addEventListener("themechange", syncThemeColor)
     rebuildUI()
     injectHomeLink()
     hideNavItem("个人博客")
