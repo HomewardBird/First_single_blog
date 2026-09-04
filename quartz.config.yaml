@@ -144,6 +144,7 @@ plugins:
   - source: github:quartz-community/explorer
     enabled: true
     options:
+      title: 目录
       folderDefaultState: open
       useSavedState: false
     layout:

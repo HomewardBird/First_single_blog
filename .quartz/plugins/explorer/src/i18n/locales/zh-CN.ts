@@ -1,7 +1,7 @@
 export default {
   components: {
     explorer: {
-      title: "探索",
+      title: "目录",
     },
   },
 };

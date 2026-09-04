@@ -3,6 +3,8 @@
   //  Constants & Keys
   // ====================================================================
   var FONT_SIZE_KEY = "fontSize"
+  var FONT_FAMILY_KEY = "fontFamily"
+  var FONT_CACHE_NAME = "homewardbird-fonts-v1"
   var BG_KEY = "bgColor"
   var FONT_COLOR_KEY = "fontColor"
   var LOCK_KEY = "bgLocked"
@@ -473,10 +475,7 @@
       hideNavItem("个人博客")
     }, 150)
     // 移动端：导航后强制收起目录面板
-    if (isMobileUI()) {
-      var exp = document.querySelector(".explorer")
-      if (exp && !exp.classList.contains("collapsed")) toggleMobileExplorer(false)
-    }
+    if (isMobileUI()) closeSidebar()
     if (!document.getElementById("hamburger-menu")) {
       rebuildUI()
       syncMusicUI()
@@ -543,6 +542,114 @@
   function restoreFontSize() {
     var s = localStorage.getItem(FONT_SIZE_KEY)
     if (s) setFontSize(s)
+  }
+
+  // ====================================================================
+  //  Font Manager (opt-in download, cached locally, apply on second click)
+  // ====================================================================
+  var fontOptions = [
+    { id: "lxgw", label: "落霞文楷", file: "/fonts/lxgw-wenkai.ttf" },
+    { id: "noto", label: "思源黑体", file: "/fonts/noto-sans-sc-variable.ttf" },
+  ]
+
+  function fontFileUrl(option) {
+    return getBp() + option.file
+  }
+
+  function fontButtonState(id, state, detail) {
+    var button = document.querySelector('.hb-font-manager-btn[data-font="' + id + '"]')
+    var progress = document.querySelector('.hb-font-progress[data-font="' + id + '"]')
+    var status = document.querySelector('.hb-font-status[data-font="' + id + '"]')
+    if (!button || !progress || !status) return
+    button.disabled = state === "downloading"
+    button.classList.toggle("ready", state === "ready")
+    button.classList.toggle("active", state === "applied")
+    button.textContent =
+      state === "downloading" ? "下载中..." : state === "ready" ? "应用" : state === "applied" ? "已应用" : "下载"
+    progress.value = detail || (state === "ready" || state === "applied" ? 100 : 0)
+    progress.hidden = state !== "downloading"
+    status.textContent =
+      state === "downloading"
+        ? Math.round(detail || 0) + "%"
+        : state === "ready"
+          ? "已下载，请再次点击应用"
+          : state === "applied"
+            ? "当前使用中"
+            : "未下载"
+  }
+
+  async function fontIsCached(option) {
+    if (!window.caches) return false
+    var cache = await caches.open(FONT_CACHE_NAME)
+    return !!(await cache.match(fontFileUrl(option)))
+  }
+
+  async function downloadFont(option) {
+    var url = fontFileUrl(option)
+    var response = await fetch(url, { cache: "no-cache" })
+    if (!response.ok) throw new Error("font download failed")
+    var total = parseInt(response.headers.get("content-length") || "0", 10)
+    var received = 0
+    var reader = response.body && response.body.getReader()
+    var chunks = []
+    if (reader) {
+      while (true) {
+        var part = await reader.read()
+        if (part.done) break
+        chunks.push(part.value)
+        received += part.value.length
+        fontButtonState(option.id, "downloading", total ? (received / total) * 100 : 0)
+      }
+    } else {
+      chunks.push(new Uint8Array(await response.arrayBuffer()))
+      received = chunks[0].length
+      fontButtonState(option.id, "downloading", 100)
+    }
+    var bytes = new Uint8Array(received)
+    var offset = 0
+    chunks.forEach(function (chunk) {
+      bytes.set(chunk, offset)
+      offset += chunk.length
+    })
+    var cache = await caches.open(FONT_CACHE_NAME)
+    await cache.put(url, new Response(bytes, { headers: { "Content-Type": "font/ttf" } }))
+  }
+
+  async function applyFont(option) {
+    var family = "HB-" + option.id
+    var cache = await caches.open(FONT_CACHE_NAME)
+    var cachedResponse = await cache.match(fontFileUrl(option))
+    if (!cachedResponse) throw new Error("font is not cached")
+    var face = new FontFace(family, await cachedResponse.arrayBuffer())
+    await face.load()
+    document.fonts.add(face)
+    document.documentElement.setAttribute("data-font-family", option.id)
+    document.documentElement.style.setProperty("--hb-selected-font", '"' + family + '"', "important")
+    localStorage.setItem(FONT_FAMILY_KEY, option.id)
+    Promise.all(
+      fontOptions.map(function (item) {
+        return fontIsCached(item).then(function (cached) {
+          fontButtonState(item.id, item.id === option.id ? "applied" : cached ? "ready" : "idle")
+        })
+      }),
+    )
+  }
+
+  function initFontManager() {
+    fontOptions.forEach(function (option) {
+      fontIsCached(option).then(function (cached) {
+        fontButtonState(option.id, cached ? "ready" : "idle")
+      })
+    })
+    var saved = localStorage.getItem(FONT_FAMILY_KEY)
+    if (saved) {
+      var option = fontOptions.find(function (item) {
+        return item.id === saved
+      })
+      if (option) fontIsCached(option).then(function (cached) {
+        if (cached) applyFont(option).catch(function () {})
+      })
+    }
   }
 
   // ====================================================================
@@ -804,6 +911,14 @@
       '<div class="hb-inline-row">',
       '<button class="hb-lock-btn" title="锁定背景不变">🔒 锁定</button>',
       "</div></div>",
+      '<div class="hb-section hb-font-manager"><button class="hb-title hb-font-manager-toggle" type="button" aria-expanded="false">字体管理<span aria-hidden="true">⌄</span></button>',
+      '<div class="hb-font-manager-list" hidden>',
+      fontOptions
+        .map(function (o) {
+          return '<div class="hb-font-item"><div><strong>' + o.label + '</strong><span class="hb-font-status" data-font="' + o.id + '">未下载</span></div><button class="hb-font-manager-btn" type="button" data-font="' + o.id + '">下载</button><progress class="hb-font-progress" data-font="' + o.id + '" max="100" value="0" hidden></progress></div>'
+        })
+        .join(""),
+      "</div></div>",
       '<div class="hb-section"><div class="hb-title">🎵 音乐</div>',
       '<div class="hb-music-row">',
       '<button class="hb-music-btn hb-music-prev" title="上一首">⏮</button>',
@@ -868,6 +983,43 @@
     })
     document.querySelectorAll(".hb-lock-btn").forEach(function (b) {
       b.addEventListener("click", toggleLock)
+    })
+    var fontToggle = document.querySelector(".hb-font-manager-toggle")
+    var fontList = document.querySelector(".hb-font-manager-list")
+    if (fontToggle && fontList && !_handlerSet.has(fontToggle)) {
+      _handlerSet.add(fontToggle)
+      fontToggle.addEventListener("click", function () {
+        var expanded = fontToggle.getAttribute("aria-expanded") === "true"
+        fontToggle.setAttribute("aria-expanded", expanded ? "false" : "true")
+        fontList.hidden = expanded
+      })
+    }
+    document.querySelectorAll(".hb-font-manager-btn").forEach(function (button) {
+      if (_handlerSet.has(button)) return
+      _handlerSet.add(button)
+      button.addEventListener("click", async function () {
+        var option = fontOptions.find(function (item) {
+          return item.id === button.dataset.font
+        })
+        if (!option) return
+        var cached = await fontIsCached(option)
+        if (!cached) {
+          fontButtonState(option.id, "downloading", 0)
+          try {
+            await downloadFont(option)
+            fontButtonState(option.id, "ready")
+          } catch (e) {
+            fontButtonState(option.id, "idle")
+            showToast("字体下载失败，请稍后重试")
+          }
+          return
+        }
+        try {
+          await applyFont(option)
+        } catch (e) {
+          showToast("字体应用失败，请刷新后重试")
+        }
+      })
     })
     var closeBtn = document.getElementById("hamburger-close-btn")
     if (closeBtn && !_handlerSet.has(closeBtn)) {
@@ -1040,8 +1192,7 @@
     var exp = document.querySelector(".explorer")
     var sidebar = document.querySelector(".left.sidebar")
     if (!exp) return false
-    var collapsed = exp.classList.contains("collapsed")
-    var open = typeof forceOpen === "boolean" ? forceOpen : collapsed
+    var open = typeof forceOpen === "boolean" ? forceOpen : !sidebar.classList.contains("open")
     var content = exp.querySelector(".explorer-content")
     if (open) {
       exp.classList.remove("collapsed")
@@ -1177,9 +1328,7 @@
   function updateScrollLock() {
     var sidebarOpen = document.querySelector(".left.sidebar")?.classList.contains("open")
     var menuOpen = document.getElementById("hamburger-menu")?.classList.contains("open")
-    var explorerOpen =
-      isMobileUI() && document.querySelector(".explorer")?.classList.contains("collapsed") === false
-    var locked = sidebarOpen || menuOpen || explorerOpen
+    var locked = sidebarOpen || menuOpen
     document.body.style.overflow = locked ? "hidden" : ""
     // 必须同时锁 html：body 的 overflow 不会传递给视口（Quartz 源码注释已说明），
     // 否则抽屉内滚动/触摸仍会带动主页滚动
@@ -1231,7 +1380,14 @@
     if (!isMobileUI()) return
     setNavToggleIcon(false)
     var exp = document.querySelector(".explorer")
-    if (exp && !exp.classList.contains("collapsed")) toggleMobileExplorer(false)
+    if (exp) {
+      exp.classList.add("collapsed")
+      exp.setAttribute("aria-expanded", "false")
+    }
+    var sidebar = document.querySelector(".left.sidebar")
+    if (sidebar) sidebar.classList.remove("open")
+    setSidebarBackdrop(false)
+    updateScrollLock()
   }
   function closeSidebar() {
     var s = document.querySelector(".left.sidebar")
@@ -1826,6 +1982,36 @@
   })
 
   // ====================================================================
+  //  Card entrance：PC 首页卡片入场动画
+  // ====================================================================
+  function initCardEntrance() {
+    function triggerEntrance() {
+      if (getSlug() !== "index") return
+      document.querySelectorAll(".glass-card").forEach(function (card) {
+        if (!card.dataset.homeEntranceBound) {
+          card.dataset.homeEntranceBound = "true"
+          card.addEventListener("animationend", function (e) {
+            if (e.animationName === "home-card-enter") {
+              card.classList.add("home-card-entered")
+              card.style.willChange = "auto"
+            }
+          })
+        }
+        card.classList.remove("home-card-entered", "home-card-active")
+        card.style.willChange = "transform, opacity"
+        void card.offsetWidth
+        requestAnimationFrame(function () {
+          if (card.isConnected && getSlug() === "index") {
+            card.classList.add("home-card-active")
+          }
+        })
+      })
+    }
+    triggerEntrance()
+    document.addEventListener("nav", triggerEntrance)
+  }
+
+  // ====================================================================
   //  Card spotlight：鼠标跟随光晕（仅桌面 hover + 精确指针设备）
   // ====================================================================
   function initCardSpotlight() {
@@ -1984,48 +2170,6 @@
   }
 
   // ====================================================================
-  //  首页自适应锁屏：内容一屏放得下 → 锁死不滚动；放不下 → 放开滚动
-  //  （测量 .home-wrapper 高度，塞得下才给 html/body 加 home-locked 类）
-  // ====================================================================
-  var _homeFitTicking = false
-  var _homeFitLast = null
-  function homeFitCheck() {
-    if (_homeFitTicking) return
-    _homeFitTicking = true
-    requestAnimationFrame(function () {
-      _homeFitTicking = false
-      var wrap =
-        getSlug() === "index" ? document.querySelector(".home-wrapper") : null
-      var tablet =
-        window.matchMedia && window.matchMedia("(min-width: 800px)").matches
-      // 顶栏 44px + 少量容差；offsetHeight 不受入场动画 transform 影响。
-      // 底部 padding 是空白区域，不计入"内容高度"，否则差几像素也会误判放不下。
-      var needed = Infinity
-      if (wrap) {
-        var pb = 0
-        try {
-          pb = parseFloat(window.getComputedStyle(wrap).paddingBottom) || 0
-        } catch (e) {}
-        needed = wrap.offsetHeight - pb + 52
-      }
-      var fits = !!(tablet && wrap && needed <= window.innerHeight)
-      var changed = fits !== _homeFitLast
-      _homeFitLast = fits
-      if (changed) {
-        if (window.console && console.log) {
-          console.log(
-            "[home-fit] " + (fits ? "锁定(不滚动)" : "放开(可滚动)") +
-              " 内容高=" + (wrap ? wrap.offsetHeight : "?") +
-              "px 视口高=" + window.innerHeight + "px",
-          )
-        }
-      }
-      document.documentElement.classList.toggle("home-locked", fits)
-      document.body.classList.toggle("home-locked", fits)
-    })
-  }
-
-  // ====================================================================
   //  Init
   // ====================================================================
   function init() {
@@ -2041,27 +2185,15 @@
     hideNavItem("个人博客")
     initMobilePanel()
     bindHamburgerDelegate()
+    initCardEntrance()
     initCardSpotlight()
     restoreFontSize()
     restoreBg()
     restoreFontColor()
     restoreLock()
+    initFontManager()
 
-    homeFitCheck()
-    window.addEventListener("load", homeFitCheck)
-    window.addEventListener("resize", homeFitCheck)
-    window.addEventListener("scroll", homeFitCheck, { passive: true })
-    document.addEventListener("nav", homeFitCheck)
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready
-        .then(function () {
-          homeFitCheck()
-        })
-        .catch(function () {})
-    }
-    // 兜底：延迟再测两次，防止字体/懒加载导致的布局抖动被早期测量错过
-    setTimeout(homeFitCheck, 300)
-    setTimeout(homeFitCheck, 1200)
+    /* 首页自动锁定滚动已停用，保持浏览器默认滚动行为。 */
 
     // 不等 window.load：首帧渲染后立即用低优先级预载另一主题的图，
     // 首次切主题时基本已缓存，不会卡。
@@ -2113,25 +2245,6 @@
         closeSidebar()
       }
     })
-
-    // 桌面端侧栏折叠兜底：capture 阶段拦截「探索」标题栏点击，
-    // 即使 explorer 插件脚本加载失败，折叠 / 展开依然可用。
-    // stopPropagation 保证插件自身的按钮监听不会被重复触发（不会双重切换）。
-    document.addEventListener(
-      "click",
-      function (e) {
-        var btn = e.target && e.target.closest ? e.target.closest(".desktop-explorer") : null
-        if (!btn) return
-        e.stopPropagation()
-        var explorer = btn.closest(".explorer")
-        if (!explorer) return
-        var collapsed = explorer.classList.toggle("collapsed")
-        explorer.setAttribute("aria-expanded", collapsed ? "false" : "true")
-        document.documentElement.classList.toggle("mobile-no-scroll", !collapsed)
-        updateScrollLock()
-      },
-      true,
-    )
 
     loadDailyQuote()
     lazyLoadImages()
