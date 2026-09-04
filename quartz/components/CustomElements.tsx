@@ -78,22 +78,22 @@ export function CustomElements({ basePath }: { basePath: string }) {
               <line x1="3" y1="18" x2="15" y2="18" />
             </svg>
           </button>
+          <button id="tb-search-btn" class="tb-action-btn" aria-label="搜索" title="搜索">
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          </button>
           <span class="top-bar-title">安巢鸟的个人网站</span>
           <div class="top-bar-right">
-            <button id="tb-search-btn" class="tb-action-btn" aria-label="搜索" title="搜索">
-              <svg
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-            </button>
             <button id="tb-theme-btn" class="tb-action-btn" aria-label="切换主题" title="切换主题">
               <svg
                 class="icon-dark"

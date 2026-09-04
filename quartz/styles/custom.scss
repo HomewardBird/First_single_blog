@@ -39,6 +39,29 @@ samp {
   font-family: #{$sys-mono} !important;
 }
 
+html[data-font-family="lxgw"] body,
+html[data-font-family="lxgw"] h1,
+html[data-font-family="lxgw"] h2,
+html[data-font-family="lxgw"] h3,
+html[data-font-family="lxgw"] h4,
+html[data-font-family="lxgw"] h5,
+html[data-font-family="lxgw"] h6,
+html[data-font-family="lxgw"] p,
+html[data-font-family="lxgw"] li,
+html[data-font-family="lxgw"] a,
+html[data-font-family="noto"] body,
+html[data-font-family="noto"] h1,
+html[data-font-family="noto"] h2,
+html[data-font-family="noto"] h3,
+html[data-font-family="noto"] h4,
+html[data-font-family="noto"] h5,
+html[data-font-family="noto"] h6,
+html[data-font-family="noto"] p,
+html[data-font-family="noto"] li,
+html[data-font-family="noto"] a {
+  font-family: var(--hb-selected-font), #{$sys-sans} !important;
+}
+
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -400,38 +423,6 @@ footer {
   }
 }
 
-/* ====== 首页（平板/桌面）：内容放得下 → 锁死不滚动；放不下 → 放开滚动 ====== */
-/* .home-locked 由 JS（homeFitCheck）自动加上/移除：测量首页内容高度，
-   一屏放得下则锁定整页不滚动（目录栏栏内滚动），放不下则不加锁，页面可滚动、内容不被切割。 */
-@media (min-width: 800px) {
-  /* Quartz 默认给 html 设了 overflow-x:hidden，body 的 overflow 不会传递给视口，
-     必须同时锁住 html 才能真正禁止页面滚动 */
-  html.home-locked {
-    overflow: hidden;
-  }
-  html body[data-slug="index"].home-locked {
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-  }
-  body[data-slug="index"].home-locked .page > #quartz-body {
-    height: calc(100dvh - 44px);
-    grid-template-rows: minmax(0, 1fr) auto auto !important;
-  }
-  /* 左栏目录：始终撑满剩余高度并栏内滚动，不参与撑高页面 */
-  body[data-slug="index"] .left.sidebar {
-    height: calc(100dvh - 44px);
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-}
-@media (min-width: 1200px) {
-  body[data-slug="index"].home-locked .page > #quartz-body {
-    grid-template-rows: minmax(0, 1fr) auto !important;
-  }
-}
-
 /* ====== 首页矮屏适配：窗口高度不足时压缩留白、卡片改双列，保证一屏放下不被切割 ====== */
 @media (min-width: 800px) and (max-height: 900px) {
   html body[data-slug="index"] .home-wrapper {
@@ -617,11 +608,11 @@ html[saved-theme="dark"] .hb-music-btn {
   /* Explorer 抽屉（插件原生全屏滑入面板）：接近不透明的底色，
      背景图不穿透，弱机不做 backdrop-filter */
   .explorer .explorer-content {
-    background: rgba(250, 248, 248, 0.97);
+    background: var(--light) !important;
   }
   html[data-theme="dark"] .explorer .explorer-content,
   html[saved-theme="dark"] .explorer .explorer-content {
-    background: rgba(22, 22, 24, 0.97);
+    background: var(--light) !important;
   }
 
   .page-title a {
@@ -1223,6 +1214,37 @@ html body[data-slug="index"] .glass-card:nth-child(3) {
   }
 }
 
+/* PC 端卡片入场：轻微上移、淡入和缩放，保留原有 hover 交互。 */
+@media (min-width: 801px) {
+  html body[data-slug="index"] .glass-card:not(.home-card-entered) {
+    animation: none;
+    opacity: 1;
+    will-change: auto;
+  }
+
+  html body[data-slug="index"] .glass-card.home-card-active:not(.home-card-entered) {
+    animation: home-card-enter 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    will-change: transform, opacity;
+  }
+
+  html body[data-slug="index"] .glass-card.home-card-entered {
+    opacity: 1;
+    animation: none;
+    will-change: auto;
+  }
+
+  @keyframes home-card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+}
+
 /* ====== 高光描边：box-shadow 外环（与主卡光环同技术，任何浏览器可见） ====== */
 
 /* ====== 噪点纹理（打破纯 CSS 渲染的塑料感） ====== */
@@ -1652,9 +1674,9 @@ html[saved-theme="dark"] .shelf-accent-violet .shelf-icon {
    right: 0;
    height: 44px;
    z-index: 10010;
-   background: rgba(255, 255, 255, 0.55);
-   -webkit-backdrop-filter: blur(14px);
-   backdrop-filter: blur(14px);
+  background: var(--light);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
    border-bottom: 1px solid rgba(255, 255, 255, 0.22);
    transition:
      background 0.3s ease,
@@ -1663,7 +1685,7 @@ html[saved-theme="dark"] .shelf-accent-violet .shelf-icon {
 
  html[data-theme="dark"] #top-bar,
  html[saved-theme="dark"] #top-bar {
-   background: rgba(22, 22, 24, 0.55);
+  background: var(--light);
    border-bottom-color: rgba(255, 255, 255, 0.06);
  }
 
@@ -1739,7 +1761,7 @@ html[saved-theme="dark"] .hamburger-line {
   overflow-y: auto;
   overscroll-behavior: contain;
   z-index: 10013;
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--light);
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 14px;
   padding: 0.8rem;
@@ -1762,10 +1784,110 @@ html[saved-theme="dark"] .hamburger-line {
   border-bottom: 1px solid rgba(128, 128, 128, 0.12);
 }
 
+/* PC 端使用右上角汉堡按钮再次点击关闭面板，不显示重复的关闭符号。 */
+@media (min-width: 801px) {
+  .hb-header {
+    justify-content: flex-start;
+  }
+
+  .hb-close-btn {
+    display: none !important;
+  }
+}
+
 .hb-title {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--dark);
+}
+
+.hb-font-manager-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.hb-font-manager-toggle span {
+  float: right;
+  transition: transform 0.2s ease;
+}
+
+.hb-font-manager-toggle[aria-expanded="true"] span {
+  transform: rotate(180deg);
+}
+
+.hb-font-manager-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.hb-font-manager-list[hidden] {
+  display: none !important;
+}
+
+.hb-font-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.45rem 0.7rem;
+  align-items: center;
+}
+
+.hb-font-item strong,
+.hb-font-status {
+  display: block;
+}
+
+.hb-font-item strong {
+  font-size: 0.82rem;
+  color: var(--dark);
+}
+
+.hb-font-status {
+  margin-top: 0.12rem;
+  font-size: 0.68rem;
+  color: var(--gray);
+}
+
+.hb-font-manager-btn {
+  min-width: 4.2rem;
+  min-height: 34px;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--dark);
+  cursor: pointer;
+}
+
+.hb-font-manager-btn:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.hb-font-manager-btn.ready,
+.hb-font-manager-btn.active {
+  border-color: var(--secondary);
+}
+
+.hb-font-progress {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 5px;
+  accent-color: var(--secondary);
+}
+
+html[data-theme="dark"] .hb-font-item strong,
+html[saved-theme="dark"] .hb-font-item strong,
+html[data-theme="dark"] .hb-font-manager-btn,
+html[saved-theme="dark"] .hb-font-manager-btn {
+  color: #d4d4d4;
+}
+
+html[data-theme="dark"] .hb-font-manager-btn,
+html[saved-theme="dark"] .hb-font-manager-btn {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .hb-close-btn {
@@ -1790,7 +1912,7 @@ html[saved-theme="dark"] .hamburger-line {
 
 html[data-theme="dark"] #hamburger-menu,
 html[saved-theme="dark"] #hamburger-menu {
-  background: rgba(22, 22, 24, 0.88);
+  background: var(--light);
   border-color: rgba(255, 255, 255, 0.08);
 }
 
@@ -2394,13 +2516,13 @@ html[saved-theme="dark"] .home-link {
     height: auto !important;
     overflow-y: auto !important;
     scrollbar-width: none !important;
-    background: rgba(255, 255, 255, 0.62) !important;
+    background: var(--light) !important;
     border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.06) !important;
     padding: 0.65rem 0.6rem 0.8rem !important;
     z-index: 500 !important;
     @include dark {
-      background: rgba(22, 22, 24, 0.5) !important;
+      background: var(--light) !important;
       border-right-color: rgba(255, 255, 255, 0.12) !important;
     }
   }
@@ -2413,24 +2535,41 @@ html[saved-theme="dark"] .home-link {
     scrollbar-width: none !important;
   }
 
-  /* 折叠：背景透明、隐藏标题文字、只留居中箭头 */
+  /* 折叠：收起目录内容，保留“目录”标题和箭头 */
   .left.sidebar:has(.explorer.collapsed) {
-    background: transparent !important;
-    border-right: none !important;
-    box-shadow: none !important;
-    height: auto !important;
+    background: var(--light) !important;
+    border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 4px 0 18px rgba(0, 0, 0, 0.05) !important;
+    width: 96px !important;
+    height: max-content !important;
+    min-height: 0 !important;
+    bottom: auto !important;
     padding: 0.4rem 0 !important;
     overflow: hidden !important;
+    @include dark {
+      background: var(--light) !important;
+      border-right-color: rgba(255, 255, 255, 0.12) !important;
+    }
   }
   .left.sidebar:has(.explorer.collapsed) .home-link,
   .left.sidebar:has(.explorer.collapsed) .search {
     display: none !important;
   }
   .explorer.collapsed .title-button h2 {
-    display: none !important;
+    display: block !important;
+    width: auto;
+    min-width: max-content;
+    overflow: visible;
+    white-space: nowrap;
   }
   .explorer.collapsed .title-button {
+    display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 0.45rem;
+    width: max-content;
+    min-width: 96px;
+    overflow: visible;
     padding: 0.4rem 0.5rem;
   }
 }
@@ -2526,6 +2665,60 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light {
 }
 
 @media (max-width: 800px) {
+  .top-bar-inner {
+    justify-content: flex-start !important;
+  }
+
+  .top-bar-right {
+    margin-left: auto;
+  }
+
+  #hamburger-backdrop,
+  #sidebar-backdrop {
+    background: rgba(15, 23, 42, 0.84);
+  }
+
+  #sidebar-backdrop {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .sidebar.left .search {
+    display: contents !important;
+  }
+
+  .sidebar.left .search-button {
+    display: none !important;
+  }
+
+  .sidebar.left .readermode {
+    display: none !important;
+  }
+
+  /* 移动端不提供目录标题折叠，始终显示完整目录。 */
+  .sidebar.left .desktop-explorer {
+    display: none !important;
+  }
+
+  .left.sidebar .search-container {
+    z-index: 10020 !important;
+  }
+
+  /* collapsed 仅表示抽屉关闭；目录内容不再被原生规则移出视口。 */
+  .explorer.collapsed > .explorer-content {
+    transform: none !important;
+    visibility: visible !important;
+  }
+
+  .explorer.collapsed {
+    flex: 1 1 auto !important;
+  }
+
+  .explorer.collapsed > .explorer-content {
+    transform: none !important;
+    visibility: visible !important;
+  }
+
   .sidebar-close-btn {
     display: inline-flex !important;
     align-self: flex-end;
@@ -2615,12 +2808,15 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light {
   }
   /* 侧栏抽屉本身：接近不透明底色，背景图不穿透 */
   .left.sidebar {
-    background: rgba(250, 248, 248, 0.98) !important;
+    background: var(--light) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12) !important;
     z-index: 10005 !important;
   }
+
   html[data-theme="dark"] .left.sidebar,
   html[saved-theme="dark"] .left.sidebar {
-    background: rgba(22, 22, 24, 0.98) !important;
+    background: var(--light) !important;
   }
 }
 
@@ -2659,6 +2855,13 @@ ol.overflow.gradient-active {
 /* ====== 隐藏 Quartz 自带移动端目录按钮（顶栏左侧按钮已覆盖此功能） ====== */
 .explorer .mobile-explorer {
   display: none !important;
+}
+
+/* 移动端目录由顶栏导航按钮控制，抽屉内不显示可折叠的目录标题。 */
+@media (max-width: 800px) {
+  .sidebar.left .explorer .desktop-explorer {
+    display: none !important;
+  }
 }
 
 /* ====== 键盘焦点环 ====== */
@@ -2986,5 +3189,17 @@ h6[id] {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* 移动端最终覆盖：目录抽屉只显示列表，颜色统一使用主题底色。 */
+@media (max-width: 800px) {
+  html body .page > #quartz-body .sidebar.left .explorer .desktop-explorer {
+    display: none !important;
+  }
+
+  html body .page > #quartz-body .sidebar.left,
+  html body .page > #quartz-body .sidebar.left:has(.explorer:not(.collapsed)) {
+    background: var(--light) !important;
   }
 }
