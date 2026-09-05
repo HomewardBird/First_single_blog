@@ -396,12 +396,26 @@ footer {
 }
 
 @media (min-width: 800px) and (max-width: 1199px) {
-  /* 平板区间：折叠 = 隐藏目录树，仅留标题栏 */
-  .explorer.collapsed .explorer-content {
-    display: none !important;
+  /* 平板区间：折叠 = 左栏整栏消失，正文改为单列堆叠（右栏下移、页脚收尾），
+     不再残留一列白色/玻璃空白 */
+  html body #quartz-body:has(.sidebar.left .explorer.collapsed) {
+    grid-template-columns: auto !important;
+    grid-template-rows: auto auto auto auto !important;
+    grid-template-areas:
+      "grid-header"
+      "grid-center"
+      "grid-sidebar-right"
+      "grid-footer" !important;
   }
-  .explorer.collapsed {
-    flex: 0 1 auto !important;
+  html body[data-slug="index"] #quartz-body:has(.explorer.collapsed) {
+    grid-template-rows: auto auto auto !important;
+    grid-template-areas:
+      "grid-center"
+      "grid-sidebar-right"
+      "grid-footer" !important;
+  }
+  html body #quartz-body:has(.sidebar.left .explorer.collapsed) .sidebar.left {
+    display: none !important;
   }
   [data-slug="index"] #quartz-body {
     grid-template-rows: auto auto auto !important;
@@ -1214,34 +1228,35 @@ html body[data-slug="index"] .glass-card:nth-child(3) {
   }
 }
 
-/* PC 端卡片入场：轻微上移、淡入和缩放，保留原有 hover 交互。 */
+/* ====== PC 端卡片入场（统一由 JS 在遮罩揭开后触发） ======
+ * 机制：JS 在首页加载遮罩基本透明后给 <html> 加上 data-home-cards，
+ * 三张卡片按 nth-child 错峰执行一次 home-card-enter；
+ * 动画结束后 JS 移除该属性，卡片回到静态样式，hover 变换不受
+ * animation fill 影响。未触发前卡片保持可见（不会"静止很久后突跳"）。 */
+@keyframes home-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 @media (min-width: 801px) {
-  html body[data-slug="index"] .glass-card:not(.home-card-entered) {
-    animation: none;
-    opacity: 1;
-    will-change: auto;
-  }
-
-  html body[data-slug="index"] .glass-card.home-card-active:not(.home-card-entered) {
-    animation: home-card-enter 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    will-change: transform, opacity;
-  }
-
-  html body[data-slug="index"] .glass-card.home-card-entered {
+  html body[data-slug="index"] .glass-card {
     opacity: 1;
     animation: none;
     will-change: auto;
   }
-
-  @keyframes home-card-enter {
-    from {
-      opacity: 0;
-      transform: translateY(14px) scale(0.985);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
+  html[data-home-cards] body[data-slug="index"] .glass-card {
+    animation: home-card-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  html[data-home-cards] body[data-slug="index"] .glass-card:nth-child(2) {
+    animation-delay: 0.12s;
+  }
+  html[data-home-cards] body[data-slug="index"] .glass-card:nth-child(3) {
+    animation-delay: 0.24s;
   }
 }
 
@@ -1692,7 +1707,9 @@ html[saved-theme="dark"] .shelf-accent-violet .shelf-icon {
 .top-bar-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  /* 标题栏文字被全局隐藏，space-between 会让中间按钮“孤悬居中”；
+     固定左对齐：☰/🔍 贴左成组，右侧按钮组由 .top-bar-right 的 margin-left:auto 推到最右 */
+  justify-content: flex-start;
   height: 100%;
   padding: 0 1rem;
   max-width: 1200px;
@@ -1754,12 +1771,17 @@ html[saved-theme="dark"] .hamburger-line {
 /* ====== 汉堡菜单面板 ====== */
 #hamburger-menu {
   position: fixed;
-  top: 44px;
-  right: 0.5rem;
+  top: calc(44px + 0.5rem);
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
   width: 300px;
-  max-height: calc(100vh - 60px);
+  max-width: calc(100vw - 1.5rem);
+  /* 用 dvh 约束面板高度：vh 在平板/手机等于“大视口”，地址栏收起时面板
+     底部会落在屏幕外，滚到底也看不到最下面的功能；dvh 随可见区域实时变化 */
+  max-height: calc(100vh - (44px + 1rem));
+  max-height: calc(100dvh - (44px + 1rem));
   overflow-y: auto;
   overscroll-behavior: contain;
+  touch-action: pan-y;
   z-index: 10013;
   background: var(--light);
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -1784,8 +1806,9 @@ html[saved-theme="dark"] .hamburger-line {
   border-bottom: 1px solid rgba(128, 128, 128, 0.12);
 }
 
-/* PC 端使用右上角汉堡按钮再次点击关闭面板，不显示重复的关闭符号。 */
-@media (min-width: 801px) {
+/* PC 端（≥1200px）使用右上角汉堡按钮再次点击关闭面板，不显示重复的关闭符号。
+   平板（801-1199px）是全高抽屉，保留 ✕ 关闭按钮便于触摸用户关闭。 */
+@media (min-width: 1200px) {
   .hb-header {
     justify-content: flex-start;
   }
@@ -2190,6 +2213,40 @@ html[saved-theme="dark"] .hb-lock-btn.locked {
   }
 }
 
+/* ====== 平板（801-1199px）：汉堡菜单改为右侧全高抽屉 ======
+ * 面板高度=可见视口高度，滚动区即整块面板；vh 地址栏偏差不再导致
+ * 面板底部落到屏幕外、功能永远滚不出来的问题。 */
+@media (min-width: 801px) and (max-width: 1199px) {
+  #hamburger-menu {
+    top: 44px;
+    bottom: auto;
+    right: 0;
+    left: auto;
+    width: min(21rem, 88vw);
+    height: calc(100vh - 44px);
+    height: calc(100dvh - 44px);
+    max-height: none;
+    max-width: none;
+    border-radius: 0;
+    border: none;
+    border-left: 1px solid rgba(128, 128, 128, 0.18);
+    box-shadow: -12px 0 40px rgba(0, 0, 0, 0.16);
+    padding: 0.8rem 0.9rem;
+    transform: translateX(100%);
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease;
+  }
+  html[data-theme="dark"] #hamburger-menu,
+  html[saved-theme="dark"] #hamburger-menu {
+    border-left-color: rgba(255, 255, 255, 0.1);
+    box-shadow: -12px 0 40px rgba(0, 0, 0, 0.5);
+  }
+  #hamburger-menu.open {
+    transform: translateX(0);
+  }
+}
+
 /* ====== Quartz 专用：图片对齐语法 (#pic_center / #pic_left / #pic_right) ====== */
 
 /* 图片居中 (支持 #pic_center 或 #center) */
@@ -2488,9 +2545,6 @@ html[saved-theme="dark"] .home-link {
   #top-bar #nav-toggle-btn {
     display: flex !important;
   }
-  .top-bar-inner {
-    justify-content: space-between !important;
-  }
 
   /* 主布局呼吸间距（Quartz 默认 gap 仅 5px） */
   #quartz-body {
@@ -2535,42 +2589,23 @@ html[saved-theme="dark"] .home-link {
     scrollbar-width: none !important;
   }
 
-  /* 折叠：收起目录内容，保留“目录”标题和箭头 */
+  /* 折叠：整栏滑出屏幕（left 位移），正文接管原 320px 留白。
+     ⚠ 不能用 transform/visibility 隐藏：transform 会成为内部 position:fixed
+     搜索浮层的包含块，visibility 会连同浮层一起隐藏；left 位移与移动端抽屉
+     同机制，固定定位的搜索浮层不受影响，折叠时顶栏 🔍 依然可用。 */
+  .left.sidebar {
+    transition: left 0.25s ease;
+  }
   .left.sidebar:has(.explorer.collapsed) {
-    background: var(--light) !important;
-    border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
-    box-shadow: 4px 0 18px rgba(0, 0, 0, 0.05) !important;
-    width: 96px !important;
-    height: max-content !important;
-    min-height: 0 !important;
-    bottom: auto !important;
-    padding: 0.4rem 0 !important;
-    overflow: hidden !important;
-    @include dark {
-      background: var(--light) !important;
-      border-right-color: rgba(255, 255, 255, 0.12) !important;
-    }
+    left: -330px !important;
+    box-shadow: none !important;
+    border-right-color: transparent !important;
   }
-  .left.sidebar:has(.explorer.collapsed) .home-link,
-  .left.sidebar:has(.explorer.collapsed) .search {
-    display: none !important;
+  #quartz-body {
+    transition: margin-left 0.25s ease;
   }
-  .explorer.collapsed .title-button h2 {
-    display: block !important;
-    width: auto;
-    min-width: max-content;
-    overflow: visible;
-    white-space: nowrap;
-  }
-  .explorer.collapsed .title-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    width: max-content;
-    min-width: 96px;
-    overflow: visible;
-    padding: 0.4rem 0.5rem;
+  .page:has(.left.sidebar .explorer.collapsed) > #quartz-body {
+    margin-left: 0 !important;
   }
 }
 
@@ -2644,6 +2679,7 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light {
   display: flex;
   align-items: center;
   gap: 0.1rem;
+  margin-left: auto;
 }
 
 /* ====== 移动端适配 ====== */
@@ -2665,14 +2701,6 @@ html[saved-theme="dark"] #tb-theme-btn .icon-light {
 }
 
 @media (max-width: 800px) {
-  .top-bar-inner {
-    justify-content: flex-start !important;
-  }
-
-  .top-bar-right {
-    margin-left: auto;
-  }
-
   #hamburger-backdrop,
   #sidebar-backdrop {
     background: rgba(15, 23, 42, 0.84);

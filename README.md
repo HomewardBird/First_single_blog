@@ -2,9 +2,9 @@
 
 > “写作是思考的延伸，而分享是思想的碰撞。” —— 改编自 Richard Hamming
 
-本项目是一个基于 [Quartz v5](https://quartz.jzhao.xyz/) 构建的个人博客，旨在打造一个简洁、高效的数字花园，用于记录日常思考、技术笔记与生活感悟。
+本项目是一个基于 [Quartz v5](https://quartz.jzhao.xyz/) 构建的个人博客，用于科普计算机知识和记录日常思考、技术笔记与生活感悟。
 
-🔗 在线访问：[安的小站](https://homewardbird.dpdns.org)  
+🔗 在线访问：[安巢鸟的小站](https://homewardbird.dpdns.org)  
 📖 Quartz 官方文档：https://quartz.jzhao.xyz/  
 💬 加入 Quartz 中文社区（欢迎交流）：[Discord](https://discord.gg/cRFFHYye7t)
 

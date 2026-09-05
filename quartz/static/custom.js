@@ -484,7 +484,7 @@
     }
     closeSidebar()
     var tbT = document.querySelector("#top-bar .top-bar-title")
-    if (tbT) tbT.textContent = document.title || "归鸟的馆藏日志"
+    if (tbT) tbT.textContent = document.title || "安巢鸟的个人网站"
     restoreLock()
     var cur = getSlug()
     if (localStorage.getItem(LOCK_KEY) !== "true") {
@@ -548,8 +548,10 @@
   //  Font Manager (opt-in download, cached locally, apply on second click)
   // ====================================================================
   var fontOptions = [
-    { id: "lxgw", label: "落霞文楷", file: "/fonts/lxgw-wenkai.ttf" },
-    { id: "noto", label: "思源黑体", file: "/fonts/noto-sans-sc-variable.ttf" },
+    // bytes：静态字体的实际文件字节数。content-length 会被 Service Worker
+    // 转发时剥离，作为进度百分比的分母兜底；替换字体文件后需同步更新。
+    { id: "lxgw", label: "落霞文楷", file: "/fonts/lxgw-wenkai.ttf", bytes: 25673994 },
+    { id: "noto", label: "思源黑体", file: "/fonts/noto-sans-sc-variable.ttf", bytes: 17773248 },
   ]
 
   function fontFileUrl(option) {
@@ -588,17 +590,30 @@
     var url = fontFileUrl(option)
     var response = await fetch(url, { cache: "no-cache" })
     if (!response.ok) throw new Error("font download failed")
-    var total = parseInt(response.headers.get("content-length") || "0", 10)
+    // 优先用响应头；SW 转发会剥离 content-length，此时退化为内置已知字节数，
+    // 保证进度条能随数据块真实递增（上限 99%，100% 由完成态给出）
+    var total =
+      parseInt(response.headers.get("content-length") || "0", 10) || option.bytes || 0
     var received = 0
     var reader = response.body && response.body.getReader()
     var chunks = []
+    var lastShownPct = -1
+    var lastShownAt = 0
     if (reader) {
       while (true) {
         var part = await reader.read()
         if (part.done) break
         chunks.push(part.value)
         received += part.value.length
-        fontButtonState(option.id, "downloading", total ? (received / total) * 100 : 0)
+        // 节流：至少 +1% 或间隔 200ms 才写一次 DOM，慢网下小块高频到达时
+        // 避免每秒上千次 querySelector/textContent 写入
+        var pct = total ? Math.min(99, (received / total) * 100) : 0
+        var now = Date.now()
+        if (pct - lastShownPct >= 1 || now - lastShownAt >= 200) {
+          lastShownPct = pct
+          lastShownAt = now
+          fontButtonState(option.id, "downloading", pct)
+        }
       }
     } else {
       chunks.push(new Uint8Array(await response.arrayBuffer()))
@@ -838,7 +853,7 @@
     var bar = document.getElementById("top-bar")
     if (!bar) return
     var tbt = bar.querySelector(".top-bar-title")
-    if (tbt) tbt.textContent = document.title || "归鸟的馆藏日志"
+    if (tbt) tbt.textContent = document.title || "安巢鸟的个人网站"
 
     if (!document.getElementById("hamburger-menu")) {
       var menu = document.createElement("div")
@@ -1982,31 +1997,65 @@
   })
 
   // ====================================================================
-  //  Card entrance：PC 首页卡片入场动画
+  //  Card entrance：首页卡片入场动画（PC）
   // ====================================================================
+  // 单一触发源：给 <html> 加 data-home-cards，三张卡片用纯 CSS 错峰执行一次。
+  // 动画约 0.79s 后移除属性恢复静态样式（hover 不受 fill 影响）。
+  // 触发时机 = 首页加载遮罩（#page-loader）基本透明时；SPA 跳转没有遮挡，
+  // 直接下一帧触发。遮罩停留再久也不会导致"先静止几秒再突跳"。
   function initCardEntrance() {
+    var ANIM_KEEP_MS = 1000
+    var removeTimer = null
+
+    function activate() {
+      document.documentElement.setAttribute("data-home-cards", "on")
+      if (removeTimer) clearTimeout(removeTimer)
+      removeTimer = setTimeout(function () {
+        document.documentElement.removeAttribute("data-home-cards")
+      }, ANIM_KEEP_MS)
+    }
+
     function triggerEntrance() {
       if (getSlug() !== "index") return
-      document.querySelectorAll(".glass-card").forEach(function (card) {
-        if (!card.dataset.homeEntranceBound) {
-          card.dataset.homeEntranceBound = "true"
-          card.addEventListener("animationend", function (e) {
-            if (e.animationName === "home-card-enter") {
-              card.classList.add("home-card-entered")
-              card.style.willChange = "auto"
-            }
-          })
+
+      var loader = document.getElementById("page-loader")
+      var occluding =
+        loader &&
+        loader.isConnected &&
+        (loader.classList.contains("show") || loader.classList.contains("fade-out"))
+      if (!occluding) {
+        activate()
+        return
+      }
+
+      // 遮罩处于遮挡状态：轮询其实际透明度，降到 ~0.35 以下（基本揭开）就触发。
+      // 不依赖遮罩的 DOM 移除/定时器，冷启动、慢网、后台标签都自适应。
+      var started = Date.now()
+      var check = function () {
+        var l = document.getElementById("page-loader")
+        var still =
+          l &&
+          l.isConnected &&
+          (l.classList.contains("show") || l.classList.contains("fade-out"))
+        if (!still) {
+          activate()
+          return
         }
-        card.classList.remove("home-card-entered", "home-card-active")
-        card.style.willChange = "transform, opacity"
-        void card.offsetWidth
-        requestAnimationFrame(function () {
-          if (card.isConnected && getSlug() === "index") {
-            card.classList.add("home-card-active")
-          }
-        })
-      })
+        var opacity = parseFloat(window.getComputedStyle(l).opacity)
+        if (!isNaN(opacity) && opacity <= 0.35) {
+          activate()
+          return
+        }
+        if (Date.now() - started > 5000) {
+          // 极端兜底：遮罩异常不透明也照常触发，避免动画永远不播
+          activate()
+          return
+        }
+        setTimeout(check, 50)
+      }
+      setTimeout(check, 50)
     }
+
     triggerEntrance()
     document.addEventListener("nav", triggerEntrance)
   }
