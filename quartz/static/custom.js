@@ -2227,6 +2227,7 @@
     var _toastEl = null
     var _dlgEl = null
     var _poemEl = null
+    var _poemTm = null
     var _logoTaps = []
     var _lastBirdAt = 0
     var _buffer = ""
@@ -2387,7 +2388,7 @@
         states.push({
           el: el,
           x: rnd(0.04, 0.9) * W,
-          y: rnd(-0.12, 0) * H,
+          y: rnd(-0.16, -0.02) * H,
           vy: 0,
           // 终端速度：约 16~26 vh/s（屏高不同时视觉一致）
           term: rnd(0.16, 0.26) * H,
@@ -2401,7 +2402,8 @@
           estDur: 0,
           rot: rnd(-8, 8),
           prevSway: 0,
-          delay: rnd(0, 1.8),
+          // 入场窗口收紧到 0.35s 内：羽毛与诗句几乎同步出现
+          delay: rnd(0, 0.35),
           t0: 0,
         })
         var st = states[i]
@@ -2475,12 +2477,20 @@
 
       var poem = BIRD_POEMS[Math.floor(Math.random() * BIRD_POEMS.length)]
       var p = ensurePoem()
+      // 按句读拆行：五言/七言每句单独一行（五言五行、七言七字），
+      // 自动排版成"词牌卡"样式，而非按屏幕宽度随意折行
+      var clauses = poem.t.match(/[^，。、；]+[，。]?/g) || [poem.t]
+      var html = ""
+      for (var i = 0; i < clauses.length; i++) {
+        var line = clauses[i].replace(/^\s+|\s+$/g, "")
+        if (line) html += '<div class="egg-poem-line">' + line + "</div>"
+      }
       p.innerHTML =
-        '<span class="egg-poem-line">' +
-        poem.t +
-        '</span><span class="egg-poem-src">—— ' +
+        '<div class="egg-poem-box">' +
+        html +
+        '</div><div class="egg-poem-src">—— ' +
         poem.a +
-        "</span>"
+        "</div>"
       p.classList.remove("show")
       void p.offsetWidth
       p.classList.add("show")
@@ -2489,9 +2499,25 @@
       if (!reducedMotion()) {
         spawnFeathers()
       }
-      setTimeout(function () {
-        if (p.isConnected) p.classList.remove("show")
-      }, 6000)
+      clearTimeout(_poemTm)
+      _poemTm = setTimeout(function () {
+        hidePoem()
+      }, 7000)
+    }
+
+    // 主动清除诗句与羽毛（点空白处/SPA 切页/到点自动）
+    function killFeathers() {
+      if (_featherRaf) {
+        cancelAnimationFrame(_featherRaf)
+        _featherRaf = null
+      }
+      var fe = document.getElementById("egg-feathers")
+      if (fe && fe.parentNode) fe.parentNode.removeChild(fe)
+    }
+    function hidePoem() {
+      clearTimeout(_poemTm)
+      if (_poemEl && _poemEl.isConnected) _poemEl.parentNode.removeChild(_poemEl)
+      _poemEl = null
     }
 
     function ensureBirdFoot() {
@@ -2518,6 +2544,11 @@
     document.addEventListener("click", function (e) {
       var t = e.target
       if (!t || !t.closest) return
+      // 诗句/羽毛展示期间，任何点击都视为"点空白处退出"：先清场再继续
+      if ((_poemEl && _poemEl.isConnected) || document.getElementById("egg-feathers")) {
+        hidePoem()
+        killFeathers()
+      }
       // 弹窗内外层点击关闭
       if (t.closest("[data-egg-close]")) {
         closeEggDialog()
@@ -2622,6 +2653,8 @@
       _logoTaps = []
       hideToast()
       closeEggDialog()
+      hidePoem()
+      killFeathers()
       ensureBirdFoot()
     })
 
