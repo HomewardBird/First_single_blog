@@ -2215,6 +2215,420 @@
   }
 
   // ====================================================================
+  //  Easter eggs：轻量彩蛋
+  //   1) 首页标题连点 3 次（每次轻抖反馈）→ 立刻弹出隐藏入口小窗（群聊小秘密）
+  //   2) 搜索框里敲出 …bird → 白羽漫天 + 鸟诗随机浮现
+  //   3) 页脚签名：哪怕网络没有留下我的羽毛，但我已飞过。
+  //  性能约束：事件全部委托在 document（SPA 换页不重绑）；DOM 节点懒创建
+  //  （body 会被 micromorph 整体替换，不缓存跨页引用）；动画只用
+  //  transform/opacity；带冷却与 reduced-motion 保护。
+  // ====================================================================
+  function initEasterEggs() {
+    var _toastEl = null
+    var _dlgEl = null
+    var _poemEl = null
+    var _logoTaps = []
+    var _lastBirdAt = 0
+    var _buffer = ""
+
+    // 线性矢量小鸟（Lucide bird，与首页卡片图标同风格）：用于弹窗徽章/页脚
+    var BIRD_SVG =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<path d="M16 7h.01"/><path d="M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.28-2.3L2 20"/>' +
+      '<path d="m20 7 2 .5-2 .5"/></svg>'
+
+    // 白羽：更真实的羽毛造型——两侧羽片带深浅过渡，中轴羽轴、细密羽枝，
+    // 底部羽根收尖；不勾粗边，靠柔和灰影与背景分离
+    var FEATHER_SVG =
+      '<svg viewBox="0 0 36 116" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<defs>' +
+      '<linearGradient id="eggFade" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#ffffff"/><stop offset="0.75" stop-color="#f4f7fa"/><stop offset="1" stop-color="#dde6ee"/>' +
+      "</linearGradient>" +
+      '<linearGradient id="eggShade" x1="0" y1="0" x2="1" y2="0">' +
+      '<stop offset="0" stop-color="#93a7ba" stop-opacity="0"/><stop offset="1" stop-color="#93a7ba" stop-opacity="0.28"/>' +
+      "</linearGradient>" +
+      "</defs>" +
+      '<path d="M18 3 C25 12 27 30 25.5 47 C24 63 21.5 80 18 102 C14.5 80 12 63 10.5 47 C9 30 11 12 18 3 Z" fill="url(#eggFade)"/>' +
+      '<path d="M18 3 C25 12 27 30 25.5 47 C24.5 60 23 74 18.6 88 C22 74 22.5 56 20.5 38 C19.5 24 18.4 12 18 3 Z" fill="url(#eggShade)"/>' +
+      '<path d="M18 12 L18 100" stroke="#9db2c6" stroke-width="1.3" stroke-linecap="round" opacity="0.75"/>' +
+      '<g stroke="#a9bccd" stroke-width="0.9" opacity="0.55" stroke-linecap="round">' +
+      '<path d="M17.6 24 L10.2 14 M17.4 37 L8.8 27 M17.2 50 L8.4 40 M17.4 63 L9.4 53 M17.8 76 L12 67 M18.2 88 L14.6 81"/>' +
+      '<path d="M18.4 24 L25.8 14 M18.6 37 L27.2 27 M18.8 50 L27.6 40 M18.6 63 L26.6 53 M18.2 76 L24 67 M17.8 88 L21.4 81"/>' +
+      "</g>" +
+      "</svg>"
+
+    // 有关鸟的诗词池（随机浮现）
+    var BIRD_POEMS = [
+      { t: "月出惊山鸟，时鸣春涧中。", a: "王维《鸟鸣涧》" },
+      { t: "春眠不觉晓，处处闻啼鸟。", a: "孟浩然《春晓》" },
+      { t: "千山鸟飞绝，万径人踪灭。", a: "柳宗元《江雪》" },
+      { t: "众鸟高飞尽，孤云独去闲。", a: "李白《独坐敬亭山》" },
+      { t: "江碧鸟逾白，山青花欲燃。", a: "杜甫《绝句二首》" },
+      { t: "山气日夕佳，飞鸟相与还。", a: "陶渊明《饮酒·其五》" },
+      { t: "鸟宿池边树，僧敲月下门。", a: "贾岛《题李凝幽居》" },
+      { t: "感时花溅泪，恨别鸟惊心。", a: "杜甫《春望》" },
+      { t: "两个黄鹂鸣翠柳，一行白鹭上青天。", a: "杜甫《绝句》" },
+      { t: "无可奈何花落去，似曾相识燕归来。", a: "晏殊《浣溪沙》" },
+      { t: "东走无复忆鲈鱼，南飞觉有安巢鸟。", a: "安巢鸟的出处" },
+    ]
+    var QQ_GROUP = "1075229021"
+    var CLOSE_SVG =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>'
+
+    function reducedMotion() {
+      return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    }
+
+    function ensureToast() {
+      if (_toastEl && _toastEl.isConnected) return _toastEl
+      var t = document.createElement("div")
+      t.id = "egg-toast"
+      t.setAttribute("role", "status")
+      document.body.appendChild(t)
+      _toastEl = t
+      return t
+    }
+    function toast(text, ms) {
+      var t = ensureToast()
+      t.textContent = text
+      t.classList.add("show")
+      clearTimeout(t._tm)
+      t._tm = setTimeout(function () {
+        t.classList.remove("show")
+      }, ms || 1800)
+    }
+    function hideToast() {
+      if (_toastEl && _toastEl.isConnected) _toastEl.classList.remove("show")
+    }
+
+    function ensureDialog() {
+      if (_dlgEl && _dlgEl.isConnected) return _dlgEl
+      var d = document.createElement("div")
+      d.id = "egg-dialog"
+      d.setAttribute("aria-hidden", "true")
+      d.innerHTML =
+        '<div class="egg-backdrop" data-egg-close></div>' +
+        '<div class="egg-card" role="dialog" aria-modal="true" aria-labelledby="egg-dlg-title">' +
+        '<button class="egg-close" type="button" data-egg-close aria-label="关闭">' +
+        CLOSE_SVG +
+        "</button>" +
+        '<div class="egg-emblem" aria-hidden="true">' +
+        BIRD_SVG +
+        "</div>" +
+        '<div class="egg-title" id="egg-dlg-title">你发现了隐藏入口</div>' +
+        '<p class="egg-desc">欢迎来到安巢鸟的小茶馆，技术交流、生活闲聊都可以。</p>' +
+        '<div class="egg-secret">' +
+        '<div class="egg-sec-title">小秘密 · 我的群聊</div>' +
+        '<div class="egg-sec-row">' +
+        '<span class="egg-sec-num">' +
+        QQ_GROUP +
+        "</span>" +
+        '<button class="egg-copy" type="button" data-egg-copy>复制群号</button>' +
+        "</div>" +
+        '<div class="egg-sec-hint">技术交流、闲聊都可以，搜到这个群号就找到我了。</div>' +
+        "</div>" +
+        '<div class="egg-links">' +
+        '<a class="egg-btn" href="' + getBp() + '/杂谈/01%20%E7%BD%91%E5%90%8D%E7%9A%84%E6%95%85%E4%BA%8B">网名的故事</a>' +
+        '<a class="egg-btn" href="' + getBp() + '/关于">关于本站</a>' +
+        "</div>" +
+        "</div>"
+      document.body.appendChild(d)
+      _dlgEl = d
+      return d
+    }
+    function openEggDialog() {
+      var d = ensureDialog()
+      d.setAttribute("aria-hidden", "false")
+      d.classList.add("open")
+      var b = d.querySelector(".egg-close")
+      if (b) {
+        try {
+          b.focus()
+        } catch (e) {}
+      }
+    }
+    function closeEggDialog() {
+      if (_dlgEl && _dlgEl.isConnected) {
+        _dlgEl.classList.remove("open")
+        _dlgEl.setAttribute("aria-hidden", "true")
+      }
+    }
+
+    // ---- bird 彩蛋：白羽漫天 + 鸟诗浮现 ----
+    // 伪物理飘落（方案 A）：垂直速度平滑趋近"终端速度"后基本匀速；
+    // 横向为正弦摆动 + 轻微整体漂移；旋转角跟随横向摆速、始终小角度。
+    // 全程只写 transform/opacity（GPU），羽毛出屏或节点失联即清理。
+    var _featherRaf = null
+    function spawnFeathers() {
+      var old = document.getElementById("egg-feathers")
+      if (old && old.parentNode) old.parentNode.removeChild(old)
+      if (_featherRaf) {
+        cancelAnimationFrame(_featherRaf)
+        _featherRaf = null
+      }
+      var W = window.innerWidth
+      var H = window.innerHeight
+      var layer = document.createElement("div")
+      layer.id = "egg-feathers"
+      layer.setAttribute("aria-hidden", "true")
+      document.body.appendChild(layer)
+
+      var rnd = function (min, max) {
+        return min + Math.random() * (max - min)
+      }
+      var states = []
+      for (var i = 0; i < 12; i++) {
+        var el = document.createElement("span")
+        el.className = "egg-feather"
+        el.style.transformOrigin = "50% 15%"
+        el.innerHTML = FEATHER_SVG
+        layer.appendChild(el)
+        states.push({
+          el: el,
+          x: rnd(0.04, 0.9) * W,
+          y: rnd(-0.12, 0) * H,
+          vy: 0,
+          // 终端速度：约 16~26 vh/s（屏高不同时视觉一致）
+          term: rnd(0.16, 0.26) * H,
+          scale: rnd(0.42, 0.72),
+          // 正弦横摆：振幅 1.2~3.2vw、角速度 2.2~4.4 rad/s（周期 1.4~2.8s）
+          amp: rnd(0.012, 0.032) * W,
+          ang: rnd(2.2, 4.4),
+          ph: rnd(0, Math.PI * 2),
+          // 整段飘落整体漂移 ±0~2.4vw
+          drift: rnd(-0.024, 0.024) * W,
+          estDur: 0,
+          rot: rnd(-8, 8),
+          prevSway: 0,
+          delay: rnd(0, 1.8),
+          t0: 0,
+        })
+        var st = states[i]
+        st.estDur = (1.35 * H) / st.term // 秒，用于分配漂移速度
+        st.t0 = performance.now() + st.delay * 1000
+      }
+
+      var last = performance.now()
+      var step = function (now) {
+        var dt = Math.min(0.05, (now - last) / 1000)
+        last = now
+        var alive = 0
+        for (var i = 0; i < states.length; i++) {
+          var s = states[i]
+          if (!s.el.isConnected) continue
+          var t = (now - s.t0) / 1000
+          if (t < 0) {
+            s.el.style.opacity = "0"
+            alive++
+            continue
+          }
+          // 垂直：平滑趋近终端速度（无骤变）
+          s.vy += (s.term - s.vy) * Math.min(1, dt * 2.2)
+          s.y += s.vy * dt
+          // 横向：正弦摆 + 全程线性漂移
+          var sway = s.amp * Math.sin(s.ang * t + s.ph)
+          var x = s.x + sway + (s.drift / s.estDur) * t
+          // 旋转：跟随横向摆速（大角速度→大角度），限幅 ±14°，平滑追赶
+          var dSway = sway - s.prevSway
+          s.prevSway = sway
+          var target = Math.max(-14, Math.min(14, dSway * (180 / Math.PI) * 6))
+          s.rot += (target - s.rot) * Math.min(1, dt * 4)
+          // 透明度：入场渐显、接近底部渐隐
+          var alpha = 0.92 * Math.min(1, t / 0.45)
+          if (s.y > H - 160) alpha *= Math.max(0, Math.min(1, (H * 1.06 - s.y) / 200))
+          s.el.style.opacity = alpha.toFixed(3)
+          s.el.style.transform =
+            "translate3d(" +
+            x.toFixed(1) +
+            "px," +
+            s.y.toFixed(1) +
+            "px,0) rotate(" +
+            s.rot.toFixed(1) +
+            "deg) scale(" +
+            s.scale.toFixed(3) +
+            ")"
+          if (s.y < H * 1.12) alive++
+        }
+        if (alive > 0) {
+          _featherRaf = requestAnimationFrame(step)
+        } else {
+          _featherRaf = null
+          if (layer.isConnected) layer.parentNode.removeChild(layer)
+        }
+      }
+      _featherRaf = requestAnimationFrame(step)
+    }
+    function ensurePoem() {
+      if (_poemEl && _poemEl.isConnected) return _poemEl
+      var p = document.createElement("div")
+      p.id = "egg-poem"
+      p.setAttribute("aria-hidden", "true")
+      document.body.appendChild(p)
+      _poemEl = p
+      return p
+    }
+    function eggPoemEffect() {
+      var now = Date.now()
+      if (now - _lastBirdAt < 12000) return
+      _lastBirdAt = now
+
+      var poem = BIRD_POEMS[Math.floor(Math.random() * BIRD_POEMS.length)]
+      var p = ensurePoem()
+      p.innerHTML =
+        '<span class="egg-poem-line">' +
+        poem.t +
+        '</span><span class="egg-poem-src">—— ' +
+        poem.a +
+        "</span>"
+      p.classList.remove("show")
+      void p.offsetWidth
+      p.classList.add("show")
+
+      // 减少动效偏好：只显示诗句，不飘羽毛
+      if (!reducedMotion()) {
+        spawnFeathers()
+      }
+      setTimeout(function () {
+        if (p.isConnected) p.classList.remove("show")
+      }, 6000)
+    }
+
+    function ensureBirdFoot() {
+      var old = document.querySelector(".egg-bird-foot")
+      if (old && old.parentNode) old.parentNode.removeChild(old)
+      var foot = document.createElement("div")
+      foot.className = "egg-bird-foot"
+      foot.innerHTML =
+        '<span class="egg-foot-bird" aria-hidden="true">' +
+        BIRD_SVG +
+        "</span><span>哪怕网络没有留下我的羽毛，但我已飞过。</span>"
+      if (getSlug() === "index") {
+        var home = document.querySelector(".home-wrapper")
+        if (!home) return
+        var friend = home.querySelector(".friend-link")
+        ;(friend ? friend.parentNode : home).appendChild(foot)
+      } else {
+        var f = document.querySelector("footer")
+        if (!f) return
+        f.appendChild(foot)
+      }
+    }
+
+    document.addEventListener("click", function (e) {
+      var t = e.target
+      if (!t || !t.closest) return
+      // 弹窗内外层点击关闭
+      if (t.closest("[data-egg-close]")) {
+        closeEggDialog()
+        hideToast()
+        return
+      }
+      // 复制群号
+      var copyBtn = t.closest("[data-egg-copy]")
+      if (copyBtn) {
+        copyBtn.textContent = "已复制"
+        setTimeout(function () {
+          copyBtn.textContent = "复制群号"
+        }, 2000)
+        var done = function () {
+          toast("已复制，去 QQ 搜索 " + QQ_GROUP + " 加入秘密基地")
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(QQ_GROUP).then(done, done)
+        } else {
+          try {
+            var ta = document.createElement("textarea")
+            ta.value = QQ_GROUP
+            ta.style.cssText = "position:fixed;opacity:0;pointer-events:none"
+            document.body.appendChild(ta)
+            ta.select()
+            document.execCommand("copy")
+            document.body.removeChild(ta)
+            done()
+          } catch (err) {
+            done()
+          }
+        }
+        return
+      }
+      // 首页标题三连击：前两下轻抖反馈，第三下（开启隐藏入口）换成
+      // 安静的"吸入回弹"，弹窗立即出现
+      if (getSlug() === "index" && t.closest(".site-title")) {
+        var title = t.closest(".site-title")
+        var now = Date.now()
+        _logoTaps.push(now)
+        _logoTaps = _logoTaps.filter(function (x) {
+          return now - x < 1500
+        })
+        var isOpen = _logoTaps.length >= 3
+        var cls = isOpen ? "egg-logo-open" : "egg-logo-tap"
+        title.classList.remove("egg-logo-tap", "egg-logo-open")
+        void title.offsetWidth
+        title.classList.add(cls)
+        clearTimeout(title._eggTapT)
+        title._eggTapT = setTimeout(function () {
+          title.classList.remove(cls)
+        }, 460)
+        if (isOpen) {
+          _logoTaps = []
+          openEggDialog()
+        }
+      }
+    })
+
+    // 搜索框输入监听（capture：输入事件不会冒泡到 document）
+    document.addEventListener(
+      "input",
+      function (e) {
+        var t = e.target
+        if (!t || !t.classList || !t.classList.contains("search-bar")) return
+        var v = t.value || ""
+        var prev = parseInt(t.getAttribute("data-egg-prev") || "0", 10) || 0
+        t.setAttribute("data-egg-prev", String(v.length))
+        if (v.length < prev) {
+          _buffer = ""
+          return
+        }
+        _buffer = (_buffer + v.slice(prev)).toLowerCase()
+        if (_buffer.length > 10) _buffer = _buffer.slice(-10)
+        if (_buffer.slice(-4) === "bird") {
+          _buffer = ""
+          eggPoemEffect()
+        }
+      },
+      true,
+    )
+    // 重新聚焦搜索框时重置缓冲，避免上次残留拼出 bird
+    document.addEventListener(
+      "focusin",
+      function (e) {
+        if (e.target && e.target.classList && e.target.classList.contains("search-bar")) {
+          _buffer = ""
+        }
+      },
+      true,
+    )
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        closeEggDialog()
+      }
+    })
+
+    // SPA 换页：清理现场（body 会整体替换，旧节点自动消失）
+    document.addEventListener("nav", function () {
+      _buffer = ""
+      _logoTaps = []
+      hideToast()
+      closeEggDialog()
+      ensureBirdFoot()
+    })
+
+    ensureBirdFoot()
+  }
+
+  // ====================================================================
   //  Init
   // ====================================================================
   function init() {
@@ -2294,6 +2708,7 @@
     loadDailyQuote()
     lazyLoadImages()
     setupBgBlurUp()
+    initEasterEggs()
   }
 
   // ====================================================================

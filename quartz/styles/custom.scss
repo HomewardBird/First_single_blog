@@ -779,6 +779,49 @@ html body[data-bg-dark="true"] .content-meta {
   font-weight: 700;
   margin: 0 0 1rem;
   letter-spacing: 0.12em;
+  user-select: none;
+}
+/* 彩蛋：点击标题时的轻抖反馈（前两下：碎抖一下） */
+.site-title.egg-logo-tap {
+  animation: egg-logo-shake 0.26s ease-out;
+}
+@keyframes egg-logo-shake {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-1.6px) rotate(-0.4deg);
+  }
+  40% {
+    transform: translateX(1.5px) rotate(0.35deg);
+  }
+  60% {
+    transform: translateX(-1px);
+  }
+  80% {
+    transform: translateX(0.7px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+/* 第 3 下（隐藏入口开启）：整体"吸入再回弹"，安静收束，不碎抖 */
+.site-title.egg-logo-open {
+  animation: egg-logo-open 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes egg-logo-open {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(0.955);
+  }
+  75% {
+    transform: scale(1.012);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 html body[data-slug="index"] h1.site-title {
   color: #223a5e !important;
@@ -3234,5 +3277,432 @@ h6[id] {
   html body .page > #quartz-body .sidebar.left,
   html body .page > #quartz-body .sidebar.left:has(.explorer:not(.collapsed)) {
     background: var(--light) !important;
+  }
+}
+
+/* =====================================================================
+   面包屑 hover 反馈（不碰颜色，避免与暗色/自定义字色规则打架）
+   ===================================================================== */
+html body .breadcrumb-container .breadcrumb-element a {
+  opacity: 0.72;
+  transition:
+    opacity 0.15s ease,
+    text-decoration-color 0.15s ease;
+}
+html body .breadcrumb-container .breadcrumb-element a:hover {
+  opacity: 1;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+html body .breadcrumb-container .breadcrumb-element a:active {
+  opacity: 0.45;
+}
+
+/* =====================================================================
+   彩蛋 UI（轻量：动画只用 transform/opacity，纯合成器；元素懒创建）
+   ===================================================================== */
+
+/* 提示气泡：仅文字淡入淡出，pointer-events:none 不挡任何操作 */
+#egg-toast {
+  position: fixed;
+  left: 50%;
+  top: calc(44px + 1rem);
+  z-index: 29990;
+  transform: translate(-50%, -6px);
+  opacity: 0;
+  pointer-events: none;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  background: var(--light);
+  border: 1px solid rgba(128, 128, 128, 0.28);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
+  color: var(--dark);
+  font-size: 0.88rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+#egg-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+html[data-theme="dark"] #egg-toast,
+html[saved-theme="dark"] #egg-toast {
+  background: #232325;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #ebebec;
+}
+
+/* 隐藏入口小窗（精修版） */
+#egg-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 30000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem;
+}
+#egg-dialog.open {
+  display: flex;
+}
+#egg-dialog .egg-backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 38%, rgba(31, 45, 61, 0.18), transparent 70%),
+    rgba(10, 10, 14, 0.5);
+}
+@media (hover: hover) and (pointer: fine) {
+  #egg-dialog .egg-backdrop {
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+}
+#egg-dialog .egg-card {
+  position: relative;
+  width: min(92vw, 348px);
+  padding: 1.9rem 1.9rem 1.5rem;
+  border-radius: 20px;
+  background: var(--light);
+  border: 1px solid rgba(128, 128, 128, 0.18);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 30px 70px rgba(10, 16, 28, 0.3);
+  text-align: center;
+  animation: egg-pop 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes egg-pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+html[data-theme="dark"] #egg-dialog .egg-card,
+html[saved-theme="dark"] #egg-dialog .egg-card {
+  background: linear-gradient(180deg, #26262a, #1f1f23);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 30px 70px rgba(0, 0, 0, 0.5);
+}
+
+/* 图标徽章：复刻首页卡片图标（柔色圆底 + 线性矢量鸟） */
+#egg-dialog .egg-emblem {
+  color: #2f6db3;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(47, 109, 179, 0.12);
+  box-shadow:
+    inset 0 0 0 1px rgba(47, 109, 179, 0.1),
+    0 10px 22px -8px rgba(47, 109, 179, 0.45);
+}
+#egg-dialog .egg-emblem svg {
+  width: 32px;
+  height: 32px;
+}
+html[data-theme="dark"] #egg-dialog .egg-emblem,
+html[saved-theme="dark"] #egg-dialog .egg-emblem {
+  color: #6d9bd0;
+  background: rgba(109, 155, 208, 0.16);
+  box-shadow:
+    inset 0 0 0 1px rgba(109, 155, 208, 0.14),
+    0 10px 22px -8px rgba(109, 155, 208, 0.35);
+}
+
+/* 标题与描述 */
+#egg-dialog .egg-title {
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--dark);
+  letter-spacing: 0.14em;
+  text-indent: 0.14em;
+  margin-bottom: 0.6rem;
+}
+html[data-theme="dark"] #egg-dialog .egg-title {
+  color: #ebebec;
+}
+#egg-dialog .egg-desc {
+  font-size: 0.82rem;
+  color: var(--gray);
+  margin: 0 0 1.2rem;
+  line-height: 1.8;
+}
+
+/* 小秘密：内嵌柔和面板 */
+#egg-dialog .egg-secret {
+  background: rgba(128, 128, 128, 0.07);
+  border: 1px solid rgba(128, 128, 128, 0.12);
+  border-radius: 14px;
+  padding: 0.85rem 0.9rem 0.9rem;
+  margin-bottom: 1.1rem;
+}
+html[data-theme="dark"] #egg-dialog .egg-secret,
+html[saved-theme="dark"] #egg-dialog .egg-secret {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+#egg-dialog .egg-sec-title {
+  font-size: 0.68rem;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  color: var(--gray);
+  margin-bottom: 0.7rem;
+}
+#egg-dialog .egg-sec-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+#egg-dialog .egg-sec-num {
+  font-family: var(--codeFont);
+  font-size: 1.14rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--secondary) !important;
+}
+#egg-dialog .egg-copy {
+  padding: 0.32rem 0.85rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--secondary) !important;
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, 0.28);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+#egg-dialog .egg-copy:hover {
+  background: var(--secondary);
+  border-color: var(--secondary);
+  color: #fff !important;
+}
+#egg-dialog .egg-copy:active {
+  transform: scale(0.97);
+}
+#egg-dialog .egg-sec-hint {
+  margin-top: 0.6rem;
+  font-size: 0.7rem;
+  line-height: 1.7;
+  color: var(--gray);
+}
+
+/* 底部链接按钮 */
+#egg-dialog .egg-links {
+  display: flex;
+  gap: 0.6rem;
+}
+#egg-dialog .egg-btn {
+  flex: 1;
+  display: inline-block;
+  padding: 0.52rem 0.2rem;
+  border-radius: 10px;
+  border: 1px solid rgba(128, 128, 128, 0.22);
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--secondary) !important;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+#egg-dialog .egg-btn:hover {
+  background: rgba(128, 128, 128, 0.08);
+  border-color: var(--secondary);
+}
+#egg-dialog .egg-btn:active {
+  transform: scale(0.97);
+}
+
+/* 关闭按钮 */
+#egg-dialog .egg-close {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(128, 128, 128, 0.1);
+  color: var(--dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+#egg-dialog .egg-close svg {
+  width: 13px;
+  height: 13px;
+}
+#egg-dialog .egg-close:hover {
+  background: rgba(128, 128, 128, 0.2);
+  transform: rotate(90deg);
+}
+
+/* ====== bird 彩蛋：白羽漫天 + 鸟诗浮现 ======
+ * 羽毛运动由 JS 伪物理驱动（垂直缓降 + 正弦横摆 + 小角度随动旋转），
+ * 这里只负责容器与羽毛造型样式。 */
+#egg-feathers {
+  position: fixed;
+  inset: 0;
+  z-index: 24000;
+  pointer-events: none;
+  overflow: hidden;
+}
+#egg-feathers .egg-feather {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  will-change: transform;
+}
+#egg-feathers .egg-feather svg {
+  display: block;
+  width: 18px;
+  height: 54px;
+  filter: drop-shadow(0 2px 4px rgba(31, 45, 61, 0.13));
+}
+html[data-theme="dark"] #egg-feathers .egg-feather svg,
+html[saved-theme="dark"] #egg-feathers .egg-feather svg {
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+}
+html[data-theme="dark"] #egg-feathers .egg-feather svg,
+html[saved-theme="dark"] #egg-feathers .egg-feather svg {
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+}
+
+/* 鸟诗浮现 */
+#egg-poem {
+  position: fixed;
+  left: 50%;
+  top: 34vh;
+  transform: translate(-50%, 0);
+  z-index: 25000;
+  max-width: min(84vw, 560px);
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  transition: opacity 0.5s ease;
+}
+#egg-poem.show {
+  opacity: 1;
+}
+#egg-poem .egg-poem-line {
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  font-size: clamp(1.15rem, 3.4vw, 1.5rem);
+  letter-spacing: 0.18em;
+  line-height: 2;
+  color: #3a4453;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.85);
+  padding: 0.6em 1.6em;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  animation: egg-poem-in 5.2s ease both;
+}
+#egg-poem .egg-poem-src {
+  font-size: 0.76rem;
+  letter-spacing: 0.24em;
+  color: rgba(58, 68, 83, 0.72);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  animation: egg-poem-in 5.2s ease both;
+}
+@keyframes egg-poem-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  8%,
+  84% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+html[data-theme="dark"] #egg-poem .egg-poem-line,
+html[saved-theme="dark"] #egg-poem .egg-poem-line {
+  color: #e6e3da;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  background: rgba(24, 24, 28, 0.55);
+}
+html[data-theme="dark"] #egg-poem .egg-poem-src,
+html[saved-theme="dark"] #egg-poem .egg-poem-src {
+  color: rgba(214, 211, 201, 0.75);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* 减少动效偏好：诗句仍显示；飘羽由 JS 直接跳过（不执行） */
+@media (prefers-reduced-motion: reduce) {
+  #egg-poem .egg-poem-line,
+  #egg-poem .egg-poem-src {
+    animation: none;
+  }
+}
+
+/* 页脚签名：线性小鸟图标 + 句子，保证可读性 */
+.egg-bird-foot {
+  margin: 1.5rem auto 0.4rem;
+  padding: 0.2rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+  letter-spacing: 0.1em;
+  color: var(--darkgray);
+  opacity: 0.92;
+  user-select: none;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.7);
+}
+.egg-bird-foot .egg-foot-bird {
+  display: inline-flex;
+  align-items: center;
+  color: var(--secondary);
+  flex: none;
+}
+.egg-bird-foot .egg-foot-bird svg {
+  width: 18px;
+  height: 18px;
+}
+html[data-theme="dark"] .egg-bird-foot,
+html[saved-theme="dark"] .egg-bird-foot {
+  color: #d4d4d6;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+html body[data-slug="index"] .egg-bird-foot {
+  margin-top: 2.4rem;
+}
+
+/* 减少动效偏好：小鸟不再隐藏（保证 bird 彩蛋任何系统设置下都出现，
+   全局 reduce 规则会把它压成瞬移一闪），弹窗保留内容无动画 */
+@media (prefers-reduced-motion: reduce) {
+  #egg-dialog .egg-card {
+    animation: none !important;
   }
 }
