@@ -2259,7 +2259,8 @@
       "</g>" +
       "</svg>"
 
-    // 有关鸟的诗词池（随机浮现）
+    // 诗词池（中外古今，随机浮现）：古典为主，点缀外国现代诗、
+    // 十四行诗与日本俳句
     var BIRD_POEMS = [
       { t: "月出惊山鸟，时鸣春涧中。", a: "王维《鸟鸣涧》" },
       { t: "春眠不觉晓，处处闻啼鸟。", a: "孟浩然《春晓》" },
@@ -2272,6 +2273,15 @@
       { t: "两个黄鹂鸣翠柳，一行白鹭上青天。", a: "杜甫《绝句》" },
       { t: "无可奈何花落去，似曾相识燕归来。", a: "晏殊《浣溪沙》" },
       { t: "东走无复忆鲈鱼，南飞觉有安巢鸟。", a: "安巢鸟的出处" },
+      { t: "希望是长着羽毛的东西，栖落在灵魂里。", a: "艾米莉·狄金森《希望》" },
+      { t: "鸟翼系上了黄金，这鸟便永不能再在天上翱翔。", a: "泰戈尔《飞鸟集》" },
+      { t: "我们最甜美的歌，是那些诉说最哀伤思绪的歌。", a: "雪莱《致云雀》" },
+      { t: "你不为死亡而生，不朽的鸟儿！", a: "济慈《夜莺颂》" },
+      { t: "我怎么能够把你来比作夏天？你比它更可爱也更温婉。", a: "莎士比亚《十四行诗·第十八首》" },
+      { t: "我如何爱你？让我逐一细数。", a: "伊丽莎白·勃朗宁《葡语十四行诗·第43首》" },
+      { t: "小麻雀，请让一让，马儿要经过啦。", a: "小林一茶（俳句）" },
+      { t: "万籁俱寂，蝉声渗入岩石。", a: "松尾芭蕉《奥之细道》" },
+      { t: "爱情如此短暂，遗忘如此漫长。", a: "聂鲁达《二十首情诗》" },
     ]
     var QQ_GROUP = "1075229021"
     var CLOSE_SVG =
@@ -2541,14 +2551,20 @@
       }
     }
 
+    // 捕获阶段 pointerdown：诗句/羽毛展示期间任何按下都清场。
+    // 捕获在最前端执行，即使浮层/插件调用了 stopPropagation 也拦不住。
+    document.addEventListener(
+      "pointerdown",
+      function () {
+        if (_poemEl && _poemEl.isConnected) hidePoem()
+        if (document.getElementById("egg-feathers")) killFeathers()
+      },
+      true,
+    )
+
     document.addEventListener("click", function (e) {
       var t = e.target
       if (!t || !t.closest) return
-      // 诗句/羽毛展示期间，任何点击都视为"点空白处退出"：先清场再继续
-      if ((_poemEl && _poemEl.isConnected) || document.getElementById("egg-feathers")) {
-        hidePoem()
-        killFeathers()
-      }
       // 弹窗内外层点击关闭
       if (t.closest("[data-egg-close]")) {
         closeEggDialog()
@@ -2644,8 +2660,33 @@
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape") {
         closeEggDialog()
+        // Esc 也会被搜索插件用来退出搜索：同步收掉诗词/羽毛
+        hidePoem()
+        killFeathers()
       }
     })
+
+    // 监控搜索浮层关闭（任何途径：Esc/按钮切换/失焦/换页）→ 立即收掉彩蛋
+    var _searchObs = []
+    function watchSearchClose() {
+      for (var i = 0; i < _searchObs.length; i++) {
+        try {
+          _searchObs[i].disconnect()
+        } catch (e) {}
+      }
+      _searchObs = []
+      document.querySelectorAll(".search-container").forEach(function (c) {
+        var ob = new MutationObserver(function () {
+          if (!c.classList.contains("active")) {
+            hidePoem()
+            killFeathers()
+          }
+        })
+        ob.observe(c, { attributes: true, attributeFilter: ["class"] })
+        _searchObs.push(ob)
+      })
+    }
+    watchSearchClose()
 
     // SPA 换页：清理现场（body 会整体替换，旧节点自动消失）
     document.addEventListener("nav", function () {
@@ -2656,6 +2697,8 @@
       hidePoem()
       killFeathers()
       ensureBirdFoot()
+      // body 被整体替换，需重新挂搜索关闭监控
+      watchSearchClose()
     })
 
     ensureBirdFoot()

@@ -3629,7 +3629,8 @@ html[saved-theme="dark"] #egg-feathers .egg-feather svg {
   letter-spacing: 0.3em;
   text-indent: 0.3em;
   line-height: 1.9;
-  white-space: nowrap;
+  /* 五言/七言自然成行；长句（外国诗/十四行）按卡片宽度折行 */
+  white-space: normal;
 }
 #egg-poem .egg-poem-src {
   font-size: 0.78rem;
