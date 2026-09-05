@@ -1177,22 +1177,22 @@ html[saved-theme="dark"] .card-accent-violet {
   }
 }
 
-/* ====== 首页入场动效（逐段淡入上浮） ====== */
+/* ====== 首页入场动效（仅"初次以首页为入口完整加载"时播放一次） ======
+ * 全部由 <html data-home-cards> 门控——JS 只在首屏遮罩揭开后加上该属性、
+ * 动画播完即移除。默认各元素一律静态可见（不播放动画），因此：
+ *  - 从子页面 SPA 返回首页不会再"重演"入场动画（PC/移动端一致）；
+ *  - 无 JS 或入口不是首页时，页面保持安静、内容完整可读。
+ * 触发后：标题/欢迎语/章节眉/友链逐段上浮；三张卡片按断点错峰入场。 */
 html body[data-slug="index"] .home-header,
 html body[data-slug="index"] .welcome-pill,
 html body[data-slug="index"] .section-eyebrow,
-html body[data-slug="index"] .friend-link {
-  animation: home-rise 0.5s ease both;
+html body[data-slug="index"] .friend-link,
+html body[data-slug="index"] .glass-card {
+  opacity: 1;
+  animation: none;
+  will-change: auto;
 }
-html body[data-slug="index"] .welcome-pill {
-  animation-delay: 0.08s;
-}
-html body[data-slug="index"] .section-eyebrow {
-  animation-delay: 0.12s;
-}
-html body[data-slug="index"] .friend-link {
-  animation-delay: 0.3s;
-}
+
 @keyframes home-rise {
   from {
     opacity: 0;
@@ -1203,22 +1203,23 @@ html body[data-slug="index"] .friend-link {
     transform: translateY(0);
   }
 }
+html[data-home-cards] body[data-slug="index"] .home-header,
+html[data-home-cards] body[data-slug="index"] .welcome-pill,
+html[data-home-cards] body[data-slug="index"] .section-eyebrow,
+html[data-home-cards] body[data-slug="index"] .friend-link {
+  animation: home-rise 0.5s ease both;
+}
+html[data-home-cards] body[data-slug="index"] .welcome-pill {
+  animation-delay: 0.08s;
+}
+html[data-home-cards] body[data-slug="index"] .section-eyebrow {
+  animation-delay: 0.12s;
+}
+html[data-home-cards] body[data-slug="index"] .friend-link {
+  animation-delay: 0.3s;
+}
 
-/* 首页卡片淡入：仅 opacity，且只在首屏使用；不加 transform / blur，避免额外重绘 */
-html body[data-slug="index"] .glass-card {
-  opacity: 0;
-  animation: home-fade 0.45s ease forwards;
-  will-change: opacity;
-}
-html body[data-slug="index"] .glass-card:nth-child(1) {
-  animation-delay: 0.16s;
-}
-html body[data-slug="index"] .glass-card:nth-child(2) {
-  animation-delay: 0.24s;
-}
-html body[data-slug="index"] .glass-card:nth-child(3) {
-  animation-delay: 0.32s;
-}
+/* 卡片入场：移动端纯淡入错峰；PC 上浮+微缩放错峰（hover 不受 fill 影响） */
 @keyframes home-fade {
   from {
     opacity: 0;
@@ -1227,12 +1228,6 @@ html body[data-slug="index"] .glass-card:nth-child(3) {
     opacity: 1;
   }
 }
-
-/* ====== PC 端卡片入场（统一由 JS 在遮罩揭开后触发） ======
- * 机制：JS 在首页加载遮罩基本透明后给 <html> 加上 data-home-cards，
- * 三张卡片按 nth-child 错峰执行一次 home-card-enter；
- * 动画结束后 JS 移除该属性，卡片回到静态样式，hover 变换不受
- * animation fill 影响。未触发前卡片保持可见（不会"静止很久后突跳"）。 */
 @keyframes home-card-enter {
   from {
     opacity: 0;
@@ -1243,12 +1238,22 @@ html body[data-slug="index"] .glass-card:nth-child(3) {
     transform: translateY(0) scale(1);
   }
 }
-@media (min-width: 801px) {
-  html body[data-slug="index"] .glass-card {
-    opacity: 1;
-    animation: none;
-    will-change: auto;
+@media (max-width: 800px) {
+  html[data-home-cards] body[data-slug="index"] .glass-card {
+    opacity: 0;
+    animation: home-fade 0.45s ease forwards;
   }
+  html[data-home-cards] body[data-slug="index"] .glass-card:nth-child(1) {
+    animation-delay: 0.16s;
+  }
+  html[data-home-cards] body[data-slug="index"] .glass-card:nth-child(2) {
+    animation-delay: 0.24s;
+  }
+  html[data-home-cards] body[data-slug="index"] .glass-card:nth-child(3) {
+    animation-delay: 0.32s;
+  }
+}
+@media (min-width: 801px) {
   html[data-home-cards] body[data-slug="index"] .glass-card {
     animation: home-card-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
   }

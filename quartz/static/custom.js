@@ -620,14 +620,15 @@
       received = chunks[0].length
       fontButtonState(option.id, "downloading", 100)
     }
-    var bytes = new Uint8Array(received)
-    var offset = 0
-    chunks.forEach(function (chunk) {
-      bytes.set(chunk, offset)
-      offset += chunk.length
-    })
+    // 直接以 Blob 组装（零拷贝）：避免先拼一份完整 Uint8Array 再把整段
+    // 拷进 Response 造成 ~2 倍峰值内存（25MB 字体下载时瞬时省 ~25MB）
     var cache = await caches.open(FONT_CACHE_NAME)
-    await cache.put(url, new Response(bytes, { headers: { "Content-Type": "font/ttf" } }))
+    await cache.put(
+      url,
+      new Response(new Blob(chunks, { type: "font/ttf" }), {
+        headers: { "Content-Type": "font/ttf" },
+      }),
+    )
   }
 
   async function applyFont(option) {
@@ -1997,14 +1998,17 @@
   })
 
   // ====================================================================
-  //  Card entrance：首页卡片入场动画（PC）
+  //  Home entrance：首页入场动画（PC + 移动端统一）
   // ====================================================================
-  // 单一触发源：给 <html> 加 data-home-cards，三张卡片用纯 CSS 错峰执行一次。
-  // 动画约 0.79s 后移除属性恢复静态样式（hover 不受 fill 影响）。
-  // 触发时机 = 首页加载遮罩（#page-loader）基本透明时；SPA 跳转没有遮挡，
-  // 直接下一帧触发。遮罩停留再久也不会导致"先静止几秒再突跳"。
+  // 只在"初次以首页为入口的整页加载"播放一次：init 时若入口不是首页
+  // （子页面/SPA 直达），整个会话都不再播放——从子页面 SPA 返回首页、
+  // 浏览器后退回到首页都保持静态，不重演入场。
+  // 触发方式：给 <html> 加 data-home-cards（CSS 全部动画由它门控），
+  // 遮罩（#page-loader）基本透明后加上、动画播完移除。属性重复设置幂等。
   function initCardEntrance() {
-    var ANIM_KEEP_MS = 1000
+    if (getSlug() !== "index") return
+
+    var ANIM_KEEP_MS = 1200
     var removeTimer = null
 
     function activate() {
@@ -2015,49 +2019,41 @@
       }, ANIM_KEEP_MS)
     }
 
-    function triggerEntrance() {
-      if (getSlug() !== "index") return
-
-      var loader = document.getElementById("page-loader")
-      var occluding =
-        loader &&
-        loader.isConnected &&
-        (loader.classList.contains("show") || loader.classList.contains("fade-out"))
-      if (!occluding) {
+    // 遮罩处于遮挡状态时轮询其实际透明度，降到 ~0.35 以下（基本揭开）再触发。
+    // 不依赖遮罩的 DOM 移除/定时器，冷启动、慢网、后台标签都自适应。
+    var loader = document.getElementById("page-loader")
+    var occluding =
+      loader &&
+      loader.isConnected &&
+      (loader.classList.contains("show") || loader.classList.contains("fade-out"))
+    if (!occluding) {
+      activate()
+      return
+    }
+    var started = Date.now()
+    var check = function () {
+      var l = document.getElementById("page-loader")
+      var still =
+        l &&
+        l.isConnected &&
+        (l.classList.contains("show") || l.classList.contains("fade-out"))
+      if (!still) {
         activate()
         return
       }
-
-      // 遮罩处于遮挡状态：轮询其实际透明度，降到 ~0.35 以下（基本揭开）就触发。
-      // 不依赖遮罩的 DOM 移除/定时器，冷启动、慢网、后台标签都自适应。
-      var started = Date.now()
-      var check = function () {
-        var l = document.getElementById("page-loader")
-        var still =
-          l &&
-          l.isConnected &&
-          (l.classList.contains("show") || l.classList.contains("fade-out"))
-        if (!still) {
-          activate()
-          return
-        }
-        var opacity = parseFloat(window.getComputedStyle(l).opacity)
-        if (!isNaN(opacity) && opacity <= 0.35) {
-          activate()
-          return
-        }
-        if (Date.now() - started > 5000) {
-          // 极端兜底：遮罩异常不透明也照常触发，避免动画永远不播
-          activate()
-          return
-        }
-        setTimeout(check, 50)
+      var opacity = parseFloat(window.getComputedStyle(l).opacity)
+      if (!isNaN(opacity) && opacity <= 0.35) {
+        activate()
+        return
+      }
+      if (Date.now() - started > 5000) {
+        // 极端兜底：遮罩异常不透明也照常触发，避免动画永远不播
+        activate()
+        return
       }
       setTimeout(check, 50)
     }
-
-    triggerEntrance()
-    document.addEventListener("nav", triggerEntrance)
+    setTimeout(check, 50)
   }
 
   // ====================================================================

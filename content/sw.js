@@ -5,10 +5,11 @@
  *    —— 先读缓存秒开，后台再用网络更新，再次访问几乎无延迟
  *  - 安装时解析首页 HTML，把其引用的 css/js 一并预缓存，
  *    二次进入时 HTML + 全部静态资源都命中缓存 → 秒开
- *  - 音频（mp3/m4a 等）：不拦截，交给页面内的 Cache API 处理（Range 请求直接走网络）
+ *  - 音频（mp3/m4a 等）与字体（/fonts/）：不拦截。音频走 Range/页面 Cache，
+ *    字体由页面 FONT_CACHE 按需缓存，避免 SW 与页面双份冗余存储
  *  - 更新缓存版本时只需改 VERSION
  */
-var VERSION = "v4"
+var VERSION = "v5"
 var CACHE_NAME = "homewardbird-site-" + VERSION
 
 var PRECACHE_URLS = [
@@ -100,6 +101,10 @@ self.addEventListener("fetch", function (event) {
   if (url.origin !== self.location.origin) return
   if (AUDIO_RE.test(url.pathname)) return
   if (url.pathname.indexOf("/cdn-cgi/") === 0) return
+  // 字体由页面自身的 FONT_CACHE 管理（可选下载/按需缓存），SW 再存一份会
+  // 造成 ~86MB 磁盘双份冗余；直接放行走网络，content-length 透传，
+  // 下载进度也能按真实响应头计算
+  if (url.pathname.indexOf("/fonts/") === 0) return
 
   event.respondWith(
     caches.open(CACHE_NAME).then(function (cache) {
