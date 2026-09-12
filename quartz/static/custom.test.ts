@@ -25,12 +25,12 @@ const HTML = `<!DOCTYPE html><html><body>
   <button type="button" class="title-button explorer-toggle desktop-explorer"><h2>目录</h2></button>
   <div class="explorer-content" aria-expanded="false"><ul class="explorer-ul"><li><a href="#">item</a></li></ul></div>
 </div></div>
-<div id="quartz-body"><article>content</article><span id="random-quote"></span></div>
+<div id="quartz-body"><input class="search-bar" /><article>content</article><span id="random-quote"></span></div>
 </body></html>`
 
-function setup() {
+function setup(url = "http://localhost/") {
   const dom = new JSDOM(HTML, {
-    url: "http://localhost/",
+    url,
     runScripts: "outside-only",
     pretendToBeVisual: true,
   })
@@ -200,6 +200,104 @@ describe("回到顶部按钮", () => {
     Object.defineProperty(t.window, "scrollY", { value: 0, configurable: true })
     t.window.dispatchEvent(new t.window.Event("scroll"))
     assert.ok(!btn().classList.contains("show"), "回到顶部后隐藏")
+  })
+})
+
+describe("季节粒子", () => {
+  test("默认按访客时间渲染当前季节粒子层", () => {
+    const t = setup()
+    const layer = t.document.getElementById("season-particles")
+    assert.ok(layer, "粒子层已创建")
+    const season = layer!.getAttribute("data-season")
+    assert.ok(["spring", "summer", "autumn", "winter"].includes(season ?? ""), "季节取值合法")
+    assert.ok(layer!.querySelectorAll(".sp").length > 0, "包含粒子")
+    assert.ok(layer!.querySelector(".sp-in"), "粒子有内层造型节点")
+  })
+
+  test("设置面板开关可关闭并持久化", () => {
+    const t = setup()
+    const toggle = () => t.document.querySelector("[data-season-toggle]")!
+    assert.strictEqual(toggle().getAttribute("aria-checked"), "true", "默认开启")
+    t.click("[data-season-toggle]")
+    assert.strictEqual(t.window.localStorage.getItem("seasonParticles"), "0")
+    assert.strictEqual(toggle().getAttribute("aria-checked"), "false", "开关已关")
+    assert.strictEqual(t.document.getElementById("season-particles"), null, "粒子层移除")
+    t.click("[data-season-toggle]")
+    assert.strictEqual(t.window.localStorage.getItem("seasonParticles"), "1")
+    assert.strictEqual(toggle().getAttribute("aria-checked"), "true", "开关已开")
+    assert.ok(t.document.getElementById("season-particles"), "粒子层恢复")
+  })
+
+  test("仅首页默认开启，子页面默认关闭", () => {
+    const home = setup()
+    assert.ok(home.document.getElementById("season-particles"), "首页默认开启")
+    const sub = setup("http://localhost/posts/hello")
+    assert.strictEqual(sub.document.getElementById("season-particles"), null, "子页面默认关闭")
+    sub.click("[data-season-toggle]")
+    assert.strictEqual(
+      sub.window.localStorage.getItem("seasonParticlesSub"),
+      "1",
+      "子页面偏好单独存储",
+    )
+    assert.strictEqual(sub.window.localStorage.getItem("seasonParticles"), null, "不污染首页偏好")
+    assert.ok(sub.document.getElementById("season-particles"), "手动开启后生效")
+    // 同一实例内 SPA 导航后仍保持开启
+    const bodyHtml = HTML.match(/<body>[\s\S]*<\/body>/)![0].replace(/<\/?body>/g, "")
+    sub.document.body.innerHTML = bodyHtml
+    sub.document.dispatchEvent(new sub.window.UIEvent("nav"))
+    assert.ok(sub.document.getElementById("season-particles"), "导航后保持开启")
+  })
+
+  test("首页偏好不外溢到子页面（旧版全局键同理）", () => {
+    const t = setup()
+    t.window.localStorage.setItem("seasonParticles", "1") // 旧版遗留的全局键
+    t.window.history.pushState({}, "", "/posts/hello")
+    const bodyHtml = HTML.match(/<body>[\s\S]*<\/body>/)![0].replace(/<\/?body>/g, "")
+    t.document.body.innerHTML = bodyHtml
+    t.document.dispatchEvent(new t.window.UIEvent("nav"))
+    assert.strictEqual(t.document.getElementById("season-particles"), null, "子页面仍默认关闭")
+  })
+
+  test("从首页 SPA 进入子页面自动关闭", () => {
+    const t = setup()
+    assert.ok(t.document.getElementById("season-particles"), "首页已开启")
+    t.window.history.pushState({}, "", "/posts/hello")
+    const bodyHtml = HTML.match(/<body>[\s\S]*<\/body>/)![0].replace(/<\/?body>/g, "")
+    t.document.body.innerHTML = bodyHtml
+    t.document.dispatchEvent(new t.window.UIEvent("nav"))
+    assert.strictEqual(t.document.getElementById("season-particles"), null, "子页面自动关闭")
+  })
+
+  test("SPA 导航后粒子层重建", () => {
+    const t = setup()
+    const bodyHtml = HTML.match(/<body>[\s\S]*<\/body>/)![0].replace(/<\/?body>/g, "")
+    t.document.body.innerHTML = bodyHtml
+    t.document.dispatchEvent(new t.window.UIEvent("nav"))
+    assert.ok(t.document.getElementById("season-particles"), "导航后粒子层重建")
+    assert.strictEqual(
+      t.document.querySelector("[data-season-toggle]")!.getAttribute("aria-checked"),
+      "true",
+      "导航后开关状态同步",
+    )
+  })
+})
+
+describe("bird 彩蛋背景幕", () => {
+  test("输入 bird 出现遮罩层，点击后开始淡出", () => {
+    const t = setup()
+    const input = t.document.querySelector(".search-bar") as HTMLInputElement
+    input.value = "bird"
+    input.dispatchEvent(new t.window.Event("input", { bubbles: true }))
+    const veil = t.document.getElementById("egg-veil")
+    assert.ok(veil, "遮罩层已创建")
+    assert.ok(veil!.classList.contains("show"), "遮罩层已显示")
+    assert.ok(t.document.getElementById("egg-feathers"), "羽毛层已创建")
+    t.document.dispatchEvent(new t.window.Event("pointerdown", { bubbles: true }))
+    assert.ok(!veil!.classList.contains("show"), "点击后开始淡出")
+    assert.ok(
+      t.document.getElementById("egg-feathers")!.classList.contains("leaving"),
+      "羽毛层开始退场",
+    )
   })
 })
 

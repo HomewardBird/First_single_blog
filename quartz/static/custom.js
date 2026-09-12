@@ -8,6 +8,8 @@
   var BG_KEY = "bgColor"
   var FONT_COLOR_KEY = "fontColor"
   var LOCK_KEY = "bgLocked"
+  var SEASON_KEY = "seasonParticles"
+  var SEASON_SUB_KEY = "seasonParticlesSub"
 
   // Handler dedup set
   var _handlerSet = new WeakSet()
@@ -486,6 +488,7 @@
     var tbT = document.querySelector("#top-bar .top-bar-title")
     if (tbT) tbT.textContent = document.title || "安巢鸟的个人网站"
     restoreLock()
+    restoreSeasonParticles()
     var cur = getSlug()
     if (localStorage.getItem(LOCK_KEY) !== "true") {
       // 首页恢复图片背景；子页面自动切纯色（无条件，任何导航来源均生效）
@@ -847,6 +850,150 @@
   }
 
   // ====================================================================
+  //  季节粒子：按访客本地时间飘落花瓣 / 柳絮 / 落叶 / 雪花
+  //  - 可读性：粒子层固定在内容平面之下（z-index:-1，背景图 -2），
+  //    正文、卡片、标题永远绘制在其上层，开启也不影响阅读
+  //  - 性能：纯 CSS 动画（合成器只跑 transform/opacity），无 rAF、无滤镜
+  //  - 开关：右上角设置面板「季节粒子效果」；首页与子页面各记一份偏好，
+  //    未选择时首页默认开、子页面默认关；尊重系统 reduced-motion
+  // ====================================================================
+  function seasonNow() {
+    var m = new Date().getMonth() // 0-11，访客本地时区
+    if (m >= 2 && m <= 4) return "spring" // 3-5 月
+    if (m >= 5 && m <= 7) return "summer" // 6-8 月
+    if (m >= 8 && m <= 10) return "autumn" // 9-11 月
+    return "winter" // 12-2 月
+  }
+  function seasonParticlesKey() {
+    // 首页与子页面偏好分开存，避免在首页开过一次后子页面也飘
+    return getSlug() === "index" ? SEASON_KEY : SEASON_SUB_KEY
+  }
+  function seasonParticlesOn() {
+    var saved = localStorage.getItem(seasonParticlesKey())
+    if (saved === "1") return true
+    if (saved === "0") return false
+    // 未做过选择：仅首页默认开启，进入子页面默认关闭
+    return getSlug() === "index"
+  }
+  function seasonReducedMotion() {
+    return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  }
+  function buildSeasonParticles() {
+    var season = seasonNow()
+    var mobile = window.innerWidth < 720
+    var rnd = function (min, max) {
+      return min + Math.random() * (max - min)
+    }
+    // 每季配方：粒子类名 / 数量 / 尺寸 / 下落时长 / 摆幅 / 摆动周期 / 旋转 / 透明度
+    var cfg =
+      season === "spring"
+        ? {
+            kinds: ["sp-petal", "sp-petal", "sp-petal", "sp-petal-light"],
+            n: mobile ? 7 : 11,
+            size: [7, 13],
+            dur: [15, 27],
+            sway: [2.5, 6.5],
+            swayDur: [3.2, 5.2],
+            rot: [18, 34],
+            op: [0.3, 0.5],
+            motion: "a",
+          }
+        : season === "summer"
+          ? {
+              kinds: ["sp-catkin"],
+              n: mobile ? 6 : 9,
+              size: [9, 17],
+              dur: [22, 40],
+              sway: [4, 9],
+              swayDur: [4.5, 7.5],
+              rot: [8, 16],
+              op: [0.24, 0.4],
+              motion: "b",
+            }
+          : season === "autumn"
+            ? {
+                kinds: ["sp-leaf", "sp-leaf", "sp-leaf-red"],
+                n: mobile ? 6 : 10,
+                size: [9, 15],
+                dur: [13, 24],
+                sway: [2.5, 6],
+                swayDur: [2.8, 4.8],
+                rot: [22, 40],
+                op: [0.32, 0.52],
+                motion: "a",
+              }
+            : {
+                kinds: ["sp-snow", "sp-snow", "sp-snow-soft"],
+                n: mobile ? 9 : 14,
+                size: [3.5, 9],
+                dur: [16, 32],
+                sway: [1.5, 5],
+                swayDur: [3.5, 6.5],
+                rot: [10, 22],
+                op: [0.28, 0.55],
+                motion: "b",
+              }
+    var html = ""
+    for (var i = 0; i < cfg.n; i++) {
+      var dur = rnd(cfg.dur[0], cfg.dur[1])
+      var vars = [
+        "--x:" + rnd(2, 98).toFixed(1) + "vw",
+        "--dur:" + dur.toFixed(1) + "s",
+        "--delay:-" + rnd(0, dur).toFixed(1) + "s",
+        "--sway:" + rnd(cfg.sway[0], cfg.sway[1]).toFixed(1) + "vw",
+        "--swaydur:" + rnd(cfg.swayDur[0], cfg.swayDur[1]).toFixed(1) + "s",
+        "--size:" + rnd(cfg.size[0], cfg.size[1]).toFixed(1) + "px",
+        "--op:" + rnd(cfg.op[0], cfg.op[1]).toFixed(2),
+        "--rot:" + rnd(cfg.rot[0], cfg.rot[1]).toFixed(0) + "deg",
+      ].join(";")
+      html +=
+        '<span class="sp sp-m-' +
+        cfg.motion +
+        '" style="' +
+        vars +
+        '"><span class="sp-in ' +
+        cfg.kinds[i % cfg.kinds.length] +
+        '"></span></span>'
+    }
+    var layer = document.createElement("div")
+    layer.id = "season-particles"
+    layer.setAttribute("aria-hidden", "true")
+    layer.setAttribute("data-season", season)
+    layer.innerHTML = html
+    return layer
+  }
+  function ensureSeasonParticles() {
+    var old = document.getElementById("season-particles")
+    if (old && old.parentNode) old.parentNode.removeChild(old)
+    if (!seasonParticlesOn() || seasonReducedMotion()) return
+    document.body.appendChild(buildSeasonParticles())
+  }
+  function syncSeasonSwitch() {
+    var on = seasonParticlesOn() ? "true" : "false"
+    document.querySelectorAll("[data-season-toggle]").forEach(function (b) {
+      b.setAttribute("aria-checked", on)
+    })
+  }
+  function setSeasonParticles(on) {
+    localStorage.setItem(seasonParticlesKey(), on ? "1" : "0")
+    syncSeasonSwitch()
+    ensureSeasonParticles()
+  }
+  function restoreSeasonParticles() {
+    syncSeasonSwitch()
+    ensureSeasonParticles()
+  }
+  // 系统「减少动效」偏好变化时同步粒子层（运行时切换也生效）
+  if (window.matchMedia) {
+    var _spMq = window.matchMedia("(prefers-reduced-motion: reduce)")
+    var _spMqChange = function () {
+      ensureSeasonParticles()
+    }
+    if (_spMq.addEventListener) _spMq.addEventListener("change", _spMqChange)
+    else if (_spMq.addListener) _spMq.addListener(_spMqChange)
+  }
+
+  // ====================================================================
   //  Top bar + hamburger menu
   // ====================================================================
   function rebuildUI() {
@@ -926,6 +1073,10 @@
       "</div>",
       '<div class="hb-inline-row">',
       '<button class="hb-lock-btn" title="锁定背景不变">🔒 锁定</button>',
+      "</div>",
+      '<div class="hb-inline-row hb-season-row">',
+      '<span class="hb-row-label">季节粒子效果</span>',
+      '<button class="hb-switch" type="button" role="switch" aria-checked="true" aria-label="季节粒子效果" data-season-toggle><span class="hb-switch-knob"></span></button>',
       "</div></div>",
       '<div class="hb-section hb-font-manager"><button class="hb-title hb-font-manager-toggle" type="button" aria-expanded="false">字体管理<span aria-hidden="true">⌄</span></button>',
       '<div class="hb-font-manager-list" hidden>',
@@ -999,6 +1150,13 @@
     })
     document.querySelectorAll(".hb-lock-btn").forEach(function (b) {
       b.addEventListener("click", toggleLock)
+    })
+    document.querySelectorAll("[data-season-toggle]").forEach(function (b) {
+      if (_handlerSet.has(b)) return
+      _handlerSet.add(b)
+      b.addEventListener("click", function () {
+        setSeasonParticles(b.getAttribute("aria-checked") !== "true")
+      })
     })
     var fontToggle = document.querySelector(".hb-font-manager-toggle")
     var fontList = document.querySelector(".hb-font-manager-list")
@@ -2218,7 +2376,6 @@
   //  Easter eggs：轻量彩蛋
   //   1) 首页标题连点 3 次（每次轻抖反馈）→ 立刻弹出隐藏入口小窗（群聊小秘密）
   //   2) 搜索框里敲出 …bird → 白羽漫天 + 鸟诗随机浮现
-  //   3) 页脚签名：哪怕网络没有留下我的羽毛，但我已飞过。
   //  性能约束：事件全部委托在 document（SPA 换页不重绑）；DOM 节点懒创建
   //  （body 会被 micromorph 整体替换，不缓存跨页引用）；动画只用
   //  transform/opacity；带冷却与 reduced-motion 保护。
@@ -2227,6 +2384,7 @@
     var _toastEl = null
     var _dlgEl = null
     var _poemEl = null
+    var _veilEl = null
     var _poemTm = null
     var _logoTaps = []
     var _lastBirdAt = 0
@@ -2238,26 +2396,56 @@
       '<path d="M16 7h.01"/><path d="M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.28-2.3L2 20"/>' +
       '<path d="m20 7 2 .5-2 .5"/></svg>'
 
-    // 白羽：更真实的羽毛造型——两侧羽片带深浅过渡，中轴羽轴、细密羽枝，
-    // 底部羽根收尖；不勾粗边，靠柔和灰影与背景分离
-    var FEATHER_SVG =
-      '<svg viewBox="0 0 36 116" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-      '<defs>' +
-      '<linearGradient id="eggFade" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0" stop-color="#ffffff"/><stop offset="0.75" stop-color="#f4f7fa"/><stop offset="1" stop-color="#dde6ee"/>' +
+    // 白羽精灵：三种形态（长飞羽 / 宽绒羽 / 窄羽）共用一份 defs 与渐变，
+    // 每根羽毛只渲染一个 <use>；柔和投影用 SVG 径向渐变"软斑"预烘焙，
+    // 不再用 CSS filter: drop-shadow（逐帧栅格化滤镜是性能大头）。
+    // 造型：两侧羽片深浅过渡、微弯羽轴、细密羽枝，底部羽根收尖。
+    var FEATHER_SPRITE =
+      '<svg class="egg-feather-sprite" width="0" height="0" aria-hidden="true" focusable="false">' +
+      "<defs>" +
+      '<radialGradient id="egg-fsh" cx="50%" cy="50%" r="52%">' +
+      '<stop offset="0" stop-color="#1f2d3d" stop-opacity="0.55"/>' +
+      '<stop offset="0.7" stop-color="#1f2d3d" stop-opacity="0.2"/>' +
+      '<stop offset="1" stop-color="#1f2d3d" stop-opacity="0"/>' +
+      "</radialGradient>" +
+      '<linearGradient id="egg-fbody" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#ffffff"/><stop offset="0.68" stop-color="#f3f7fb"/><stop offset="1" stop-color="#dbe5ee"/>' +
       "</linearGradient>" +
-      '<linearGradient id="eggShade" x1="0" y1="0" x2="1" y2="0">' +
-      '<stop offset="0" stop-color="#93a7ba" stop-opacity="0"/><stop offset="1" stop-color="#93a7ba" stop-opacity="0.28"/>' +
+      '<linearGradient id="egg-fshade" x1="0" y1="0" x2="1" y2="0">' +
+      '<stop offset="0" stop-color="#8ea3b8" stop-opacity="0"/><stop offset="1" stop-color="#8ea3b8" stop-opacity="0.3"/>' +
       "</linearGradient>" +
-      "</defs>" +
-      '<path d="M18 3 C25 12 27 30 25.5 47 C24 63 21.5 80 18 102 C14.5 80 12 63 10.5 47 C9 30 11 12 18 3 Z" fill="url(#eggFade)"/>' +
-      '<path d="M18 3 C25 12 27 30 25.5 47 C24.5 60 23 74 18.6 88 C22 74 22.5 56 20.5 38 C19.5 24 18.4 12 18 3 Z" fill="url(#eggShade)"/>' +
-      '<path d="M18 12 L18 100" stroke="#9db2c6" stroke-width="1.3" stroke-linecap="round" opacity="0.75"/>' +
-      '<g stroke="#a9bccd" stroke-width="0.9" opacity="0.55" stroke-linecap="round">' +
-      '<path d="M17.6 24 L10.2 14 M17.4 37 L8.8 27 M17.2 50 L8.4 40 M17.4 63 L9.4 53 M17.8 76 L12 67 M18.2 88 L14.6 81"/>' +
-      '<path d="M18.4 24 L25.8 14 M18.6 37 L27.2 27 M18.8 50 L27.6 40 M18.6 63 L26.6 53 M18.2 76 L24 67 M17.8 88 L21.4 81"/>' +
-      "</g>" +
-      "</svg>"
+      '<path id="egg-fp-a" d="M18 4 C25.6 12.6 27.9 29.2 26.3 46 C24.7 62.8 21.9 81.8 18 104 C14.1 81.8 11.3 62.8 9.7 46 C8.1 29.2 10.4 12.6 18 4 Z"/>' +
+      '<path id="egg-fp-b" d="M18 7 C27.6 15.2 30.6 33 28.9 49.2 C27.1 65.4 23.6 82.6 18 100 C12.4 82.6 8.9 65.4 7.1 49.2 C5.4 33 8.4 15.2 18 7 Z"/>' +
+      '<path id="egg-fp-c" d="M18 3 C24.2 12 26 30 24.8 48.2 C23.5 66.4 20.7 84.4 18 106 C15.3 84.4 12.5 66.4 11.2 48.2 C10 30 11.8 12 18 3 Z"/>' +
+      '<g id="egg-f-a">' +
+      '<use href="#egg-fp-a" class="egg-f-shadow" fill="url(#egg-fsh)" transform="translate(1.5 2.6)"/>' +
+      '<use href="#egg-fp-a" fill="url(#egg-fbody)"/>' +
+      '<path d="M18 4 C25.6 12.6 27.9 29.2 26.3 46 C25.1 58.8 23.2 71.6 19.8 85.6 C22.8 71 23.6 54.4 21.8 38.4 C20.5 25.4 19.2 13.4 18 4 Z" fill="url(#egg-fshade)"/>' +
+      '<path d="M18 12 C17.6 40 18.4 71 18 102" class="egg-f-shaft"/>' +
+      '<g class="egg-f-barb">' +
+      '<path d="M17.6 24 L10.4 15 M17.4 36 L9 27 M17.2 48 L8.6 39 M17.4 60 L9.6 51 M17.8 72 L11.8 64 M18.2 84 L14.4 77"/>' +
+      '<path d="M18.4 24 L25.6 15 M18.6 36 L27 27 M18.8 48 L27.4 39 M18.6 60 L26.4 51 M18.2 72 L24.2 64 M17.8 84 L21.6 77"/>' +
+      "</g></g>" +
+      '<g id="egg-f-b">' +
+      '<use href="#egg-fp-b" class="egg-f-shadow" fill="url(#egg-fsh)" transform="translate(1.5 2.6)"/>' +
+      '<use href="#egg-fp-b" fill="url(#egg-fbody)"/>' +
+      '<path d="M18 7 C27.6 15.2 30.6 33 28.9 49.2 C27.6 61.6 25.2 73.6 21.2 86.4 C24.4 71.8 25.4 55 23.4 40 C22 27 19.6 15.4 18 7 Z" fill="url(#egg-fshade)"/>' +
+      '<path d="M18 15 C17.5 41 18.5 70 18 99" class="egg-f-shaft"/>' +
+      '<g class="egg-f-barb">' +
+      '<path d="M17.6 26 L11.2 18 M17.4 38 L9.8 30 M17.2 50 L9.4 42 M17.4 62 L10.2 54 M17.8 74 L12.4 67 M18.2 86 L15 80"/>' +
+      '<path d="M18.4 26 L24.8 18 M18.6 38 L26.2 30 M18.8 50 L26.6 42 M18.6 62 L25.8 54 M18.2 74 L23.6 67 M17.8 86 L21 80"/>' +
+      "</g></g>" +
+      '<g id="egg-f-c">' +
+      '<use href="#egg-fp-c" class="egg-f-shadow" fill="url(#egg-fsh)" transform="translate(1.5 2.6)"/>' +
+      '<use href="#egg-fp-c" fill="url(#egg-fbody)"/>' +
+      '<path d="M18 3 C24.2 12 26 30 24.8 48.2 C23.7 62.4 21.9 76.6 19 90.6 C21.6 75.6 22.4 57.4 20.8 41.2 C19.7 27.2 18.8 13.2 18 3 Z" fill="url(#egg-fshade)"/>' +
+      '<path d="M18 10 C17.7 41 18.3 73 18 104" class="egg-f-shaft"/>' +
+      '<g class="egg-f-barb">' +
+      '<path d="M17.7 22 L11.4 14 M17.5 34 L10.2 26 M17.3 46 L9.8 38 M17.5 58 L10.6 50 M17.9 70 L12.6 62 M18.3 82 L15 76"/>' +
+      '<path d="M18.3 22 L24.6 14 M18.5 34 L25.8 26 M18.7 46 L26.2 38 M18.5 58 L25.4 50 M18.1 70 L23.4 62 M17.7 82 L21 76"/>' +
+      "</g></g>" +
+      "</defs></svg>"
+    var FEATHER_IDS = ["egg-f-a", "egg-f-b", "egg-f-c"]
 
     // 诗词池（只保留与鸟相关的诗句，中外古今，随机浮现）
     var BIRD_POEMS = [
@@ -2360,10 +2548,18 @@
     }
 
     // ---- bird 彩蛋：白羽漫天 + 鸟诗浮现 ----
-    // 伪物理飘落（方案 A）：垂直速度平滑趋近"终端速度"后基本匀速；
-    // 横向为正弦摆动 + 轻微整体漂移；旋转角跟随横向摆速、始终小角度。
-    // 全程只写 transform/opacity（GPU），羽毛出屏或节点失联即清理。
+    // 运动模型（倾角驱动）：
+    //   θ(t) = 双频正弦叠加 —— 准周期摆动，没有节拍感；
+    //   θ 同时决定三件事：
+    //     1) 横向滑翔 vx = glide·term·sinθ（越倾斜滑得越快）
+    //     2) 下落速度趋近 term·(1 - drag·|sinθ|)（展平兜风变慢、侧立加速）
+    //     3) 画面内旋转 rotate(θ)
+    //   再叠加绕羽轴的伪 3D 翻面 scaleX(cosφ) 与缓慢风漂；近大远小、
+    //   近实远虚。全程只写 transform/opacity，羽毛走共享精灵 <use>，
+    //   无滤镜。节奏：开场 0.8s 洒一波，随后细雨式补充；退场不瞬删——
+    //   加 .leaving 让图层淡出，羽毛继续飘完再移除。
     var _featherRaf = null
+    var _featherKillTm = null
     function spawnFeathers() {
       var old = document.getElementById("egg-feathers")
       if (old && old.parentNode) old.parentNode.removeChild(old)
@@ -2371,95 +2567,122 @@
         cancelAnimationFrame(_featherRaf)
         _featherRaf = null
       }
+      clearTimeout(_featherKillTm)
+      _featherKillTm = null
       var W = window.innerWidth
       var H = window.innerHeight
       var layer = document.createElement("div")
       layer.id = "egg-feathers"
       layer.setAttribute("aria-hidden", "true")
+      layer.innerHTML = FEATHER_SPRITE
       document.body.appendChild(layer)
 
       var rnd = function (min, max) {
         return min + Math.random() * (max - min)
       }
+      var now0 = performance.now()
+      var count = W < 720 ? 7 : 10
       var states = []
-      for (var i = 0; i < 12; i++) {
-        var el = document.createElement("span")
-        el.className = "egg-feather"
-        el.style.transformOrigin = "50% 15%"
-        el.innerHTML = FEATHER_SVG
-        layer.appendChild(el)
+      for (var i = 0; i < count; i++) {
+        var depth = Math.random() // 0 远 → 1 近
         states.push({
-          el: el,
-          x: rnd(0.04, 0.9) * W,
-          y: rnd(-0.16, -0.02) * H,
+          el: null,
+          id: FEATHER_IDS[i % FEATHER_IDS.length],
+          x: rnd(0.06, 0.94) * W,
+          y: rnd(-0.2, -0.04) * H,
           vy: 0,
-          // 终端速度：约 16~26 vh/s（屏高不同时视觉一致）
-          term: rnd(0.16, 0.26) * H,
-          scale: rnd(0.42, 0.72),
-          // 正弦横摆：振幅 1.2~3.2vw、角速度 2.2~4.4 rad/s（周期 1.4~2.8s）
-          amp: rnd(0.012, 0.032) * W,
-          ang: rnd(2.2, 4.4),
-          ph: rnd(0, Math.PI * 2),
-          // 整段飘落整体漂移 ±0~2.4vw
-          drift: rnd(-0.024, 0.024) * W,
-          estDur: 0,
-          rot: rnd(-8, 8),
-          prevSway: 0,
-          // 入场窗口收紧到 0.35s 内：羽毛与诗句几乎同步出现
-          delay: rnd(0, 0.35),
-          t0: 0,
+          // 终端速度 / 尺寸 / 透明度按景深分层：近处更大、更快、更实
+          term: (0.18 + depth * 0.12) * H,
+          scale: 0.3 + depth * 0.32,
+          alpha: 0.5 + depth * 0.35,
+          glide: rnd(0.65, 1),
+          drag: rnd(0.3, 0.46),
+          // 倾角：主摆 30°~55°（周期 2~3.5s）+ 高频小幅扰动
+          a1: rnd(0.55, 0.95),
+          w1: rnd(1.8, 3.1),
+          p1: rnd(0, Math.PI * 2),
+          a2: rnd(0.12, 0.3),
+          w2: rnd(3.8, 6.2),
+          p2: rnd(0, Math.PI * 2),
+          // 绕羽轴翻面 + 缓慢风漂
+          fw: rnd(0.8, 1.7),
+          fp: rnd(0, Math.PI * 2),
+          dw: rnd(0.25, 0.6),
+          dp: rnd(0, Math.PI * 2),
+          da: rnd(8, 26),
+          // 开场一波集中在 0.8s 内，其余 1.2~3.8s 陆续补入
+          t0: now0 + (i < Math.round(count * 0.55) ? rnd(0, 800) : rnd(1200, 3800)),
+          lastA: -1,
         })
-        var st = states[i]
-        st.estDur = (1.35 * H) / st.term // 秒，用于分配漂移速度
-        st.t0 = performance.now() + st.delay * 1000
       }
 
       var last = performance.now()
       var step = function (now) {
         var dt = Math.min(0.05, (now - last) / 1000)
         last = now
+        var leaving = layer.classList.contains("leaving")
         var alive = 0
         for (var i = 0; i < states.length; i++) {
           var s = states[i]
+          // 懒创建：到点才建节点，避免一批 SVG 同时入场；
+          // 退场淡出期间不再补充新羽毛，让画面自然收尾
+          if (!s.el) {
+            if (leaving) continue
+            if (now < s.t0) {
+              alive++
+              continue
+            }
+            s.el = document.createElement("span")
+            s.el.className = "egg-feather"
+            s.el.innerHTML =
+              '<svg viewBox="0 0 36 116" aria-hidden="true"><use href="#' + s.id + '"/></svg>'
+            layer.appendChild(s.el)
+          }
           if (!s.el.isConnected) continue
           var t = (now - s.t0) / 1000
-          if (t < 0) {
-            s.el.style.opacity = "0"
-            alive++
-            continue
-          }
-          // 垂直：平滑趋近终端速度（无骤变）
-          s.vy += (s.term - s.vy) * Math.min(1, dt * 2.2)
+          // 倾角：双频正弦叠加（准周期），sinθ 驱动滑翔、兜风与旋转
+          var theta = s.a1 * Math.sin(s.w1 * t + s.p1) + s.a2 * Math.sin(s.w2 * t + s.p2)
+          var sinT = Math.sin(theta)
+          // 垂直：展平兜风变慢、侧立加速；平滑趋近目标，形成"一顿一飘"
+          var vTarget = s.term * (1 - s.drag * Math.abs(sinT))
+          s.vy += (vTarget - s.vy) * Math.min(1, dt * 3)
           s.y += s.vy * dt
-          // 横向：正弦摆 + 全程线性漂移
-          var sway = s.amp * Math.sin(s.ang * t + s.ph)
-          var x = s.x + sway + (s.drift / s.estDur) * t
-          // 旋转：跟随横向摆速（大角速度→大角度），限幅 ±14°，平滑追赶
-          var dSway = sway - s.prevSway
-          s.prevSway = sway
-          var target = Math.max(-14, Math.min(14, dSway * (180 / Math.PI) * 6))
-          s.rot += (target - s.rot) * Math.min(1, dt * 4)
-          // 透明度：入场渐显、接近底部渐隐
-          var alpha = 0.92 * Math.min(1, t / 0.45)
-          if (s.y > H - 160) alpha *= Math.max(0, Math.min(1, (H * 1.06 - s.y) / 200))
-          s.el.style.opacity = alpha.toFixed(3)
+          // 横向：倾斜滑翔 + 缓慢风漂；贴近左右边缘时软回推
+          var vx = s.glide * s.term * sinT + s.da * Math.sin(s.dw * t + s.dp)
+          if (s.x < W * 0.07) vx += (W * 0.07 - s.x) * 1.5
+          else if (s.x > W * 0.93) vx -= (s.x - W * 0.93) * 1.5
+          s.x += vx * dt
+          // 伪 3D 翻面：绕羽轴翻转，保留最小宽度避免完全消失
+          var flip = Math.cos(s.fw * t + s.fp)
+          var sx = (flip < 0 ? -1 : 1) * Math.max(0.12, Math.abs(flip))
+          // 透明度：入场渐显、侧立略透、接近底部渐隐；变化极小则跳过写样式
+          var alpha = s.alpha * Math.min(1, t / 0.5) * (0.76 + 0.24 * Math.abs(sx))
+          if (s.y > H - 170) alpha *= Math.max(0, Math.min(1, (H * 1.05 - s.y) / 190))
+          if (Math.abs(alpha - s.lastA) > 0.004) {
+            s.el.style.opacity = alpha.toFixed(3)
+            s.lastA = alpha
+          }
           s.el.style.transform =
             "translate3d(" +
-            x.toFixed(1) +
+            s.x.toFixed(1) +
             "px," +
             s.y.toFixed(1) +
             "px,0) rotate(" +
-            s.rot.toFixed(1) +
+            (theta * 57.2958).toFixed(1) +
             "deg) scale(" +
             s.scale.toFixed(3) +
+            ") scaleX(" +
+            sx.toFixed(3) +
             ")"
-          if (s.y < H * 1.12) alive++
+          if (s.y < H * 1.05) alive++
         }
         if (alive > 0) {
           _featherRaf = requestAnimationFrame(step)
         } else {
           _featherRaf = null
-          if (layer.isConnected) layer.parentNode.removeChild(layer)
+          clearTimeout(_featherKillTm)
+          _featherKillTm = null
+          if (layer.isConnected && layer.parentNode) layer.parentNode.removeChild(layer)
         }
       }
       _featherRaf = requestAnimationFrame(step)
@@ -2472,6 +2695,17 @@
       document.body.appendChild(p)
       _poemEl = p
       return p
+    }
+    // 背景幕：彩蛋期间压暗并模糊页面（搜索无结果、候选列表等杂讯），
+    // 让诗句与白羽成为唯一焦点；z-index 位于羽毛/诗句之下、搜索之上。
+    function ensureVeil() {
+      if (_veilEl && _veilEl.isConnected) return _veilEl
+      var v = document.createElement("div")
+      v.id = "egg-veil"
+      v.setAttribute("aria-hidden", "true")
+      document.body.appendChild(v)
+      _veilEl = v
+      return v
     }
     function eggPoemEffect() {
       var now = Date.now()
@@ -2497,6 +2731,11 @@
       p.classList.remove("show")
       void p.offsetWidth
       p.classList.add("show")
+      // 背景幕同步淡入，遮住搜索浮层/页面杂讯
+      var v = ensureVeil()
+      v.classList.remove("show")
+      void v.offsetWidth
+      v.classList.add("show")
 
       // 减少动效偏好：只显示诗句，不飘羽毛
       if (!reducedMotion()) {
@@ -2509,38 +2748,39 @@
     }
 
     // 主动清除诗句与羽毛（点空白处/SPA 切页/到点自动）
+    // 退场不瞬删：羽毛层加 .leaving 整体淡出、羽毛继续飘，之后再移除；
+    // 与搜索浮层关闭同帧触发时，视觉上自然"跟着浮层一起走"。
     function killFeathers() {
-      if (_featherRaf) {
-        cancelAnimationFrame(_featherRaf)
-        _featherRaf = null
-      }
       var fe = document.getElementById("egg-feathers")
-      if (fe && fe.parentNode) fe.parentNode.removeChild(fe)
+      if (!fe || fe.classList.contains("leaving")) return
+      fe.classList.add("leaving")
+      clearTimeout(_featherKillTm)
+      _featherKillTm = setTimeout(function () {
+        _featherKillTm = null
+        if (_featherRaf) {
+          cancelAnimationFrame(_featherRaf)
+          _featherRaf = null
+        }
+        if (fe.parentNode) fe.parentNode.removeChild(fe)
+      }, 460)
     }
     function hidePoem() {
       clearTimeout(_poemTm)
-      if (_poemEl && _poemEl.isConnected) _poemEl.parentNode.removeChild(_poemEl)
+      var p = _poemEl
       _poemEl = null
-    }
-
-    function ensureBirdFoot() {
-      var old = document.querySelector(".egg-bird-foot")
-      if (old && old.parentNode) old.parentNode.removeChild(old)
-      var foot = document.createElement("div")
-      foot.className = "egg-bird-foot"
-      foot.innerHTML =
-        '<span class="egg-foot-bird" aria-hidden="true">' +
-        BIRD_SVG +
-        "</span><span>哪怕网络没有留下我的羽毛，但我已飞过。</span>"
-      if (getSlug() === "index") {
-        var home = document.querySelector(".home-wrapper")
-        if (!home) return
-        var friend = home.querySelector(".friend-link")
-        ;(friend ? friend.parentNode : home).appendChild(foot)
-      } else {
-        var f = document.querySelector("footer")
-        if (!f) return
-        f.appendChild(foot)
+      if (p && p.isConnected) {
+        p.classList.remove("show")
+        setTimeout(function () {
+          if (p.parentNode) p.parentNode.removeChild(p)
+        }, 520)
+      }
+      var v = _veilEl
+      _veilEl = null
+      if (v && v.isConnected) {
+        v.classList.remove("show")
+        setTimeout(function () {
+          if (v.parentNode) v.parentNode.removeChild(v)
+        }, 520)
       }
     }
 
@@ -2689,12 +2929,9 @@
       closeEggDialog()
       hidePoem()
       killFeathers()
-      ensureBirdFoot()
       // body 被整体替换，需重新挂搜索关闭监控
       watchSearchClose()
     })
-
-    ensureBirdFoot()
   }
 
   // ====================================================================
@@ -2719,6 +2956,7 @@
     restoreBg()
     restoreFontColor()
     restoreLock()
+    restoreSeasonParticles()
     initFontManager()
 
     /* 首页自动锁定滚动已停用，保持浏览器默认滚动行为。 */

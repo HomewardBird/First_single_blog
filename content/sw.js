@@ -9,7 +9,7 @@
  *    字体由页面 FONT_CACHE 按需缓存，避免 SW 与页面双份冗余存储
  *  - 更新缓存版本时只需改 VERSION
  */
-var VERSION = "v5"
+var VERSION = "v6"
 var CACHE_NAME = "homewardbird-site-" + VERSION
 
 var PRECACHE_URLS = [
@@ -105,6 +105,24 @@ self.addEventListener("fetch", function (event) {
   // 造成 ~86MB 磁盘双份冗余；直接放行走网络，content-length 透传，
   // 下载进度也能按真实响应头计算
   if (url.pathname.indexOf("/fonts/") === 0) return
+
+  // custom.js 无内容哈希、每次构建都可能变化：网络优先，
+  // 保证改版后普通刷新即生效；离线/弱网时回退缓存。
+  if (url.pathname.endsWith("/static/custom.js")) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(function (cache) {
+        return fetch(request)
+          .then(function (res) {
+            if (res && res.ok) cache.put(request, res.clone()).catch(function () {})
+            return res
+          })
+          .catch(function () {
+            return cache.match(request)
+          })
+      }),
+    )
+    return
+  }
 
   event.respondWith(
     caches.open(CACHE_NAME).then(function (cache) {
