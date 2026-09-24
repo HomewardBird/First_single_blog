@@ -2,6 +2,8 @@ export default {
   pages: {
     folderContent: {
       folder: "Aplankas",
+      previousPage: "Ankstesnis",
+      nextPage: "Kitas",
       itemsUnderFolder: ({ count }: { count: number }) =>
         count === 1
           ? "1 elementas šiame aplanke."

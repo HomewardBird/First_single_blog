@@ -100,13 +100,24 @@
     "defaultEnabled": true,
     "defaultOptions": {
       "showFolderCount": true,
-      "showSubfolders": true
+      "showSubfolders": true,
+      "pagination": false
+    },
+    "components": {
+      "FolderPagination": {
+        "displayName": "Folder Pagination",
+        "defaultPosition": "afterBody",
+        "defaultPriority": 60
+      }
     },
     "optionSchema": {
       "showFolderCount": {
         "type": "boolean"
       },
       "showSubfolders": {
+        "type": "boolean"
+      },
+      "pagination": {
         "type": "boolean"
       }
     }

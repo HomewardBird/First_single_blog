@@ -6,6 +6,7 @@ import type {
   VirtualPage,
 } from "@quartz-community/types";
 import FolderContentComponent from "./components/FolderContent";
+import { injectPagination, type TrieNode } from "./components/FolderPagination";
 import { i18n } from "./i18n";
 import { joinSegments } from "./util/path";
 import type { SortFn } from "./components/PageList";
@@ -15,6 +16,8 @@ export interface FolderPageOptions {
   showFolderCount?: boolean;
   showSubfolders?: boolean;
   sort?: SortFn;
+  /** Replace the folder listing with previous/next page navigation. Default: false */
+  pagination?: boolean;
   /** Show "Folder: " prefix before folder name in generated titles. Default: false */
   prefixFolders?: boolean;
 }
@@ -125,5 +128,13 @@ export const FolderPage: QuartzPageTypePlugin<FolderPageOptions> = (opts) => {
     },
     layout: "folder",
     body,
+    treeTransforms: () => [
+      (root, slug, componentData) => {
+        const trie = (componentData.ctx as { trie?: TrieNode } | undefined)?.trie;
+        if (!trie) return;
+        const locale = (componentData.cfg as { locale?: string } | undefined)?.locale ?? "en-US";
+        injectPagination(root, slug, trie, locale);
+      },
+    ],
   };
 };

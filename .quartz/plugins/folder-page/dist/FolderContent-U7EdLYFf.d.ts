@@ -3,6 +3,7 @@ import { SortFn, QuartzComponent } from '@quartz-community/types';
 interface FolderContentOptions {
     showFolderCount: boolean;
     showSubfolders: boolean;
+    pagination?: boolean;
     sort?: SortFn;
 }
 declare const _default: (opts?: Partial<FolderContentOptions>) => QuartzComponent;

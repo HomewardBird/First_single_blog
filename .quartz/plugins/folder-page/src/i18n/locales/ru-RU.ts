@@ -2,6 +2,8 @@ export default {
   pages: {
     folderContent: {
       folder: "Папка",
+      previousPage: "Предыдущая",
+      nextPage: "Следующая",
       itemsUnderFolder: ({ count }: { count: number }) =>
         `в этой папке ${count} элемент${getForm(count, "", "а", "ов")}`,
     },

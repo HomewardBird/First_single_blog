@@ -553,7 +553,7 @@
   var fontOptions = [
     // bytes：静态字体的实际文件字节数。content-length 会被 Service Worker
     // 转发时剥离，作为进度百分比的分母兜底；替换字体文件后需同步更新。
-    { id: "lxgw", label: "落霞文楷", file: "/fonts/lxgw-wenkai.ttf", bytes: 25673994 },
+    { id: "lxgw", label: "落霞文楷", file: "/fonts/lxgwwenkai-regular.ttf", bytes: 25575676 },
     { id: "noto", label: "思源黑体", file: "/fonts/noto-sans-sc-variable.ttf", bytes: 17773248 },
   ]
 

@@ -2,6 +2,8 @@ export default {
   pages: {
     folderContent: {
       folder: "Carpeta",
+      previousPage: "Anterior",
+      nextPage: "Següent",
       itemsUnderFolder: ({ count }: { count: number }) =>
         count === 1 ? "1 article en aquesta carpeta." : `${count} articles en esta carpeta.`,
     },
