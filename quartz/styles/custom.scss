@@ -4001,3 +4001,117 @@ html[saved-theme="dark"] #egg-poem .egg-poem-src {
     animation: none !important;
   }
 }
+
+/* ================================================================
+   上一篇 / 下一篇：两个等宽矩形卡片，整块可点
+   （覆盖 folder-page 插件里那条较窄的行内布局）
+   ================================================================ */
+.page-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 1rem;
+  margin-top: 2.75rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid rgba(128, 128, 128, 0.16);
+  @include dark {
+    border-top-color: rgba(255, 255, 255, 0.09);
+  }
+}
+
+.page-pagination .pagination-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.32rem;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: calc(50% - 0.5rem);
+  min-height: 4.4rem;
+  padding: 1rem 1.25rem;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  box-shadow:
+    0 1px 2px rgba(31, 45, 61, 0.05),
+    0 6px 18px -8px rgba(31, 45, 61, 0.12);
+  text-decoration: none !important;
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    background 0.25s ease;
+  @include dark {
+    background: rgba(22, 22, 24, 0.35);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 22px -10px rgba(0, 0, 0, 0.5);
+  }
+}
+
+.page-pagination .pagination-next {
+  margin-left: auto;
+  text-align: right;
+}
+
+.page-pagination .pagination-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  opacity: 0.62;
+  transition: opacity 0.25s ease;
+}
+
+.page-pagination .pagination-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+@media (hover: hover) {
+  .page-pagination .pagination-item:hover {
+    transform: translateY(-3px);
+    border-color: var(--secondary);
+    box-shadow:
+      0 2px 4px rgba(31, 45, 61, 0.06),
+      0 14px 30px -12px rgba(31, 45, 61, 0.22);
+    @include dark {
+      border-color: var(--secondary);
+      box-shadow: 0 16px 34px -14px rgba(0, 0, 0, 0.65);
+    }
+  }
+  .page-pagination .pagination-item:hover .pagination-label {
+    opacity: 1;
+    color: var(--secondary) !important;
+  }
+}
+
+.page-pagination .pagination-item:active {
+  transform: translateY(0) scale(0.985);
+  transition: transform 0.06s ease;
+}
+
+.page-pagination .pagination-item:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+}
+
+/* 窄屏：两张卡片改上下堆叠，避免文字被挤成一两个字 */
+@media (max-width: 600px) {
+  .page-pagination {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .page-pagination .pagination-item {
+    max-width: 100%;
+    min-height: 0;
+    padding: 0.85rem 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-pagination .pagination-item {
+    transition: none;
+  }
+}
