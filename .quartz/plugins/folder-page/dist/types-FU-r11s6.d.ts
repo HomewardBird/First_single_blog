@@ -4,6 +4,8 @@ interface FolderPageOptions {
     showFolderCount?: boolean;
     showSubfolders?: boolean;
     sort?: SortFn;
+    /** Replace the folder listing with previous/next page navigation. Default: false */
+    pagination?: boolean;
     /** Show "Folder: " prefix before folder name in generated titles. Default: false */
     prefixFolders?: boolean;
 }

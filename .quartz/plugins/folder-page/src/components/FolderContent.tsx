@@ -3,64 +3,41 @@ import type {
   QuartzComponent,
   QuartzComponentConstructor,
   QuartzComponentProps,
-  QuartzPluginData,
   SortFn,
 } from "@quartz-community/types";
-import { PageList } from "./PageList";
+import { PageList, byDateAndAlphabeticalFolderFirst } from "./PageList";
 import { htmlToJsx } from "@quartz-community/utils/jsx";
+import { resolveRelative } from "../util/path";
 import type { ComponentChildren } from "preact";
 import type { Root } from "hast";
 import { i18n } from "../i18n";
+import {
+  computeChainNav,
+  pagesFromTrie,
+  paginationCss,
+  type PageEntry,
+  type TrieNode,
+} from "./FolderPagination";
 import style from "./styles/listPage.scss";
 
 interface FolderContentOptions {
   showFolderCount: boolean;
   showSubfolders: boolean;
+  pagination?: boolean;
   sort?: SortFn;
 }
 
 const defaultOptions: FolderContentOptions = {
   showFolderCount: true,
   showSubfolders: true,
+  pagination: false,
 };
-
-interface TrieNode {
-  isFolder: boolean;
-  children: TrieNode[];
-  data: unknown;
-  slug: string;
-  displayName: string;
-  findNode(path: string[]): TrieNode | undefined;
-}
-
-type PageEntry = QuartzPluginData & Record<string, unknown>;
 
 function concatenateResources(
   ...resources: (string | string[] | undefined)[]
 ): string | string[] | undefined {
   const result = resources.filter((r): r is string | string[] => r !== undefined).flat();
   return result.length === 0 ? undefined : result;
-}
-
-function pagesFromTrie(folder: TrieNode, showSubfolders: boolean): PageEntry[] {
-  return folder.children
-    .map((node) => {
-      const nodeData = node.data as PageEntry | null;
-      if (nodeData) {
-        if (nodeData.unlisted === true) return undefined;
-        return nodeData;
-      }
-
-      if (node.isFolder && showSubfolders) {
-        return {
-          slug: node.slug as FullSlug,
-          dates: mostRecentDatesFromChildren(node.children),
-          frontmatter: { title: node.displayName, tags: [] },
-        };
-      }
-      return undefined;
-    })
-    .filter((page): page is PageEntry => page !== undefined);
 }
 
 export function pagesFromAllFiles(
@@ -186,27 +163,73 @@ export default ((opts?: Partial<FolderContentOptions>) => {
 
     const pageListContent = PageList(listProps) as unknown as ComponentChildren;
 
+    const sorter = options.sort ?? byDateAndAlphabeticalFolderFirst(cfg);
+    const locale = (cfg as { locale?: string } | undefined)?.locale ?? "en-US";
+    const toNav = (page: PageEntry): { slug: FullSlug; title: string } => ({
+      slug: page.slug as FullSlug,
+      title: String((page.frontmatter?.title as string | undefined) ?? page.slug ?? ""),
+    });
+    let prevPage: { slug: FullSlug; title: string } | undefined;
+    let nextPage: { slug: FullSlug; title: string } | undefined;
+    if (trie) {
+      const nav = computeChainNav(trie, slug, locale);
+      prevPage = nav.prev;
+      nextPage = nav.next;
+    } else {
+      const sortedPages = [...allPagesInFolder].sort(sorter);
+      const currentIndex = sortedPages.findIndex((p) => p.slug === (slug as unknown as string));
+      const fallbackPrev = currentIndex > 0 ? sortedPages[currentIndex - 1] : undefined;
+      const fallbackNext = currentIndex >= 0 ? sortedPages[currentIndex + 1] : sortedPages[0];
+      prevPage = fallbackPrev ? toNav(fallbackPrev) : undefined;
+      nextPage = fallbackNext ? toNav(fallbackNext) : undefined;
+    }
+
+    const t = i18n(locale).pages.folderContent;
+
     return (
       <div class="popover-hint">
         <article class={classes}>
           <div class="markdown-preview-view markdown-rendered">{content}</div>
         </article>
-        <div class="page-listing">
-          {options.showFolderCount && (
-            <p>
-              {i18n(
-                (cfg as { locale?: string } | undefined)?.locale ?? "en-US",
-              ).pages.folderContent.itemsUnderFolder({
-                count: allPagesInFolder.length,
-              })}
-            </p>
-          )}
-          <div>{pageListContent}</div>
-        </div>
+        {options.pagination ? (
+          (prevPage || nextPage) && (
+            <nav class="page-pagination">
+              {prevPage && (
+                <a
+                  class="pagination-item pagination-prev internal"
+                  href={resolveRelative(slug as unknown as FullSlug, prevPage.slug)}
+                >
+                  <span class="pagination-label">← {t.previousPage}</span>
+                  <span class="pagination-title">{prevPage.title}</span>
+                </a>
+              )}
+              {nextPage && (
+                <a
+                  class="pagination-item pagination-next internal"
+                  href={resolveRelative(slug as unknown as FullSlug, nextPage.slug)}
+                >
+                  <span class="pagination-label">{t.nextPage} →</span>
+                  <span class="pagination-title">{nextPage.title}</span>
+                </a>
+              )}
+            </nav>
+          )
+        ) : (
+          <div class="page-listing">
+            {options.showFolderCount && (
+              <p>
+                {t.itemsUnderFolder({
+                  count: allPagesInFolder.length,
+                })}
+              </p>
+            )}
+            <div>{pageListContent}</div>
+          </div>
+        )}
       </div>
     );
   };
 
-  FolderContent.css = concatenateResources(style, PageList.css);
+  FolderContent.css = concatenateResources(style, PageList.css, paginationCss);
   return FolderContent;
 }) satisfies QuartzComponentConstructor;

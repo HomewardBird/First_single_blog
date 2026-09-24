@@ -4,7 +4,6 @@ import { resolveRelative, isFolderPath } from "../util/path";
 import type { FullSlug } from "../util/path";
 
 export type { SortFn } from "@quartz-community/types";
-export { byDateAndAlphabetical };
 
 export function byDateAndAlphabeticalFolderFirst(_cfg: unknown): SortFn {
   return (f1, f2) => {

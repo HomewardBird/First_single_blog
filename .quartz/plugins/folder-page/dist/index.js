@@ -30,9 +30,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// node_modules/inline-style-parser/cjs/index.js
+// ../../../node_modules/inline-style-parser/cjs/index.js
 var require_cjs = __commonJS({
-  "node_modules/inline-style-parser/cjs/index.js"(exports$1, module) {
+  "../../../node_modules/inline-style-parser/cjs/index.js"(exports$1, module) {
     var COMMENT_REGEX = /\/\*[^*]*\*+([^/*][^*]*\*+)*\//g;
     var NEWLINE_REGEX = /\n/g;
     var WHITESPACE_REGEX = /^\s*/;
@@ -168,9 +168,9 @@ var require_cjs = __commonJS({
   }
 });
 
-// node_modules/style-to-object/cjs/index.js
+// ../../../node_modules/style-to-object/cjs/index.js
 var require_cjs2 = __commonJS({
-  "node_modules/style-to-object/cjs/index.js"(exports$1) {
+  "../../../node_modules/style-to-object/cjs/index.js"(exports$1) {
     var __importDefault = exports$1 && exports$1.__importDefault || function(mod) {
       return mod && mod.__esModule ? mod : { "default": mod };
     };
@@ -201,9 +201,9 @@ var require_cjs2 = __commonJS({
   }
 });
 
-// node_modules/style-to-js/cjs/utilities.js
+// ../../../node_modules/style-to-js/cjs/utilities.js
 var require_utilities = __commonJS({
-  "node_modules/style-to-js/cjs/utilities.js"(exports$1) {
+  "../../../node_modules/style-to-js/cjs/utilities.js"(exports$1) {
     Object.defineProperty(exports$1, "__esModule", { value: true });
     exports$1.camelCase = void 0;
     var CUSTOM_PROPERTY_REGEX = /^--[a-zA-Z0-9_-]+$/;
@@ -239,9 +239,9 @@ var require_utilities = __commonJS({
   }
 });
 
-// node_modules/style-to-js/cjs/index.js
+// ../../../node_modules/style-to-js/cjs/index.js
 var require_cjs3 = __commonJS({
-  "node_modules/style-to-js/cjs/index.js"(exports$1, module) {
+  "../../../node_modules/style-to-js/cjs/index.js"(exports$1, module) {
     var __importDefault = exports$1 && exports$1.__importDefault || function(mod) {
       return mod && mod.__esModule ? mod : { "default": mod };
     };
@@ -264,7 +264,7 @@ var require_cjs3 = __commonJS({
   }
 });
 
-// node_modules/@quartz-community/utils/dist/sort.js
+// ../../../node_modules/@quartz-community/utils/dist/sort.js
 function getDate(data) {
   const defaultDateType = data.defaultDateType;
   if (!defaultDateType) {
@@ -274,7 +274,7 @@ function getDate(data) {
   return dates?.[defaultDateType];
 }
 
-// node_modules/@quartz-community/utils/dist/path.js
+// ../../../node_modules/@quartz-community/utils/dist/path.js
 function simplifySlug(fp) {
   const res = stripSlashes(trimSuffix(fp, "index"), true);
   return res.length === 0 ? "/" : res;
@@ -327,34 +327,34 @@ function resolveRelative(current, target) {
   return res;
 }
 
-// node_modules/preact/dist/preact.mjs
+// ../../../node_modules/preact/dist/preact.mjs
 var n;
 var l;
 var u;
-var w = [];
-function k(l2, u3, t2) {
+var v = [];
+function _(l2, u3, t2) {
   var i2, r2, o2, e2 = {};
   for (o2 in u3) "key" == o2 ? i2 = u3[o2] : "ref" == o2 ? r2 = u3[o2] : e2[o2] = u3[o2];
   if (arguments.length > 2 && (e2.children = arguments.length > 3 ? n.call(arguments, 2) : t2), "function" == typeof l2 && null != l2.defaultProps) for (o2 in l2.defaultProps) void 0 === e2[o2] && (e2[o2] = l2.defaultProps[o2]);
-  return x(l2, e2, i2, r2, null);
+  return m(l2, e2, i2, r2, null);
 }
-function x(n2, t2, i2, r2, o2) {
+function m(n2, t2, i2, r2, o2) {
   var e2 = { type: n2, props: t2, key: i2, ref: r2, __k: null, __: null, __b: 0, __e: null, __c: null, constructor: void 0, __v: null == o2 ? ++u : o2, __i: -1, __u: 0 };
   return null != l.vnode && l.vnode(e2), e2;
 }
-function S(n2) {
+function k(n2) {
   return n2.children;
 }
-n = w.slice, l = { __e: function(n2, l2, u3, t2) {
+n = v.slice, l = { __e: function(n2, l2, u3, t2) {
   for (var i2, r2, o2; l2 = l2.__; ) if ((i2 = l2.__c) && !i2.__) try {
     if ((r2 = i2.constructor) && null != r2.getDerivedStateFromError && (i2.setState(r2.getDerivedStateFromError(n2)), o2 = i2.__d), null != i2.componentDidCatch && (i2.componentDidCatch(n2, t2 || {}), o2 = i2.__d), o2) return i2.__E = i2;
   } catch (l3) {
     n2 = l3;
   }
   throw n2;
-} }, u = 0, "function" == typeof Promise ? Promise.prototype.then.bind(Promise.resolve()) : setTimeout, Math.random().toString(8);
+} }, u = 0, "function" == typeof Promise ? Promise.prototype.then.bind(Promise.resolve()) : setTimeout;
 
-// node_modules/preact/jsx-runtime/dist/jsxRuntime.mjs
+// ../../../node_modules/preact/jsx-runtime/dist/jsxRuntime.mjs
 var f2 = 0;
 function u2(e2, t2, n2, o2, i2, u3) {
   t2 || (t2 = {});
@@ -372,13 +372,6 @@ function byDateAndAlphabeticalFolderFirst(_cfg) {
     const f2IsFolder = isFolderPath(f22.slug ?? "");
     if (f1IsFolder && !f2IsFolder) return -1;
     if (!f1IsFolder && f2IsFolder) return 1;
-    if (f1.dates && f22.dates) {
-      return (getDate(f22)?.getTime() ?? 0) - (getDate(f1)?.getTime() ?? 0);
-    } else if (f1.dates && !f22.dates) {
-      return -1;
-    } else if (!f1.dates && f22.dates) {
-      return 1;
-    }
     const f1Title = f1.frontmatter?.title?.toLowerCase() ?? "";
     const f2Title = f22.frontmatter?.title?.toLowerCase() ?? "";
     return f1Title.localeCompare(f2Title);
@@ -447,7 +440,7 @@ PageList.css = `
 }
 `;
 
-// node_modules/comma-separated-tokens/index.js
+// ../../../node_modules/comma-separated-tokens/index.js
 function stringify(values, options) {
   const settings = {};
   const input = values[values.length - 1] === "" ? [...values, ""] : values;
@@ -456,11 +449,11 @@ function stringify(values, options) {
   ).trim();
 }
 
-// node_modules/devlop/lib/default.js
+// ../../../node_modules/devlop/lib/default.js
 function ok() {
 }
 
-// node_modules/estree-util-is-identifier-name/lib/index.js
+// ../../../node_modules/estree-util-is-identifier-name/lib/index.js
 var nameRe = /^[$_\p{ID_Start}][$_\u{200C}\u{200D}\p{ID_Continue}]*$/u;
 var nameReJsx = /^[$_\p{ID_Start}][-$_\u{200C}\u{200D}\p{ID_Continue}]*$/u;
 var emptyOptions = {};
@@ -470,7 +463,7 @@ function name(name2, options) {
   return re2.test(name2);
 }
 
-// node_modules/hast-util-whitespace/lib/index.js
+// ../../../node_modules/hast-util-whitespace/lib/index.js
 var re = /[ \t\n\f\r]/g;
 function whitespace(thing) {
   return typeof thing === "object" ? thing.type === "text" ? empty(thing.value) : false : empty(thing);
@@ -479,7 +472,7 @@ function empty(value) {
   return value.replace(re, "") === "";
 }
 
-// node_modules/property-information/lib/util/schema.js
+// ../../../node_modules/property-information/lib/util/schema.js
 var Schema = class {
   /**
    * @param {SchemaType['property']} property
@@ -503,7 +496,7 @@ Schema.prototype.normal = {};
 Schema.prototype.property = {};
 Schema.prototype.space = void 0;
 
-// node_modules/property-information/lib/util/merge.js
+// ../../../node_modules/property-information/lib/util/merge.js
 function merge(definitions, space) {
   const property = {};
   const normal = {};
@@ -514,12 +507,12 @@ function merge(definitions, space) {
   return new Schema(property, normal, space);
 }
 
-// node_modules/property-information/lib/normalize.js
+// ../../../node_modules/property-information/lib/normalize.js
 function normalize(value) {
   return value.toLowerCase();
 }
 
-// node_modules/property-information/lib/util/info.js
+// ../../../node_modules/property-information/lib/util/info.js
 var Info = class {
   /**
    * @param {string} property
@@ -547,7 +540,7 @@ Info.prototype.property = "";
 Info.prototype.spaceSeparated = false;
 Info.prototype.space = void 0;
 
-// node_modules/property-information/lib/util/types.js
+// ../../../node_modules/property-information/lib/util/types.js
 var types_exports = {};
 __export(types_exports, {
   boolean: () => boolean,
@@ -570,7 +563,7 @@ function increment() {
   return 2 ** ++powers;
 }
 
-// node_modules/property-information/lib/util/defined-info.js
+// ../../../node_modules/property-information/lib/util/defined-info.js
 var checks = (
   /** @type {ReadonlyArray<keyof typeof types>} */
   Object.keys(types_exports)
@@ -608,7 +601,7 @@ function mark(values, key, value) {
   }
 }
 
-// node_modules/property-information/lib/util/create.js
+// ../../../node_modules/property-information/lib/util/create.js
 function create(definition) {
   const properties = {};
   const normals = {};
@@ -629,7 +622,7 @@ function create(definition) {
   return new Schema(properties, normals, definition.space);
 }
 
-// node_modules/property-information/lib/aria.js
+// ../../../node_modules/property-information/lib/aria.js
 var aria = create({
   properties: {
     ariaActiveDescendant: null,
@@ -687,17 +680,17 @@ var aria = create({
   }
 });
 
-// node_modules/property-information/lib/util/case-sensitive-transform.js
+// ../../../node_modules/property-information/lib/util/case-sensitive-transform.js
 function caseSensitiveTransform(attributes, attribute) {
   return attribute in attributes ? attributes[attribute] : attribute;
 }
 
-// node_modules/property-information/lib/util/case-insensitive-transform.js
+// ../../../node_modules/property-information/lib/util/case-insensitive-transform.js
 function caseInsensitiveTransform(attributes, property) {
   return caseSensitiveTransform(attributes, property.toLowerCase());
 }
 
-// node_modules/property-information/lib/html.js
+// ../../../node_modules/property-information/lib/html.js
 var html = create({
   attributes: {
     acceptcharset: "accept-charset",
@@ -1061,7 +1054,7 @@ var html = create({
   transform: caseInsensitiveTransform
 });
 
-// node_modules/property-information/lib/svg.js
+// ../../../node_modules/property-information/lib/svg.js
 var svg = create({
   attributes: {
     accentHeight: "accent-height",
@@ -1623,7 +1616,7 @@ var svg = create({
   transform: caseSensitiveTransform
 });
 
-// node_modules/property-information/lib/xlink.js
+// ../../../node_modules/property-information/lib/xlink.js
 var xlink = create({
   properties: {
     xLinkActuate: null,
@@ -1640,7 +1633,7 @@ var xlink = create({
   }
 });
 
-// node_modules/property-information/lib/xmlns.js
+// ../../../node_modules/property-information/lib/xmlns.js
 var xmlns = create({
   attributes: { xmlnsxlink: "xmlns:xlink" },
   properties: { xmlnsXLink: null, xmlns: null },
@@ -1648,7 +1641,7 @@ var xmlns = create({
   transform: caseInsensitiveTransform
 });
 
-// node_modules/property-information/lib/xml.js
+// ../../../node_modules/property-information/lib/xml.js
 var xml = create({
   properties: { xmlBase: null, xmlLang: null, xmlSpace: null },
   space: "xml",
@@ -1657,7 +1650,7 @@ var xml = create({
   }
 });
 
-// node_modules/property-information/lib/hast-to-react.js
+// ../../../node_modules/property-information/lib/hast-to-react.js
 var hastToReact = {
   classId: "classID",
   dataType: "datatype",
@@ -1678,7 +1671,7 @@ var hastToReact = {
   xmlnsXLink: "xmlnsXlink"
 };
 
-// node_modules/property-information/lib/find.js
+// ../../../node_modules/property-information/lib/find.js
 var cap = /[A-Z]/g;
 var dash = /-[a-z]/g;
 var valid = /^data[-\w.:]+$/i;
@@ -1714,16 +1707,16 @@ function camelcase($0) {
   return $0.charAt(1).toUpperCase();
 }
 
-// node_modules/property-information/index.js
+// ../../../node_modules/property-information/index.js
 var html2 = merge([aria, html, xlink, xmlns, xml], "html");
 var svg2 = merge([aria, svg, xlink, xmlns, xml], "svg");
 
-// node_modules/space-separated-tokens/index.js
+// ../../../node_modules/space-separated-tokens/index.js
 function stringify2(values) {
   return values.join(" ").trim();
 }
 
-// node_modules/hast-util-to-jsx-runtime/lib/index.js
+// ../../../node_modules/hast-util-to-jsx-runtime/lib/index.js
 var import_style_to_js = __toESM(require_cjs3());
 var pointStart = point("start");
 function point(type) {
@@ -1740,7 +1733,7 @@ function point(type) {
   }
 }
 
-// node_modules/unist-util-stringify-position/lib/index.js
+// ../../../node_modules/unist-util-stringify-position/lib/index.js
 function stringifyPosition(value) {
   if (!value || typeof value !== "object") {
     return "";
@@ -1766,7 +1759,7 @@ function index(value) {
   return value && typeof value === "number" ? value : 1;
 }
 
-// node_modules/vfile-message/lib/index.js
+// ../../../node_modules/vfile-message/lib/index.js
 var VFileMessage = class extends Error {
   /**
    * Create a message for `reason`.
@@ -1902,7 +1895,7 @@ VFileMessage.prototype.place = void 0;
 VFileMessage.prototype.ruleId = void 0;
 VFileMessage.prototype.source = void 0;
 
-// node_modules/hast-util-to-jsx-runtime/lib/index.js
+// ../../../node_modules/hast-util-to-jsx-runtime/lib/index.js
 var own2 = {}.hasOwnProperty;
 var emptyMap = /* @__PURE__ */ new Map();
 var cap2 = /[A-Z]/g;
@@ -2280,7 +2273,7 @@ function toDash($0) {
   return "-" + $0.toLowerCase();
 }
 
-// node_modules/@quartz-community/utils/dist/jsx.js
+// ../../../node_modules/@quartz-community/utils/dist/jsx.js
 function childrenToString(children) {
   if (typeof children === "string") return children;
   if (Array.isArray(children)) return children.map(childrenToString).join("");
@@ -2291,12 +2284,12 @@ var builtinComponents = {
     class: "table-container",
     children: /* @__PURE__ */ u2("table", { ...props })
   }),
-  style: ({ children, ...rest }) => k("style", { ...rest, dangerouslySetInnerHTML: { __html: childrenToString(children) } }),
-  script: ({ children, ...rest }) => k("script", { ...rest, dangerouslySetInnerHTML: { __html: childrenToString(children) } })
+  style: ({ children, ...rest }) => _("style", { ...rest, dangerouslySetInnerHTML: { __html: childrenToString(children) } }),
+  script: ({ children, ...rest }) => _("script", { ...rest, dangerouslySetInnerHTML: { __html: childrenToString(children) } })
 };
 function htmlToJsx(tree, components) {
   return toJsxRuntime(tree, {
-    Fragment: S,
+    Fragment: k,
     jsx: u2,
     jsxs: u2,
     elementAttributeNameCase: "html",
@@ -2309,7 +2302,9 @@ var en_US_default = {
   pages: {
     folderContent: {
       folder: "Folder",
-      itemsUnderFolder: ({ count }) => count === 1 ? "1 item under this folder." : `${count} items under this folder.`
+      itemsUnderFolder: ({ count }) => count === 1 ? "1 item under this folder." : `${count} items under this folder.`,
+      previousPage: "Previous",
+      nextPage: "Next"
     }
   },
   components: {}
@@ -2320,6 +2315,8 @@ var ar_SA_default = {
   pages: {
     folderContent: {
       folder: "\u0645\u062C\u0644\u062F",
+      previousPage: "\u0627\u0644\u0633\u0627\u0628\u0642",
+      nextPage: "\u0627\u0644\u062A\u0627\u0644\u064A",
       itemsUnderFolder: ({ count }) => count === 1 ? "\u064A\u0648\u062C\u062F \u0639\u0646\u0635\u0631 \u0648\u0627\u062D\u062F \u0641\u0642\u0637 \u062A\u062D\u062A \u0647\u0630\u0627 \u0627\u0644\u0645\u062C\u0644\u062F" : `\u064A\u0648\u062C\u062F ${count} \u0639\u0646\u0627\u0635\u0631 \u062A\u062D\u062A \u0647\u0630\u0627 \u0627\u0644\u0645\u062C\u0644\u062F.`
     }
   },
@@ -2331,6 +2328,8 @@ var ca_ES_default = {
   pages: {
     folderContent: {
       folder: "Carpeta",
+      previousPage: "Anterior",
+      nextPage: "Seg\xFCent",
       itemsUnderFolder: ({ count }) => count === 1 ? "1 article en aquesta carpeta." : `${count} articles en esta carpeta.`
     }
   },
@@ -2342,6 +2341,8 @@ var cs_CZ_default = {
   pages: {
     folderContent: {
       folder: "Slo\u017Eka",
+      previousPage: "P\u0159edchoz\xED",
+      nextPage: "Dal\u0161\xED",
       itemsUnderFolder: ({ count }) => count === 1 ? "1 polo\u017Eka v t\xE9to slo\u017Ece." : `${count} polo\u017Eek v t\xE9to slo\u017Ece.`
     }
   },
@@ -2353,6 +2354,8 @@ var de_DE_default = {
   pages: {
     folderContent: {
       folder: "Ordner",
+      previousPage: "Zur\xFCck",
+      nextPage: "Weiter",
       itemsUnderFolder: ({ count }) => count === 1 ? "1 Datei in diesem Ordner." : `${count} Dateien in diesem Ordner.`
     }
   },
@@ -2364,6 +2367,8 @@ var en_GB_default = {
   pages: {
     folderContent: {
       folder: "Folder",
+      previousPage: "Previous",
+      nextPage: "Next",
       itemsUnderFolder: ({ count }) => count === 1 ? "1 item under this folder." : `${count} items under this folder.`
     }
   },
@@ -2375,6 +2380,8 @@ var es_ES_default = {
   pages: {
     folderContent: {
       folder: "Carpeta",
+      previousPage: "Anterior",
+      nextPage: "Siguiente",
       itemsUnderFolder: ({ count }) => count === 1 ? "1 art\xEDculo en esta carpeta." : `${count} art\xEDculos en esta carpeta.`
     }
   },
@@ -2386,6 +2393,8 @@ var fa_IR_default = {
   pages: {
     folderContent: {
       folder: "\u067E\u0648\u0634\u0647",
+      previousPage: "\u0642\u0628\u0644\u06CC",
+      nextPage: "\u0628\u0639\u062F\u06CC",
       itemsUnderFolder: ({ count }) => count === 1 ? ".\u06CC\u06A9 \u0645\u0637\u0644\u0628 \u062F\u0631 \u0627\u06CC\u0646 \u067E\u0648\u0634\u0647 \u0627\u0633\u062A" : `${count} \u0645\u0637\u0644\u0628 \u062F\u0631 \u0627\u06CC\u0646 \u067E\u0648\u0634\u0647 \u0627\u0633\u062A.`
     }
   },
@@ -2397,6 +2406,8 @@ var fi_FI_default = {
   pages: {
     folderContent: {
       folder: "Kansio",
+      previousPage: "Edellinen",
+      nextPage: "Seuraava",
       itemsUnderFolder: ({ count }) => count === 1 ? "1 kohde t\xE4ss\xE4 kansiossa." : `${count} kohdetta t\xE4ss\xE4 kansiossa.`
     }
   },
@@ -2408,6 +2419,8 @@ var fr_FR_default = {
   pages: {
     folderContent: {
       folder: "Dossier",
+      previousPage: "Pr\xE9c\xE9dent",
+      nextPage: "Suivant",
       itemsUnderFolder: ({ count }) => count === 1 ? "1 \xE9l\xE9ment sous ce dossier." : `${count} \xE9l\xE9ments sous ce dossier.`
     }
   },
@@ -2419,6 +2432,8 @@ var he_IL_default = {
   pages: {
     folderContent: {
       folder: "\u05EA\u05D9\u05E7\u05D9\u05D9\u05D4",
+      previousPage: "\u05D4\u05E7\u05D5\u05D3\u05DD",
+      nextPage: "\u05D4\u05D1\u05D0",
       itemsUnderFolder: ({ count }) => count === 1 ? "\u05E4\u05E8\u05D9\u05D8 \u05D0\u05D7\u05D3 \u05EA\u05D7\u05EA \u05EA\u05D9\u05E7\u05D9\u05D9\u05D4 \u05D6\u05D5." : `${count} \u05E4\u05E8\u05D9\u05D8\u05D9\u05DD \u05EA\u05D7\u05EA \u05EA\u05D9\u05E7\u05D9\u05D9\u05D4 \u05D6\u05D5.`
     }
   },
@@ -2430,6 +2445,8 @@ var hu_HU_default = {
   pages: {
     folderContent: {
       folder: "Mappa",
+      previousPage: "El\u0151z\u0151",
+      nextPage: "K\xF6vetkez\u0151",
       itemsUnderFolder: ({ count }) => `Ebben a mapp\xE1ban ${count} elem tal\xE1lhat\xF3.`
     }
   },
@@ -2441,6 +2458,8 @@ var id_ID_default = {
   pages: {
     folderContent: {
       folder: "Folder",
+      previousPage: "Sebelumnya",
+      nextPage: "Berikutnya",
       itemsUnderFolder: ({ count }) => count === 1 ? "1 item di bawah folder ini." : `${count} item di bawah folder ini.`
     }
   },
@@ -2452,6 +2471,8 @@ var it_IT_default = {
   pages: {
     folderContent: {
       folder: "Cartella",
+      previousPage: "Precedente",
+      nextPage: "Successivo",
       itemsUnderFolder: ({ count }) => count === 1 ? "1 oggetto in questa cartella." : `${count} oggetti in questa cartella.`
     }
   },
@@ -2463,6 +2484,8 @@ var ja_JP_default = {
   pages: {
     folderContent: {
       folder: "\u30D5\u30A9\u30EB\u30C0",
+      previousPage: "\u524D\u3078",
+      nextPage: "\u6B21\u3078",
       itemsUnderFolder: ({ count }) => `${count}\u4EF6\u306E\u30DA\u30FC\u30B8`
     }
   },
@@ -2474,6 +2497,8 @@ var kk_KZ_default = {
   pages: {
     folderContent: {
       folder: "\u049A\u0430\u043B\u0442\u0430",
+      previousPage: "\u0410\u043B\u0434\u044B\u04A3\u0493\u044B",
+      nextPage: "\u041A\u0435\u043B\u0435\u0441\u0456",
       itemsUnderFolder: ({ count }) => count === 1 ? "\u0411\u04B1\u043B \u049B\u0430\u043B\u0442\u0430\u0434\u0430 1 \u044D\u043B\u0435\u043C\u0435\u043D\u0442 \u0431\u0430\u0440." : `\u0411\u04B1\u043B \u049B\u0430\u043B\u0442\u0430\u0434\u0430 ${count} \u044D\u043B\u0435\u043C\u0435\u043D\u0442 \u0431\u0430\u0440.`
     }
   },
@@ -2485,6 +2510,8 @@ var ko_KR_default = {
   pages: {
     folderContent: {
       folder: "\uD3F4\uB354",
+      previousPage: "\uC774\uC804",
+      nextPage: "\uB2E4\uC74C",
       itemsUnderFolder: ({ count }) => `${count}\uAC74\uC758 \uD56D\uBAA9`
     }
   },
@@ -2496,6 +2523,8 @@ var lt_LT_default = {
   pages: {
     folderContent: {
       folder: "Aplankas",
+      previousPage: "Ankstesnis",
+      nextPage: "Kitas",
       itemsUnderFolder: ({ count }) => count === 1 ? "1 elementas \u0161iame aplanke." : count < 10 ? `${count} elementai \u0161iame aplanke.` : `${count} element\u0173 \u0161iame aplanke.`
     }
   },
@@ -2507,6 +2536,8 @@ var nb_NO_default = {
   pages: {
     folderContent: {
       folder: "Mappe",
+      previousPage: "Forrige",
+      nextPage: "Neste",
       itemsUnderFolder: ({ count }) => count === 1 ? "1 gjenstand i denne mappen." : `${count} gjenstander i denne mappen.`
     }
   },
@@ -2518,6 +2549,8 @@ var nl_NL_default = {
   pages: {
     folderContent: {
       folder: "Map",
+      previousPage: "Vorige",
+      nextPage: "Volgende",
       itemsUnderFolder: ({ count }) => count === 1 ? "1 item in deze map." : `${count} items in deze map.`
     }
   },
@@ -2529,6 +2562,8 @@ var pl_PL_default = {
   pages: {
     folderContent: {
       folder: "Folder",
+      previousPage: "Poprzedni",
+      nextPage: "Nast\u0119pny",
       itemsUnderFolder: ({ count }) => count === 1 ? "W tym folderze jest 1 element." : `Element\xF3w w folderze: ${count}.`
     }
   },
@@ -2540,6 +2575,8 @@ var pt_BR_default = {
   pages: {
     folderContent: {
       folder: "Arquivo",
+      previousPage: "Anterior",
+      nextPage: "Pr\xF3ximo",
       itemsUnderFolder: ({ count }) => count === 1 ? "1 item neste arquivo." : `${count} items neste arquivo.`
     }
   },
@@ -2551,6 +2588,8 @@ var ro_RO_default = {
   pages: {
     folderContent: {
       folder: "Dosar",
+      previousPage: "Anterior",
+      nextPage: "Urm\u0103tor",
       itemsUnderFolder: ({ count }) => count === 1 ? "1 articol \xEEn acest dosar." : `${count} elemente \xEEn acest dosar.`
     }
   },
@@ -2562,6 +2601,8 @@ var ru_RU_default = {
   pages: {
     folderContent: {
       folder: "\u041F\u0430\u043F\u043A\u0430",
+      previousPage: "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0430\u044F",
+      nextPage: "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0430\u044F",
       itemsUnderFolder: ({ count }) => `\u0432 \u044D\u0442\u043E\u0439 \u043F\u0430\u043F\u043A\u0435 ${count} \u044D\u043B\u0435\u043C\u0435\u043D\u0442${getForm(count, "", "\u0430", "\u043E\u0432")}`
     }
   },
@@ -2581,6 +2622,8 @@ var th_TH_default = {
   pages: {
     folderContent: {
       folder: "\u0E42\u0E1F\u0E25\u0E40\u0E14\u0E2D\u0E23\u0E4C",
+      previousPage: "\u0E01\u0E48\u0E2D\u0E19\u0E2B\u0E19\u0E49\u0E32",
+      nextPage: "\u0E16\u0E31\u0E14\u0E44\u0E1B",
       itemsUnderFolder: ({ count }) => `\u0E21\u0E35 ${count} \u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E43\u0E19\u0E42\u0E1F\u0E25\u0E40\u0E14\u0E2D\u0E23\u0E4C\u0E19\u0E35\u0E49`
     }
   },
@@ -2592,6 +2635,8 @@ var tr_TR_default = {
   pages: {
     folderContent: {
       folder: "Klas\xF6r",
+      previousPage: "\xD6nceki",
+      nextPage: "Sonraki",
       itemsUnderFolder: ({ count }) => count === 1 ? "Bu klas\xF6r alt\u0131nda 1 \xF6\u011Fe." : `Bu klas\xF6r alt\u0131ndaki ${count} \xF6\u011Fe.`
     }
   },
@@ -2603,6 +2648,8 @@ var uk_UA_default = {
   pages: {
     folderContent: {
       folder: "\u0422\u0435\u043A\u0430",
+      previousPage: "\u041F\u043E\u043F\u0435\u0440\u0435\u0434\u043D\u044F",
+      nextPage: "\u041D\u0430\u0441\u0442\u0443\u043F\u043D\u0430",
       itemsUnderFolder: ({ count }) => count === 1 ? "\u0423 \u0446\u0456\u0439 \u0442\u0435\u0446\u0456 1 \u0435\u043B\u0435\u043C\u0435\u043D\u0442." : `\u0415\u043B\u0435\u043C\u0435\u043D\u0442\u0456\u0432 \u0443 \u0446\u0456\u0439 \u0442\u0435\u0446\u0456: ${count}.`
     }
   },
@@ -2614,6 +2661,8 @@ var vi_VN_default = {
   pages: {
     folderContent: {
       folder: "Th\u01B0 m\u1EE5c",
+      previousPage: "Tr\u01B0\u1EDBc",
+      nextPage: "Ti\u1EBFp theo",
       itemsUnderFolder: ({ count }) => `C\xF3 ${count} trang trong th\u01B0 m\u1EE5c n\xE0y.`
     }
   },
@@ -2625,7 +2674,9 @@ var zh_CN_default = {
   pages: {
     folderContent: {
       folder: "\u6587\u4EF6\u5939",
-      itemsUnderFolder: ({ count }) => `\u6B64\u6587\u4EF6\u5939\u4E0B\u6709${count}\u6761\u7B14\u8BB0\u3002`
+      itemsUnderFolder: ({ count }) => `\u6B64\u6587\u4EF6\u5939\u4E0B\u6709${count}\u6761\u7B14\u8BB0\u3002`,
+      previousPage: "\u4E0A\u4E00\u7BC7",
+      nextPage: "\u4E0B\u4E00\u7BC7"
     }
   },
   components: {}
@@ -2636,6 +2687,8 @@ var zh_TW_default = {
   pages: {
     folderContent: {
       folder: "\u8CC7\u6599\u593E",
+      previousPage: "\u4E0A\u4E00\u7BC7",
+      nextPage: "\u4E0B\u4E00\u7BC7",
       itemsUnderFolder: ({ count }) => `\u6B64\u8CC7\u6599\u593E\u4E0B\u6709 ${count} \u689D\u7B46\u8A18\u3002`
     }
   },
@@ -2679,18 +2732,7 @@ function i18n(locale) {
   return locales[locale] || en_US_default;
 }
 
-// src/components/styles/listPage.scss
-var listPage_default = "ul.section-ul {\n  list-style: none;\n  margin-top: 2em;\n  padding-left: 0;\n}\n\nli.section-li {\n  margin-bottom: 1em;\n}\nli.section-li > .section {\n  display: grid;\n  grid-template-columns: fit-content(8em) 3fr 1fr;\n}\n@media all and (max-width: 600px) {\n  li.section-li > .section > .tags {\n    display: none;\n  }\n}\nli.section-li > .section > .desc > h3 > a {\n  background-color: transparent;\n}\nli.section-li > .section .meta {\n  margin: 0 1em 0 0;\n  opacity: 0.6;\n}\n\n.popover .section {\n  grid-template-columns: fit-content(8em) 1fr !important;\n}\n.popover .section > .tags {\n  display: none;\n}";
-
-// src/components/FolderContent.tsx
-var defaultOptions = {
-  showFolderCount: true,
-  showSubfolders: true
-};
-function concatenateResources(...resources) {
-  const result = resources.filter((r2) => r2 !== void 0).flat();
-  return result.length === 0 ? void 0 : result;
-}
+// src/components/FolderPagination.tsx
 function pagesFromTrie(folder, showSubfolders) {
   return folder.children.map((node) => {
     const nodeData = node.data;
@@ -2707,6 +2749,158 @@ function pagesFromTrie(folder, showSubfolders) {
     }
     return void 0;
   }).filter((page) => page !== void 0);
+}
+function mostRecentDatesFromChildren(children) {
+  let maybeDates;
+  for (const child of children) {
+    const childDates = child.data?.dates;
+    if (childDates) {
+      if (!maybeDates) {
+        maybeDates = { ...childDates };
+      } else {
+        if (childDates.created > maybeDates.created) maybeDates.created = childDates.created;
+        if (childDates.modified > maybeDates.modified) maybeDates.modified = childDates.modified;
+        if (childDates.published > maybeDates.published)
+          maybeDates.published = childDates.published;
+      }
+    }
+  }
+  return maybeDates ?? { created: /* @__PURE__ */ new Date(), modified: /* @__PURE__ */ new Date(), published: /* @__PURE__ */ new Date() };
+}
+function toNavEntry(page) {
+  return {
+    slug: page.slug,
+    title: page.frontmatter?.title ?? page.slug ?? ""
+  };
+}
+function sortNodes(locale) {
+  return (a2, b) => {
+    if (a2.isFolder !== b.isFolder) return a2.isFolder ? -1 : 1;
+    return a2.displayName.localeCompare(b.displayName, locale);
+  };
+}
+function computeChainNav(trie, slug2, locale) {
+  const segments = slug2.split("/");
+  const top = segments[0];
+  if (!top || top === "index" || top === "tags") return {};
+  const topFolder = trie.findNode([top, "index"]);
+  if (!topFolder || !topFolder.isFolder) return {};
+  const chain = [];
+  const visit = (node) => {
+    chain.push({ slug: node.slug, title: node.displayName });
+    const children = node.children.filter((child) => {
+      const data = child.data;
+      return !(data && data.unlisted === true);
+    }).sort(sortNodes(locale));
+    for (const child of children) {
+      if (child.isFolder) {
+        visit(child);
+      } else {
+        chain.push(toNavEntry(child.data));
+      }
+    }
+  };
+  visit(topFolder);
+  const pos = chain.findIndex((entry) => entry.slug === slug2);
+  if (pos === -1) return {};
+  return { prev: pos > 0 ? chain[pos - 1] : void 0, next: chain[pos + 1] };
+}
+function el(tagName, properties, children) {
+  return { type: "element", tagName, properties, children };
+}
+function textNode(value) {
+  return { type: "text", value };
+}
+function buildPaginationHast(slug2, locale, nav) {
+  const t2 = i18n(locale).pages.folderContent;
+  const item = (entry, isPrev) => el(
+    "a",
+    {
+      className: ["pagination-item", isPrev ? "pagination-prev" : "pagination-next", "internal"],
+      href: resolveRelative(slug2, entry.slug)
+    },
+    [
+      el("span", { className: ["pagination-label"] }, [
+        textNode(isPrev ? `\u2190 ${t2.previousPage}` : `${t2.nextPage} \u2192`)
+      ]),
+      el("span", { className: ["pagination-title"] }, [textNode(entry.title)])
+    ]
+  );
+  const items = [];
+  if (nav.prev) items.push(item(nav.prev, true));
+  if (nav.next) items.push(item(nav.next, false));
+  return el("nav", { className: ["page-pagination"] }, items);
+}
+function injectPagination(root2, slug2, trie, locale) {
+  if (slug2.endsWith("/index")) return;
+  const nav = computeChainNav(trie, slug2, locale);
+  if (!nav.prev && !nav.next) return;
+  const navElement = buildPaginationHast(slug2, locale, nav);
+  let footnotes;
+  const visit = (node) => {
+    if (footnotes) return;
+    if (node.type === "element") {
+      const cls = node.properties?.className;
+      const classList = Array.isArray(cls) ? cls : typeof cls === "string" ? cls.split(/\s+/) : [];
+      if (classList.includes("footnotes")) {
+        footnotes = node;
+        return;
+      }
+      for (const child of node.children ?? []) visit(child);
+    }
+  };
+  for (const child of root2.children) visit(child);
+  if (footnotes) {
+    const idx = root2.children.findIndex((c2) => c2 === footnotes);
+    if (idx !== -1) {
+      root2.children.splice(idx, 0, navElement);
+      return;
+    }
+  }
+  root2.children.push(navElement);
+}
+var paginationCss = `
+.page-pagination {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.page-pagination .pagination-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 45%;
+}
+
+.page-pagination .pagination-next {
+  margin-left: auto;
+  text-align: right;
+}
+
+.page-pagination .pagination-label {
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
+.page-pagination .pagination-title {
+  font-weight: 600;
+}
+`;
+
+// src/components/styles/listPage.scss
+var listPage_default = "ul.section-ul {\n  list-style: none;\n  margin-top: 2em;\n  padding-left: 0;\n}\n\nli.section-li {\n  margin-bottom: 1em;\n}\nli.section-li > .section {\n  display: grid;\n  grid-template-columns: fit-content(8em) 3fr 1fr;\n}\n@media all and (max-width: 600px) {\n  li.section-li > .section > .tags {\n    display: none;\n  }\n}\nli.section-li > .section > .desc > h3 > a {\n  background-color: transparent;\n}\nli.section-li > .section .meta {\n  margin: 0 1em 0 0;\n  opacity: 0.6;\n}\n\n.popover .section {\n  grid-template-columns: fit-content(8em) 1fr !important;\n}\n.popover .section > .tags {\n  display: none;\n}";
+
+// src/components/FolderContent.tsx
+var defaultOptions = {
+  showFolderCount: true,
+  showSubfolders: true,
+  pagination: false
+};
+function concatenateResources(...resources) {
+  const result = resources.filter((r2) => r2 !== void 0).flat();
+  return result.length === 0 ? void 0 : result;
 }
 function pagesFromAllFiles(allFiles, folderSlug, showSubfolders) {
   const folderPrefix = folderSlug.endsWith("/index") ? folderSlug.slice(0, -"index".length) : folderSlug.endsWith("/") ? folderSlug : folderSlug + "/";
@@ -2739,23 +2933,6 @@ function pagesFromAllFiles(allFiles, folderSlug, showSubfolders) {
     });
   }
   return directChildren;
-}
-function mostRecentDatesFromChildren(children) {
-  let maybeDates;
-  for (const child of children) {
-    const childDates = child.data?.dates;
-    if (childDates) {
-      if (!maybeDates) {
-        maybeDates = { ...childDates };
-      } else {
-        if (childDates.created > maybeDates.created) maybeDates.created = childDates.created;
-        if (childDates.modified > maybeDates.modified) maybeDates.modified = childDates.modified;
-        if (childDates.published > maybeDates.published)
-          maybeDates.published = childDates.published;
-      }
-    }
-  }
-  return maybeDates ?? { created: /* @__PURE__ */ new Date(), modified: /* @__PURE__ */ new Date(), published: /* @__PURE__ */ new Date() };
 }
 function mostRecentDatesFromEntries(entries) {
   let maybeDates;
@@ -2799,19 +2976,67 @@ var FolderContent_default = ((opts) => {
     const hastRoot = tree;
     const content = hastRoot.children.length === 0 ? fileData?.description : htmlToJsx(hastRoot);
     const pageListContent = PageList(listProps);
+    const sorter = options.sort ?? byDateAndAlphabeticalFolderFirst();
+    const locale = cfg?.locale ?? "en-US";
+    const toNav = (page) => ({
+      slug: page.slug,
+      title: String(page.frontmatter?.title ?? page.slug ?? "")
+    });
+    let prevPage;
+    let nextPage;
+    if (trie) {
+      const nav = computeChainNav(trie, slug2, locale);
+      prevPage = nav.prev;
+      nextPage = nav.next;
+    } else {
+      const sortedPages = [...allPagesInFolder].sort(sorter);
+      const currentIndex = sortedPages.findIndex((p2) => p2.slug === slug2);
+      const fallbackPrev = currentIndex > 0 ? sortedPages[currentIndex - 1] : void 0;
+      const fallbackNext = currentIndex >= 0 ? sortedPages[currentIndex + 1] : sortedPages[0];
+      prevPage = fallbackPrev ? toNav(fallbackPrev) : void 0;
+      nextPage = fallbackNext ? toNav(fallbackNext) : void 0;
+    }
+    const t2 = i18n(locale).pages.folderContent;
     return /* @__PURE__ */ u2("div", { class: "popover-hint", children: [
       /* @__PURE__ */ u2("article", { class: classes, children: /* @__PURE__ */ u2("div", { class: "markdown-preview-view markdown-rendered", children: content }) }),
-      /* @__PURE__ */ u2("div", { class: "page-listing", children: [
-        options.showFolderCount && /* @__PURE__ */ u2("p", { children: i18n(
-          cfg?.locale ?? "en-US"
-        ).pages.folderContent.itemsUnderFolder({
+      options.pagination ? (prevPage || nextPage) && /* @__PURE__ */ u2("nav", { class: "page-pagination", children: [
+        prevPage && /* @__PURE__ */ u2(
+          "a",
+          {
+            class: "pagination-item pagination-prev internal",
+            href: resolveRelative(slug2, prevPage.slug),
+            children: [
+              /* @__PURE__ */ u2("span", { class: "pagination-label", children: [
+                "\u2190 ",
+                t2.previousPage
+              ] }),
+              /* @__PURE__ */ u2("span", { class: "pagination-title", children: prevPage.title })
+            ]
+          }
+        ),
+        nextPage && /* @__PURE__ */ u2(
+          "a",
+          {
+            class: "pagination-item pagination-next internal",
+            href: resolveRelative(slug2, nextPage.slug),
+            children: [
+              /* @__PURE__ */ u2("span", { class: "pagination-label", children: [
+                t2.nextPage,
+                " \u2192"
+              ] }),
+              /* @__PURE__ */ u2("span", { class: "pagination-title", children: nextPage.title })
+            ]
+          }
+        )
+      ] }) : /* @__PURE__ */ u2("div", { class: "page-listing", children: [
+        options.showFolderCount && /* @__PURE__ */ u2("p", { children: t2.itemsUnderFolder({
           count: allPagesInFolder.length
         }) }),
         /* @__PURE__ */ u2("div", { children: pageListContent })
       ] })
     ] });
   };
-  FolderContent.css = concatenateResources(listPage_default, PageList.css);
+  FolderContent.css = concatenateResources(listPage_default, PageList.css, paginationCss);
   return FolderContent;
 });
 var folderMatcher = ({ slug: slug2 }) => {
@@ -2893,7 +3118,15 @@ var FolderPage = (opts) => {
       return virtualPages;
     },
     layout: "folder",
-    body
+    body,
+    treeTransforms: () => [
+      (root2, slug2, componentData) => {
+        const trie = componentData.ctx?.trie;
+        if (!trie) return;
+        const locale = componentData.cfg?.locale ?? "en-US";
+        injectPagination(root2, slug2, trie, locale);
+      }
+    ]
   };
 };
 
