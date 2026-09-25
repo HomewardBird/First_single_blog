@@ -214,6 +214,47 @@ describe("季节粒子", () => {
     assert.ok(layer!.querySelector(".sp-in"), "粒子有内层造型节点")
   })
 
+  test("夏季渲染流萤而非雪花", () => {
+    const t = setup("http://localhost/?season=summer")
+    const layer = t.document.getElementById("season-particles")!
+    assert.ok(layer.querySelectorAll(".sp-firefly, .sp-firefly-dim").length > 0, "夏季为流萤")
+    assert.strictEqual(layer.querySelectorAll(".sp-snow, .sp-snow-soft").length, 0, "夏季无雪花")
+  })
+
+  test("四季各有独立运动类型", () => {
+    const cases: [string, string][] = [
+      ["spring", "sp-m-petal"],
+      ["summer", "sp-m-firefly"],
+      ["autumn", "sp-m-leaf"],
+      ["winter", "sp-m-snow"],
+    ]
+    for (const [season, cls] of cases) {
+      const t = setup(`http://localhost/?season=${season}`)
+      const layer = t.document.getElementById("season-particles")!
+      assert.ok(layer.querySelector(`.${cls}`), `${season} 使用 ${cls}`)
+      assert.ok(layer.querySelector(`.${cls} .sp-in`), `${cls} 有内层运动节点`)
+    }
+  })
+
+  test("粒子带统一风向变量（全局同向）", () => {
+    const t = setup("http://localhost/?season=autumn")
+    const layer = t.document.getElementById("season-particles")!
+    const winds = Array.from(layer.querySelectorAll(".sp")).map((el) => {
+      const m = /--wind:(-?[\d.]+)vw/.exec(el.getAttribute("style") || "")
+      return m ? parseFloat(m[1]) : NaN
+    })
+    assert.ok(winds.length > 0, "存在粒子")
+    assert.ok(
+      winds.every((w) => !Number.isNaN(w)),
+      "每个粒子都有 --wind",
+    )
+    const sign = Math.sign(winds[0])
+    assert.ok(
+      winds.every((w) => Math.sign(w) === sign),
+      "所有粒子风向一致",
+    )
+  })
+
   test("设置面板开关可关闭并持久化", () => {
     const t = setup()
     const toggle = () => t.document.querySelector("[data-season-toggle]")!
@@ -279,6 +320,141 @@ describe("季节粒子", () => {
       "true",
       "导航后开关状态同步",
     )
+  })
+})
+
+type Quote = { text: string; source?: string; tags?: string[]; cat?: string }
+type QuoteApi = {
+  pickQuote: (qs: Quote[], d?: Date, r?: () => number) => Quote | null
+  activeOccasions: (d: Date) => string[]
+  seasonNow: (d?: Date) => string
+  solarToLunar: (y: number, m: number, d: number) => {
+    y: number
+    m: number
+    d: number
+    leap: boolean
+  }
+}
+const quoteApi = (t: ReturnType<typeof setup>) =>
+  (t.window as unknown as { __quoteApi: QuoteApi }).__quoteApi
+const seq = (values: number[]) => {
+  let i = 0
+  return () => values[Math.min(i++, values.length - 1)]
+}
+const day = (y: number, m: number, d: number) => new Date(y, m - 1, d)
+
+describe("引言时间加权", () => {
+  test("春季只从春季句与通用句抽取", () => {
+    const { pickQuote } = quoteApi(setup())
+    const qs: Quote[] = [
+      { text: "春", tags: ["spring"] },
+      { text: "夏", tags: ["summer"] },
+      { text: "秋", tags: ["autumn"] },
+      { text: "冬", tags: ["winter"] },
+      { text: "通用" },
+    ]
+    for (let i = 0; i < 40; i++) {
+      const q = pickQuote(qs, day(2026, 3, 15), Math.random)
+      assert.ok(q!.text === "春" || q!.text === "通用", `不应抽到 ${q!.text}`)
+    }
+  })
+
+  test("平常日：当季句 65%、通用句 35%", () => {
+    const { pickQuote } = quoteApi(setup())
+    const qs: Quote[] = [{ text: "春", tags: ["spring"] }, { text: "通用" }]
+    assert.strictEqual(pickQuote(qs, day(2026, 3, 15), seq([0.64, 0]))!.text, "春")
+    assert.strictEqual(pickQuote(qs, day(2026, 3, 15), seq([0.65, 0]))!.text, "通用")
+  })
+
+  test("国庆当天只出国庆句，假期外不生效", () => {
+    const { pickQuote } = quoteApi(setup())
+    const qs: Quote[] = [{ text: "国庆", tags: ["holiday:national-day"] }, { text: "通用" }]
+    for (const d of [day(2026, 10, 1), day(2026, 10, 7)]) {
+      for (let i = 0; i < 20; i++) {
+        assert.strictEqual(pickQuote(qs, d, Math.random)!.text, "国庆")
+      }
+    }
+    assert.strictEqual(pickQuote(qs, day(2026, 9, 30), seq([0.1, 0]))!.text, "通用")
+    assert.strictEqual(pickQuote(qs, day(2026, 10, 8), seq([0.1, 0]))!.text, "通用")
+  })
+
+  test("时令严格对应：其他节日、季节句都不串场", () => {
+    const { pickQuote } = quoteApi(setup())
+    const qs: Quote[] = [
+      { text: "春节", tags: ["holiday:spring-festival", "spring"] },
+      { text: "清明", tags: ["term:清明", "spring"] },
+      { text: "春", tags: ["spring"] },
+      { text: "通用" },
+    ]
+    for (let i = 0; i < 20; i++) {
+      assert.strictEqual(pickQuote(qs, day(2026, 4, 5), Math.random)!.text, "清明")
+    }
+    for (let i = 0; i < 40; i++) {
+      const text = pickQuote(qs, day(2026, 5, 15), Math.random)!.text
+      assert.ok(text === "春" || text === "通用", `平常日不应出现 ${text}`)
+    }
+    for (let i = 0; i < 20; i++) {
+      assert.strictEqual(
+        pickQuote(qs, day(2026, 2, 17), Math.random)!.text,
+        "春节",
+        "春节当天只出春节句",
+      )
+    }
+  })
+
+  test("农历节日：春节窗口、除夕、中秋", () => {
+    const { activeOccasions } = quoteApi(setup())
+    assert.ok(activeOccasions(day(2026, 2, 17)).includes("holiday:spring-festival"))
+    assert.ok(activeOccasions(day(2026, 2, 19)).includes("holiday:spring-festival"))
+    assert.ok(!activeOccasions(day(2026, 2, 20)).includes("holiday:spring-festival"))
+    assert.ok(activeOccasions(day(2026, 2, 16)).includes("holiday:new-year-eve"))
+    assert.ok(activeOccasions(day(2026, 9, 25)).includes("holiday:mid-autumn"))
+    assert.ok(!activeOccasions(day(2026, 9, 24)).includes("holiday:mid-autumn"))
+  })
+
+  test("二十四节气：当天命中、次日不命中", () => {
+    const { activeOccasions } = quoteApi(setup())
+    assert.ok(activeOccasions(day(2026, 4, 5)).includes("term:清明"))
+    assert.ok(!activeOccasions(day(2026, 4, 6)).includes("term:清明"))
+    assert.ok(activeOccasions(day(2026, 12, 22)).includes("term:冬至"))
+  })
+
+  test("节气当天专属池为空时回退到季节加权", () => {
+    const { pickQuote } = quoteApi(setup())
+    const qs: Quote[] = [{ text: "春", tags: ["spring"] }, { text: "通用" }]
+    assert.strictEqual(pickQuote(qs, day(2026, 4, 5), seq([0.64, 0]))!.text, "春")
+    assert.strictEqual(pickQuote(qs, day(2026, 4, 5), seq([0.65, 0]))!.text, "通用")
+  })
+
+  test("本地调试：?season= 强制季节，?date= 模拟日期", () => {
+    const forced = setup("http://localhost/?season=autumn")
+    assert.strictEqual(quoteApi(forced).seasonNow(), "autumn")
+    assert.strictEqual(
+      forced.document.getElementById("season-particles")!.getAttribute("data-season"),
+      "autumn",
+    )
+
+    const dated = quoteApi(setup("http://localhost/?date=2026-10-01"))
+    assert.strictEqual(dated.seasonNow(), "autumn")
+    const qs: Quote[] = [{ text: "国庆", tags: ["holiday:national-day"] }, { text: "通用" }]
+    assert.strictEqual(dated.pickQuote(qs, undefined, seq([0.5, 0]))!.text, "国庆")
+  })
+
+  test("通用池按文哲/ACG/古典/其他比例抽取", () => {
+    const { pickQuote } = quoteApi(setup())
+    const qs: Quote[] = [
+      { text: "文哲", cat: "lit" },
+      { text: "ACG", cat: "acg" },
+      { text: "古典", cat: "classic" },
+      { text: "其他", cat: "misc" },
+    ]
+    const d = day(2026, 5, 15)
+    assert.strictEqual(pickQuote(qs, d, seq([0.44, 0]))!.text, "文哲")
+    assert.strictEqual(pickQuote(qs, d, seq([0.45, 0]))!.text, "ACG")
+    assert.strictEqual(pickQuote(qs, d, seq([0.74, 0]))!.text, "ACG")
+    assert.strictEqual(pickQuote(qs, d, seq([0.75, 0]))!.text, "古典")
+    assert.strictEqual(pickQuote(qs, d, seq([0.94, 0]))!.text, "古典")
+    assert.strictEqual(pickQuote(qs, d, seq([0.95, 0]))!.text, "其他")
   })
 })
 

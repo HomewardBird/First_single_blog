@@ -3614,10 +3614,12 @@ html[saved-theme="dark"] #egg-dialog .egg-secret {
   transform: rotate(90deg);
 }
 
-/* ====== 季节粒子：花瓣 / 柳絮 / 落叶 / 雪花 ======
- * 按访客本地时间选择季节；粒子层固定在内容平面之下（z-index:-1，
+/* ====== 季节粒子：花瓣 / 流萤 / 落叶 / 雪花 ======
+ * 按访客本地时间选择季节；粒子层只覆盖首页首屏（absolute + 100vh +
+ * overflow hidden，滚动离开首屏即消失），固定在内容平面之下（z-index:-1，
  * 背景图 -2），正文、卡片、标题永远绘制在其上层，开启也不影响阅读。
- * 纯 CSS 动画，只跑 transform/opacity，无 JS 逐帧开销、无滤镜。
+ * 运动：全局统一风向的缓漂 + 各自的局部摆动/翻转；远中近三层景深。
+ * 纯 CSS 动画，只跑 transform/translate/rotate/scale/opacity，无 JS 逐帧。
  * 开关：设置面板「季节粒子效果」（localStorage: seasonParticles /
  * seasonParticlesSub，首页与子页面各记一份；未选择时仅首页默认开启）。 */
 #season-particles {
@@ -3631,8 +3633,11 @@ html[saved-theme="dark"] #egg-dialog .egg-secret {
   --sp-leaf-red-hi: #e8a06f;
   --sp-leaf-red-lo: #b5643c;
   --sp-snow-lo: #e4eef9;
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
@@ -3655,21 +3660,43 @@ html[saved-theme="dark"] #season-particles {
   position: absolute;
   top: -12vh;
   left: var(--x);
-  animation: sp-fall var(--dur) linear var(--delay) infinite;
-  will-change: transform;
+  animation:
+    sp-fall var(--dur) linear var(--delay) infinite,
+    sp-wind var(--dur) linear var(--delay) infinite;
+  will-change: transform, translate;
 }
 #season-particles .sp-in {
   display: block;
   width: var(--size);
   height: var(--size);
   opacity: 0;
-  will-change: transform;
+  will-change: translate, rotate, scale;
 }
-#season-particles .sp-m-a .sp-in {
-  animation: sp-sway-a var(--swaydur) ease-in-out var(--delay) infinite alternate;
+/* 四季各用独立运动：花瓣横移与翻面双周期叠加、流萤原地游曳并缓慢上浮、
+ * 落叶滑移与翻滚双周期叠加、雪花近垂直缓落微摆 */
+#season-particles .sp-m-firefly {
+  top: 108vh;
+  animation:
+    sp-rise var(--dur) linear var(--delay) infinite,
+    sp-wind var(--dur) linear var(--delay) infinite;
 }
-#season-particles .sp-m-b .sp-in {
-  animation: sp-sway-b var(--swaydur) ease-in-out var(--delay) infinite alternate;
+#season-particles .sp-m-petal .sp-in {
+  animation:
+    sp-petal-sway var(--swaydur) ease-in-out var(--delay) infinite,
+    sp-petal-roll var(--rolldur) ease-in-out var(--delay2) infinite alternate;
+}
+#season-particles .sp-m-firefly .sp-in {
+  animation:
+    sp-firefly-wander var(--swaydur) ease-in-out var(--delay) infinite,
+    sp-firefly-pulse var(--rolldur) ease-in-out var(--delay2) infinite alternate;
+}
+#season-particles .sp-m-leaf .sp-in {
+  animation:
+    sp-leaf-sway var(--swaydur) ease-in-out var(--delay) infinite,
+    sp-leaf-roll var(--rolldur) ease-in-out var(--delay2) infinite alternate;
+}
+#season-particles .sp-m-snow .sp-in {
+  animation: sp-snow-drift var(--swaydur) ease-in-out var(--delay) infinite;
 }
 /* 花瓣 */
 #season-particles .sp-petal,
@@ -3687,24 +3714,32 @@ html[saved-theme="dark"] #season-particles {
     var(--sp-petal-light-lo) 72%
   );
 }
-/* 柳絮 */
-#season-particles .sp-catkin {
+/* 流萤 */
+#season-particles .sp-firefly,
+#season-particles .sp-firefly-dim {
   border-radius: 50%;
+}
+#season-particles .sp-firefly {
   background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.95),
-    rgba(255, 255, 255, 0.42) 55%,
-    rgba(255, 255, 255, 0) 74%
+    circle at 45% 45%,
+    #fffbe0 0%,
+    #ffe27a 38%,
+    rgba(240, 180, 30, 0.55) 62%,
+    rgba(240, 180, 30, 0) 80%
+  );
+  box-shadow: 0 0 6px 1px rgba(255, 206, 64, 0.75);
+}
+#season-particles .sp-firefly-dim {
+  background: radial-gradient(
+    circle at 45% 45%,
+    rgba(255, 250, 220, 0.85) 0%,
+    rgba(255, 226, 122, 0.5) 45%,
+    rgba(240, 180, 30, 0) 78%
   );
 }
-html[data-theme="dark"] #season-particles .sp-catkin,
-html[saved-theme="dark"] #season-particles .sp-catkin {
-  background: radial-gradient(
-    circle,
-    rgba(226, 236, 248, 0.9),
-    rgba(226, 236, 248, 0.35) 55%,
-    rgba(226, 236, 248, 0) 74%
-  );
+html[data-theme="dark"] #season-particles .sp-firefly,
+html[saved-theme="dark"] #season-particles .sp-firefly {
+  box-shadow: 0 0 8px 2px rgba(255, 214, 64, 0.55);
 }
 /* 落叶 */
 #season-particles .sp-leaf,
@@ -3749,24 +3784,138 @@ html[saved-theme="dark"] #season-particles .sp-catkin {
     transform: translate3d(0, 128vh, 0);
   }
 }
-@keyframes sp-sway-a {
+@keyframes sp-rise {
   from {
-    transform: translate3d(calc(var(--sway) * -1), 0, 0) rotate(calc(var(--rot) * -1)) scaleX(1);
-    opacity: calc(var(--op) * var(--sp-dim));
+    transform: translate3d(0, 0, 0);
   }
   to {
-    transform: translate3d(var(--sway), 0, 0) rotate(var(--rot)) scaleX(0.42);
-    opacity: calc(var(--op) * var(--sp-dim) * 0.82);
+    transform: translate3d(0, -122vh, 0);
   }
 }
-@keyframes sp-sway-b {
+/* 全局风场：所有粒子以同向、同周期缓慢漂移（与坠落同时进行） */
+@keyframes sp-wind {
   from {
-    transform: translate3d(calc(var(--sway) * -1), 0, 0) rotate(calc(var(--rot) * -0.35));
-    opacity: calc(var(--op) * var(--sp-dim) * 0.7);
+    translate: 0 0;
   }
   to {
-    transform: translate3d(var(--sway), 0, 0) rotate(calc(var(--rot) * 0.35));
+    translate: var(--wind) 0;
+  }
+}
+/* 花瓣：被气流推着侧滑，偶尔轻轻抬起；translate 与 rotate 用不同周期，
+ * 两条动画叠加后轨迹不会原样复读 */
+@keyframes sp-petal-sway {
+  0% {
+    translate: calc(var(--sway) * -1) 0;
+    opacity: calc(var(--op) * var(--sp-dim) * 0.7);
+  }
+  30% {
+    translate: calc(var(--sway) * 0.75) calc(var(--bob) * -1);
     opacity: calc(var(--op) * var(--sp-dim));
+  }
+  65% {
+    translate: calc(var(--sway) * 0.25) calc(var(--bob) * -0.3);
+    opacity: calc(var(--op) * var(--sp-dim) * 0.85);
+  }
+  100% {
+    translate: calc(var(--sway) * -1) 0;
+    opacity: calc(var(--op) * var(--sp-dim) * 0.7);
+  }
+}
+@keyframes sp-petal-roll {
+  from {
+    rotate: calc(var(--roll) * -0.6);
+    scale: 1 0.92;
+  }
+  to {
+    rotate: var(--roll);
+    scale: 0.94 1;
+  }
+}
+/* 雪花：慢速下落＝空气阻力占比大，横向几乎不摆，近似垂直 */
+@keyframes sp-snow-drift {
+  0% {
+    translate: calc(var(--sway) * -0.5) 0;
+    opacity: calc(var(--op) * var(--sp-dim) * 0.75);
+  }
+  50% {
+    translate: calc(var(--sway) * 0.5) 0;
+    opacity: calc(var(--op) * var(--sp-dim));
+  }
+  100% {
+    translate: calc(var(--sway) * -0.5) 0;
+    opacity: calc(var(--op) * var(--sp-dim) * 0.75);
+  }
+}
+/* 落叶：滑移带停顿与回摆，翻滚用它自己的节奏 */
+@keyframes sp-leaf-sway {
+  0% {
+    translate: calc(var(--sway) * -1) 0;
+    opacity: calc(var(--op) * var(--sp-dim) * 0.8);
+  }
+  28% {
+    translate: calc(var(--sway) * 0.9) calc(var(--bob) * -0.7);
+    opacity: calc(var(--op) * var(--sp-dim));
+  }
+  52% {
+    translate: calc(var(--sway) * 0.45) calc(var(--bob) * 0.15);
+    opacity: calc(var(--op) * var(--sp-dim) * 0.9);
+  }
+  78% {
+    translate: calc(var(--sway) * -0.25) calc(var(--bob) * -0.4);
+    opacity: calc(var(--op) * var(--sp-dim));
+  }
+  100% {
+    translate: calc(var(--sway) * -1) 0;
+    opacity: calc(var(--op) * var(--sp-dim) * 0.8);
+  }
+}
+@keyframes sp-leaf-roll {
+  0% {
+    rotate: calc(var(--roll) * -0.7);
+    scale: 1 1;
+  }
+  35% {
+    rotate: calc(var(--roll) * 0.1);
+    scale: 0.45 1;
+  }
+  70% {
+    rotate: calc(var(--roll) * 0.6);
+    scale: 0.9 1;
+  }
+  100% {
+    rotate: var(--roll);
+    scale: 1 1;
+  }
+}
+/* 流萤：原地小范围游曳 + 明暗呼吸（外层 sp-rise 缓慢上浮） */
+@keyframes sp-firefly-wander {
+  0% {
+    translate: 0 0;
+    opacity: calc(var(--op) * var(--sp-dim) * 0.12);
+  }
+  25% {
+    translate: calc(var(--sway) * 0.9) calc(var(--bob) * -0.8);
+    opacity: calc(var(--op) * var(--sp-dim));
+  }
+  50% {
+    translate: calc(var(--sway) * -0.6) calc(var(--bob) * -1.4);
+    opacity: calc(var(--op) * var(--sp-dim) * 0.25);
+  }
+  75% {
+    translate: calc(var(--sway) * 0.5) calc(var(--bob) * 0.6);
+    opacity: calc(var(--op) * var(--sp-dim) * 0.85);
+  }
+  100% {
+    translate: 0 0;
+    opacity: calc(var(--op) * var(--sp-dim) * 0.12);
+  }
+}
+@keyframes sp-firefly-pulse {
+  from {
+    scale: 0.8;
+  }
+  to {
+    scale: 1.2;
   }
 }
 

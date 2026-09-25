@@ -380,15 +380,338 @@
     },
   }
 
+  // ====================================================================
+  //  引言：按访客本地日期加权抽取（节日/节气 > 季节 > 通用）
+  //  - 节日/节气当天：只出该时令专属句（多个时令重叠则合并），不混其他
+  //  - 平常日：当季句 65%、通用句 35%；节令句只在当天出现
+  //  - quotes.json 里无 tags = 通用；标签取值见该文件
+  // ====================================================================
+  // 农历数据表（1900-2100）：低 4 位闰月，位 4-15 为各月大小，
+  // 位 16 为闰月大小；公开的常用农历数据表
+  var LUNAR_INFO = [
+    19416, 19168, 42352, 21717, 53856, 55632, 91476, 22176, 39632, 21970,
+    19168, 42422, 42192, 53840, 119381, 46400, 54944, 44450, 38320, 84343,
+    18800, 42160, 46261, 27216, 27968, 109396, 11104, 38256, 21234, 18800,
+    25958, 54432, 59984, 28309, 23248, 11104, 100067, 37600, 116951, 51536,
+    54432, 120998, 46416, 22176, 107956, 9680, 37584, 53938, 43344, 46423,
+    27808, 46416, 86869, 19872, 42416, 83315, 21168, 43432, 59728, 27296,
+    44710, 43856, 19296, 43748, 42352, 21088, 62051, 55632, 23383, 22176,
+    38608, 19925, 19152, 42192, 54484, 53840, 54616, 46400, 46752, 103846,
+    38320, 18864, 43380, 42160, 45690, 27216, 27968, 44870, 43872, 38256,
+    19189, 18800, 25776, 29859, 59984, 27480, 23232, 43872, 38613, 37600,
+    51552, 55636, 54432, 55888, 30034, 22176, 43959, 9680, 37584, 51893,
+    43344, 46240, 47780, 44368, 21977, 19360, 42416, 86390, 21168, 43312,
+    31060, 27296, 44368, 23378, 19296, 42726, 42208, 53856, 60005, 54576,
+    23200, 30371, 38608, 19195, 19152, 42192, 118966, 53840, 54560, 56645,
+    46496, 22224, 21938, 18864, 42359, 42160, 43600, 111189, 27936, 44448,
+    84835, 37744, 18936, 18800, 25776, 92326, 59984, 27424, 108228, 43744,
+    37600, 53987, 51552, 54615, 54432, 55888, 23893, 22176, 42704, 21972,
+    21200, 43448, 43344, 46240, 46758, 44368, 21920, 43940, 42416, 21168,
+    45683, 26928, 29495, 27296, 44368, 84821, 19296, 42352, 21732, 53600,
+    59752, 54560, 55968, 92838, 22224, 19168, 43476, 42192, 53584, 62034,
+    54560,
+  ]
+  function lunarLeapMonth(y) {
+    return LUNAR_INFO[y - 1900] & 0xf
+  }
+  function lunarLeapDays(y) {
+    if (!lunarLeapMonth(y)) return 0
+    return LUNAR_INFO[y - 1900] & 0x10000 ? 30 : 29
+  }
+  function lunarMonthDays(y, m) {
+    return LUNAR_INFO[y - 1900] & (0x10000 >> m) ? 30 : 29
+  }
+  function lunarYearDays(y) {
+    var sum = 348
+    for (var i = 0x8000; i > 0x8; i >>= 1) sum += LUNAR_INFO[y - 1900] & i ? 1 : 0
+    return sum + lunarLeapDays(y)
+  }
+  function solarToLunar(y, m, d) {
+    var offset = Math.floor((Date.UTC(y, m - 1, d) - Date.UTC(1900, 0, 31)) / 86400000)
+    var i,
+      temp = 0
+    for (i = 1900; i < 2101 && offset > 0; i++) {
+      temp = lunarYearDays(i)
+      offset -= temp
+    }
+    if (offset < 0) {
+      offset += temp
+      i--
+    }
+    var year = i
+    var leap = lunarLeapMonth(i)
+    var isLeap = false
+    for (i = 1; i < 13 && offset > 0; i++) {
+      if (leap > 0 && i === leap + 1 && !isLeap) {
+        --i
+        isLeap = true
+        temp = lunarLeapDays(year)
+      } else {
+        temp = lunarMonthDays(year, i)
+      }
+      if (isLeap && i === leap + 1) isLeap = false
+      offset -= temp
+    }
+    if (offset === 0 && leap > 0 && i === leap + 1) {
+      if (isLeap) {
+        isLeap = false
+      } else {
+        isLeap = true
+        --i
+      }
+    }
+    if (offset < 0) {
+      offset += temp
+      --i
+    }
+    return { y: year, m: i, d: offset + 1, leap: isLeap }
+  }
+  // 公历节日窗口（含首尾）
+  var SOLAR_HOLIDAYS = [
+    { key: "holiday:new-year", from: [1, 1], to: [1, 1] },
+    { key: "holiday:labour", from: [5, 1], to: [5, 5] },
+    { key: "holiday:national-day", from: [10, 1], to: [10, 7] },
+  ]
+  // 二十四节气近似日期（逐年最多相差一天，列出可能日期即可）
+  var SOLAR_TERMS = {
+    "term:小寒": [
+      [1, 5],
+      [1, 6],
+    ],
+    "term:大寒": [
+      [1, 20],
+      [1, 21],
+    ],
+    "term:立春": [
+      [2, 3],
+      [2, 4],
+      [2, 5],
+    ],
+    "term:雨水": [
+      [2, 18],
+      [2, 19],
+      [2, 20],
+    ],
+    "term:惊蛰": [
+      [3, 5],
+      [3, 6],
+    ],
+    "term:春分": [
+      [3, 20],
+      [3, 21],
+    ],
+    "term:清明": [
+      [4, 4],
+      [4, 5],
+    ],
+    "term:谷雨": [
+      [4, 19],
+      [4, 20],
+      [4, 21],
+    ],
+    "term:立夏": [
+      [5, 5],
+      [5, 6],
+    ],
+    "term:小满": [
+      [5, 20],
+      [5, 21],
+      [5, 22],
+    ],
+    "term:芒种": [
+      [6, 5],
+      [6, 6],
+    ],
+    "term:夏至": [
+      [6, 21],
+      [6, 22],
+    ],
+    "term:小暑": [
+      [7, 6],
+      [7, 7],
+      [7, 8],
+    ],
+    "term:大暑": [
+      [7, 22],
+      [7, 23],
+      [7, 24],
+    ],
+    "term:立秋": [
+      [8, 7],
+      [8, 8],
+    ],
+    "term:处暑": [
+      [8, 22],
+      [8, 23],
+      [8, 24],
+    ],
+    "term:白露": [
+      [9, 7],
+      [9, 8],
+    ],
+    "term:秋分": [
+      [9, 22],
+      [9, 23],
+      [9, 24],
+    ],
+    "term:寒露": [
+      [10, 8],
+      [10, 9],
+    ],
+    "term:霜降": [
+      [10, 23],
+      [10, 24],
+    ],
+    "term:立冬": [
+      [11, 7],
+      [11, 8],
+    ],
+    "term:小雪": [
+      [11, 22],
+      [11, 23],
+    ],
+    "term:大雪": [
+      [12, 6],
+      [12, 7],
+      [12, 8],
+    ],
+    "term:冬至": [
+      [12, 21],
+      [12, 22],
+      [12, 23],
+    ],
+  }
+  // 农历节日（春节含初一至初三；除夕 = 正月初一前一天）
+  var LUNAR_HOLIDAYS = [
+    { key: "holiday:spring-festival", m: 1, d: 1, span: 3 },
+    { key: "holiday:lantern", m: 1, d: 15 },
+    { key: "holiday:dragon-boat", m: 5, d: 5 },
+    { key: "holiday:qixi", m: 7, d: 7 },
+    { key: "holiday:mid-autumn", m: 8, d: 15 },
+    { key: "holiday:double-ninth", m: 9, d: 9 },
+    { key: "holiday:laba", m: 12, d: 8 },
+  ]
+  function activeOccasions(date) {
+    var y = date.getFullYear(),
+      m = date.getMonth() + 1,
+      d = date.getDate()
+    var keys = []
+    for (var i = 0; i < SOLAR_HOLIDAYS.length; i++) {
+      var h = SOLAR_HOLIDAYS[i]
+      var afterFrom = m > h.from[0] || (m === h.from[0] && d >= h.from[1])
+      var beforeTo = m < h.to[0] || (m === h.to[0] && d <= h.to[1])
+      if (afterFrom && beforeTo) keys.push(h.key)
+    }
+    for (var term in SOLAR_TERMS) {
+      var days = SOLAR_TERMS[term]
+      for (var j = 0; j < days.length; j++) {
+        if (days[j][0] === m && days[j][1] === d) {
+          keys.push(term)
+          break
+        }
+      }
+    }
+    var lunar = solarToLunar(y, m, d)
+    if (!lunar.leap) {
+      for (var k = 0; k < LUNAR_HOLIDAYS.length; k++) {
+        var lh = LUNAR_HOLIDAYS[k]
+        if (lunar.m === lh.m && lunar.d >= lh.d && lunar.d < lh.d + (lh.span || 1)) {
+          keys.push(lh.key)
+          break
+        }
+      }
+    }
+    // 除夕：次日为农历正月初一
+    var tomorrow = new Date(y, m - 1, d + 1)
+    var nl = solarToLunar(tomorrow.getFullYear(), tomorrow.getMonth() + 1, tomorrow.getDate())
+    if (nl.m === 1 && nl.d === 1 && !nl.leap) keys.push("holiday:new-year-eve")
+    return keys
+  }
+  function pickFromPool(pool, rand) {
+    return pool[Math.floor(rand() * pool.length)]
+  }
+  // 通用池气质比例：文哲 / ACG / 古典 / 其他（可按喜好调整）
+  var GENERAL_CATEGORY_WEIGHTS = { lit: 45, acg: 30, classic: 20, misc: 5 }
+  function pickGeneral(generalPool, rand) {
+    if (!generalPool.length) return null
+    var groups = {}
+    for (var i = 0; i < generalPool.length; i++) {
+      var cat = generalPool[i].cat || "misc"
+      if (!groups[cat]) groups[cat] = []
+      groups[cat].push(generalPool[i])
+    }
+    var total = 0
+    var entries = []
+    for (var key in GENERAL_CATEGORY_WEIGHTS) {
+      if (groups[key] && groups[key].length) {
+        entries.push([key, groups[key]])
+        total += GENERAL_CATEGORY_WEIGHTS[key]
+      }
+    }
+    if (!entries.length) return null
+    var r = rand() * total
+    for (var j = 0; j < entries.length; j++) {
+      r -= GENERAL_CATEGORY_WEIGHTS[entries[j][0]]
+      if (r < 0) return pickFromPool(entries[j][1], rand)
+    }
+    return pickFromPool(entries[entries.length - 1][1], rand)
+  }
+  function pickQuote(qs, date, rand) {
+    if (!qs || !qs.length) return null
+    date = date || currentDate()
+    rand = rand || Math.random
+    var season = seasonNow(date)
+    var occasions = activeOccasions(date)
+    var occasionPool = [],
+      seasonPool = [],
+      generalPool = []
+    for (var i = 0; i < qs.length; i++) {
+      var q = qs[i]
+      var tags = q.tags || []
+      if (!tags.length) {
+        generalPool.push(q)
+        continue
+      }
+      var hitOccasion = false
+      var hasOccasionTag = false
+      for (var j = 0; j < tags.length; j++) {
+        if (tags[j].indexOf("holiday:") === 0 || tags[j].indexOf("term:") === 0) {
+          hasOccasionTag = true
+          if (occasions.indexOf(tags[j]) !== -1) hitOccasion = true
+        }
+      }
+      if (hitOccasion) occasionPool.push(q)
+      else if (!hasOccasionTag && tags.indexOf(season) !== -1) seasonPool.push(q)
+    }
+    // 节日/节气当天：只出该节日/节气的句子（多个时令重叠则合并）
+    if (occasionPool.length) return pickFromPool(occasionPool, rand)
+    if (seasonPool.length && generalPool.length) {
+      if (rand() < 0.65) return pickFromPool(seasonPool, rand)
+      return pickGeneral(generalPool, rand)
+    }
+    if (seasonPool.length) return pickFromPool(seasonPool, rand)
+    if (generalPool.length) return pickGeneral(generalPool, rand)
+    return pickFromPool(qs, rand)
+  }
+  // 单测/调试接口
+  window.__quoteApi = {
+    pickQuote: pickQuote,
+    activeOccasions: activeOccasions,
+    seasonNow: seasonNow,
+    solarToLunar: solarToLunar,
+  }
+
   var _quotesCache = null
   var _quoteFetching = false
   function loadDailyQuote() {
     var el = document.getElementById("random-quote")
     if (!el) return
     if (_quotesCache) {
-      var cq = _quotesCache[Math.floor(Math.random() * _quotesCache.length)]
-      el.textContent = "「 " + (cq.text || "") + " 」"
-      el.title = cq.source || ""
+      var cq = pickQuote(_quotesCache)
+      if (cq) {
+        el.textContent = "「 " + (cq.text || "") + " 」"
+        el.title = cq.source || ""
+      }
       return
     }
     if (_quoteFetching) return
@@ -406,7 +729,8 @@
         .then(function (qs) {
           clearTimeout(tm)
           _quotesCache = qs
-          var q = qs[Math.floor(Math.random() * qs.length)]
+          var q = pickQuote(qs)
+          if (!q) throw Error()
           el.textContent = "「 " + (q.text || "") + " 」"
           el.title = q.source || ""
         })
@@ -850,15 +1174,32 @@
   }
 
   // ====================================================================
-  //  季节粒子：按访客本地时间飘落花瓣 / 柳絮 / 落叶 / 雪花
+  //  季节粒子：按访客本地时间飘落花瓣 / 流萤 / 落叶 / 雪花
   //  - 可读性：粒子层固定在内容平面之下（z-index:-1，背景图 -2），
   //    正文、卡片、标题永远绘制在其上层，开启也不影响阅读
   //  - 性能：纯 CSS 动画（合成器只跑 transform/opacity），无 rAF、无滤镜
   //  - 开关：右上角设置面板「季节粒子效果」；首页与子页面各记一份偏好，
   //    未选择时首页默认开、子页面默认关；尊重系统 reduced-motion
   // ====================================================================
-  function seasonNow() {
-    var m = new Date().getMonth() // 0-11，访客本地时区
+  // 本地调试：?season=spring|summer|autumn|winter 强制季节；
+  // ?date=YYYY-MM-DD 模拟日期（季节与节日/节气判定都跟随）
+  function debugSeason() {
+    var m = /[?&]season=(spring|summer|autumn|winter)/.exec(window.location.search)
+    return m ? m[1] : null
+  }
+  function debugDate() {
+    var m = /[?&]date=(\d{4})-(\d{1,2})-(\d{1,2})/.exec(window.location.search)
+    if (!m) return null
+    var d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+    return isNaN(d.getTime()) ? null : d
+  }
+  function currentDate() {
+    return debugDate() || new Date()
+  }
+  function seasonNow(date) {
+    var forced = debugSeason()
+    if (forced) return forced
+    var m = (date || currentDate()).getMonth() // 0-11，访客本地时区
     if (m >= 2 && m <= 4) return "spring" // 3-5 月
     if (m >= 5 && m <= 7) return "summer" // 6-8 月
     if (m >= 8 && m <= 10) return "autumn" // 9-11 月
@@ -878,73 +1219,103 @@
   function seasonReducedMotion() {
     return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
   }
+  // 景深分层：远（小、淡、慢）/ 中 / 近（少量、稍大、稍快）
+  var DEPTH_LAYERS = {
+    far: { size: 0.62, op: 0.5, dur: 1.32, sway: 0.6, wind: 0.7 },
+    mid: { size: 1, op: 0.82, dur: 1, sway: 1, wind: 1 },
+    near: { size: 1.3, op: 1, dur: 0.85, sway: 1.15, wind: 1.35 },
+  }
+  function pickDepth() {
+    var r = Math.random()
+    return r < 0.5 ? "far" : r < 0.85 ? "mid" : "near"
+  }
   function buildSeasonParticles() {
     var season = seasonNow()
     var mobile = window.innerWidth < 720
+    var windDir = Math.random() < 0.5 ? -1 : 1 // 全局风向：整页粒子同向缓漂
     var rnd = function (min, max) {
       return min + Math.random() * (max - min)
     }
-    // 每季配方：粒子类名 / 数量 / 尺寸 / 下落时长 / 摆幅 / 摆动周期 / 旋转 / 透明度
+    // 每季配方：粒子类名 / 数量 / 尺寸 / 坠落（流萤为上升）时长 /
+    // 风漂里程 / 摆幅 / 横移周期 / 翻转幅度 / 翻转周期 / 透明度 / 纵向起伏
     var cfg =
       season === "spring"
         ? {
             kinds: ["sp-petal", "sp-petal", "sp-petal", "sp-petal-light"],
-            n: mobile ? 7 : 11,
+            n: mobile ? 5 : 7,
             size: [7, 13],
-            dur: [15, 27],
+            dur: [13, 23],
+            wind: [2, 6],
             sway: [2.5, 6.5],
-            swayDur: [3.2, 5.2],
-            rot: [18, 34],
+            swayDur: [3.5, 6.5],
+            roll: [40, 110],
+            rollDur: [4, 9],
             op: [0.3, 0.5],
-            motion: "a",
+            bob: [1.5, 4],
+            motion: "petal",
           }
         : season === "summer"
           ? {
-              kinds: ["sp-catkin"],
-              n: mobile ? 6 : 9,
-              size: [9, 17],
-              dur: [22, 40],
-              sway: [4, 9],
-              swayDur: [4.5, 7.5],
-              rot: [8, 16],
-              op: [0.24, 0.4],
-              motion: "b",
+              kinds: ["sp-firefly", "sp-firefly", "sp-firefly-dim"],
+              n: mobile ? 5 : 8,
+              size: [4, 9],
+              dur: [45, 90],
+              wind: [0.5, 2.5],
+              sway: [1.5, 3.5],
+              swayDur: [3, 6],
+              roll: [0, 0],
+              rollDur: [1.6, 3.2],
+              op: [0.5, 0.95],
+              bob: [0.8, 2.4],
+              motion: "firefly",
             }
           : season === "autumn"
             ? {
                 kinds: ["sp-leaf", "sp-leaf", "sp-leaf-red"],
-                n: mobile ? 6 : 10,
+                n: mobile ? 4 : 7,
                 size: [9, 15],
-                dur: [13, 24],
+                dur: [11, 20],
+                wind: [1.5, 5],
                 sway: [2.5, 6],
-                swayDur: [2.8, 4.8],
-                rot: [22, 40],
+                swayDur: [3, 5.5],
+                roll: [60, 150],
+                rollDur: [2.5, 5.5],
                 op: [0.32, 0.52],
-                motion: "a",
+                bob: [2.5, 6],
+                motion: "leaf",
               }
             : {
                 kinds: ["sp-snow", "sp-snow", "sp-snow-soft"],
-                n: mobile ? 9 : 14,
+                n: mobile ? 6 : 9,
                 size: [3.5, 9],
-                dur: [16, 32],
-                sway: [1.5, 5],
-                swayDur: [3.5, 6.5],
-                rot: [10, 22],
+                dur: [17, 32],
+                wind: [0.3, 1.5],
+                sway: [0.3, 1.2],
+                swayDur: [7, 14],
+                roll: [0, 0],
+                rollDur: [0, 0],
                 op: [0.28, 0.55],
-                motion: "b",
+                bob: [0, 0],
+                motion: "snow",
               }
     var html = ""
     for (var i = 0; i < cfg.n; i++) {
-      var dur = rnd(cfg.dur[0], cfg.dur[1])
+      var k = DEPTH_LAYERS[pickDepth()]
+      var dur = rnd(cfg.dur[0], cfg.dur[1]) * k.dur
+      var op = Math.min(0.95, rnd(cfg.op[0], cfg.op[1]) * k.op)
       var vars = [
         "--x:" + rnd(2, 98).toFixed(1) + "vw",
         "--dur:" + dur.toFixed(1) + "s",
         "--delay:-" + rnd(0, dur).toFixed(1) + "s",
-        "--sway:" + rnd(cfg.sway[0], cfg.sway[1]).toFixed(1) + "vw",
+        "--wind:" + (windDir * rnd(cfg.wind[0], cfg.wind[1]) * k.wind).toFixed(2) + "vw",
+        "--sway:" + (rnd(cfg.sway[0], cfg.sway[1]) * k.sway).toFixed(1) + "vw",
+        "--bob:" + rnd(cfg.bob[0], cfg.bob[1]).toFixed(1) + "vh",
         "--swaydur:" + rnd(cfg.swayDur[0], cfg.swayDur[1]).toFixed(1) + "s",
-        "--size:" + rnd(cfg.size[0], cfg.size[1]).toFixed(1) + "px",
-        "--op:" + rnd(cfg.op[0], cfg.op[1]).toFixed(2),
-        "--rot:" + rnd(cfg.rot[0], cfg.rot[1]).toFixed(0) + "deg",
+        "--roll:" + rnd(cfg.roll[0], cfg.roll[1]).toFixed(0) + "deg",
+        "--rolldur:" + rnd(cfg.rollDur[0], cfg.rollDur[1]).toFixed(1) + "s",
+        "--delay2:-" + rnd(0, 9).toFixed(1) + "s",
+        "--size:" + (rnd(cfg.size[0], cfg.size[1]) * k.size).toFixed(1) + "px",
+        "--op:" + op.toFixed(2),
       ].join(";")
       html +=
         '<span class="sp sp-m-' +
