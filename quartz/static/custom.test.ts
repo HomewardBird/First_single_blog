@@ -366,19 +366,17 @@ describe("引言时间加权", () => {
     assert.strictEqual(pickQuote(qs, day(2026, 3, 15), seq([0.65, 0]))!.text, "通用")
   })
 
-  test("国庆当天只出国庆句，假期外不生效", () => {
+  test("国庆当天：专属 80%，其余通用；假期外不生效", () => {
     const { pickQuote } = quoteApi(setup())
     const qs: Quote[] = [{ text: "国庆", tags: ["holiday:national-day"] }, { text: "通用" }]
-    for (const d of [day(2026, 10, 1), day(2026, 10, 7)]) {
-      for (let i = 0; i < 20; i++) {
-        assert.strictEqual(pickQuote(qs, d, Math.random)!.text, "国庆")
-      }
-    }
+    assert.strictEqual(pickQuote(qs, day(2026, 10, 1), seq([0.79, 0]))!.text, "国庆")
+    assert.strictEqual(pickQuote(qs, day(2026, 10, 1), seq([0.8, 0]))!.text, "通用")
+    assert.strictEqual(pickQuote(qs, day(2026, 10, 7), seq([0.1, 0]))!.text, "国庆")
     assert.strictEqual(pickQuote(qs, day(2026, 9, 30), seq([0.1, 0]))!.text, "通用")
     assert.strictEqual(pickQuote(qs, day(2026, 10, 8), seq([0.1, 0]))!.text, "通用")
   })
 
-  test("时令严格对应：其他节日、季节句都不串场", () => {
+  test("节令句不串场：清明不会出春节，平常日不出节令句", () => {
     const { pickQuote } = quoteApi(setup())
     const qs: Quote[] = [
       { text: "春节", tags: ["holiday:spring-festival", "spring"] },
@@ -386,19 +384,17 @@ describe("引言时间加权", () => {
       { text: "春", tags: ["spring"] },
       { text: "通用" },
     ]
-    for (let i = 0; i < 20; i++) {
-      assert.strictEqual(pickQuote(qs, day(2026, 4, 5), Math.random)!.text, "清明")
+    for (let i = 0; i < 60; i++) {
+      const text = pickQuote(qs, day(2026, 4, 5), Math.random)!.text
+      assert.ok(text === "清明" || text === "春" || text === "通用", `清明节不应出现 ${text}`)
     }
     for (let i = 0; i < 40; i++) {
       const text = pickQuote(qs, day(2026, 5, 15), Math.random)!.text
       assert.ok(text === "春" || text === "通用", `平常日不应出现 ${text}`)
     }
-    for (let i = 0; i < 20; i++) {
-      assert.strictEqual(
-        pickQuote(qs, day(2026, 2, 17), Math.random)!.text,
-        "春节",
-        "春节当天只出春节句",
-      )
+    for (let i = 0; i < 60; i++) {
+      const text = pickQuote(qs, day(2026, 2, 17), Math.random)!.text
+      assert.ok(text !== "清明", "春节不应出现清明句")
     }
   })
 
@@ -449,8 +445,8 @@ describe("引言时间加权", () => {
       { text: "其他", cat: "misc" },
     ]
     const d = day(2026, 5, 15)
-    assert.strictEqual(pickQuote(qs, d, seq([0.44, 0]))!.text, "文哲")
-    assert.strictEqual(pickQuote(qs, d, seq([0.45, 0]))!.text, "ACG")
+    assert.strictEqual(pickQuote(qs, d, seq([0.39, 0]))!.text, "文哲")
+    assert.strictEqual(pickQuote(qs, d, seq([0.4, 0]))!.text, "ACG")
     assert.strictEqual(pickQuote(qs, d, seq([0.74, 0]))!.text, "ACG")
     assert.strictEqual(pickQuote(qs, d, seq([0.75, 0]))!.text, "古典")
     assert.strictEqual(pickQuote(qs, d, seq([0.94, 0]))!.text, "古典")

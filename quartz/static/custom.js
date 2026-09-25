@@ -382,8 +382,8 @@
 
   // ====================================================================
   //  引言：按访客本地日期加权抽取（节日/节气 > 季节 > 通用）
-  //  - 节日/节气当天：只出该时令专属句（多个时令重叠则合并），不混其他
-  //  - 平常日：当季句 65%、通用句 35%；节令句只在当天出现
+  //  - 节日/节气当天：专属句 80%，其余从当季+通用池抽
+  //  - 平常日：当季句 65%、通用句 35%；节令句只在当天出现，不串场
   //  - quotes.json 里无 tags = 通用；标签取值见该文件
   // ====================================================================
   // 农历数据表（1900-2100）：低 4 位闰月，位 4-15 为各月大小，
@@ -631,7 +631,7 @@
     return pool[Math.floor(rand() * pool.length)]
   }
   // 通用池气质比例：文哲 / ACG / 古典 / 其他（可按喜好调整）
-  var GENERAL_CATEGORY_WEIGHTS = { lit: 45, acg: 30, classic: 20, misc: 5 }
+  var GENERAL_CATEGORY_WEIGHTS = { lit: 40, acg: 35, classic: 20, misc: 5 }
   function pickGeneral(generalPool, rand) {
     if (!generalPool.length) return null
     var groups = {}
@@ -683,8 +683,18 @@
       if (hitOccasion) occasionPool.push(q)
       else if (!hasOccasionTag && tags.indexOf(season) !== -1) seasonPool.push(q)
     }
-    // 节日/节气当天：只出该节日/节气的句子（多个时令重叠则合并）
-    if (occasionPool.length) return pickFromPool(occasionPool, rand)
+    // 节日/节气当天：专属句 80%，其余从当季+通用池抽；
+    // 节令句只在当天出现，不会串进其他节日或普通日子
+    if (occasionPool.length) {
+      if (rand() < 0.8) return pickFromPool(occasionPool, rand)
+      if (seasonPool.length && generalPool.length) {
+        if (rand() < 0.5) return pickFromPool(seasonPool, rand)
+        return pickGeneral(generalPool, rand)
+      }
+      if (seasonPool.length) return pickFromPool(seasonPool, rand)
+      if (generalPool.length) return pickGeneral(generalPool, rand)
+      return pickFromPool(occasionPool, rand)
+    }
     if (seasonPool.length && generalPool.length) {
       if (rand() < 0.65) return pickFromPool(seasonPool, rand)
       return pickGeneral(generalPool, rand)
