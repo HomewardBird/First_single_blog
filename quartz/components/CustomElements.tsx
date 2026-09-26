@@ -1,3 +1,27 @@
+import { createHash } from "node:crypto"
+import { readFileSync, statSync } from "node:fs"
+import { join } from "node:path"
+
+const versionCache = new Map<string, { mtimeMs: number; version: string }>()
+
+// 构建时读取 quartz 静态文件的内容哈希，作为 ?v= 参数自动破坏缓存：
+// 更换背景图后 URL 自动变化，用户无需强刷即可看到新图。
+function assetUrl(basePath: string, relPath: string): string {
+  const filePath = join(process.cwd(), "quartz", relPath)
+  try {
+    const mtimeMs = statSync(filePath).mtimeMs
+    const cached = versionCache.get(filePath)
+    if (cached && cached.mtimeMs === mtimeMs) {
+      return `${basePath}/${relPath}?v=${cached.version}`
+    }
+    const version = createHash("sha1").update(readFileSync(filePath)).digest("hex").slice(0, 8)
+    versionCache.set(filePath, { mtimeMs, version })
+    return `${basePath}/${relPath}?v=${version}`
+  } catch {
+    return `${basePath}/${relPath}`
+  }
+}
+
 export function CustomElements({ basePath }: { basePath: string }) {
   return (
     <>
@@ -11,43 +35,58 @@ export function CustomElements({ basePath }: { basePath: string }) {
       <div id="bg-image-light" class="bg-layer">
         <img
           class="bg-thumb"
-          src={`${basePath}/static/blur/light_bg.webp?v=3`}
+          src={assetUrl(basePath, "static/blur/light_bg.webp")}
           alt=""
           loading="eager"
         />
         <img
           class="bg-full"
-          src={`${basePath}/static/light_bg.webp?v=3`}
+          src={assetUrl(basePath, "static/light_bg.webp")}
           alt=""
           loading="lazy"
           fetchPriority="high"
         />
       </div>
       <div id="bg-image-dark" class="bg-layer">
-        <img class="bg-thumb" src={`${basePath}/static/blur/dark_bg.webp?v=3`} alt="" loading="eager" />
+        <img
+          class="bg-thumb"
+          src={assetUrl(basePath, "static/blur/dark_bg.webp")}
+          alt=""
+          loading="eager"
+        />
         <img
           class="bg-full"
-          src={`${basePath}/static/dark_bg.webp?v=3`}
+          src={assetUrl(basePath, "static/dark_bg.webp")}
           alt=""
           loading="lazy"
           fetchPriority="high"
         />
       </div>
       <div id="bg-image-light-pc" class="bg-layer">
-        <img class="bg-thumb" src={`${basePath}/static/blur/light.webp?v=3`} alt="" loading="eager" />
+        <img
+          class="bg-thumb"
+          src={assetUrl(basePath, "static/blur/light.webp")}
+          alt=""
+          loading="eager"
+        />
         <img
           class="bg-full"
-          src={`${basePath}/static/light.webp?v=3`}
+          src={assetUrl(basePath, "static/light.webp")}
           alt=""
           loading="lazy"
           fetchPriority="high"
         />
       </div>
       <div id="bg-image-dark-pc" class="bg-layer">
-        <img class="bg-thumb" src={`${basePath}/static/blur/dark.webp?v=3`} alt="" loading="eager" />
+        <img
+          class="bg-thumb"
+          src={assetUrl(basePath, "static/blur/dark.webp")}
+          alt=""
+          loading="eager"
+        />
         <img
           class="bg-full"
-          src={`${basePath}/static/dark.webp?v=3`}
+          src={assetUrl(basePath, "static/dark.webp")}
           alt=""
           loading="lazy"
           fetchPriority="high"

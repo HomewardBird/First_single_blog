@@ -4252,10 +4252,28 @@ html[saved-theme="dark"] #egg-poem .egg-poem-src {
     flex-direction: column;
     gap: 0.75rem;
   }
+  /* 纵向排列时 flex: 1 1 0 会按剩余空间压缩卡片高度，
+     导致长标题溢出圆角框（min-height:0 会解除内容最小高度保护），
+     改为按内容撑开 */
   .page-pagination .pagination-item {
+    flex: 0 0 auto;
     max-width: 100%;
-    min-height: 0;
+    min-height: 3.5rem;
     padding: 0.85rem 1rem;
+  }
+  /* 纵向排列时 margin-left:auto 属于交叉轴 auto margin，会取消 stretch，
+     使“下一篇”卡片缩成内容宽度，这里恢复整行宽度 */
+  .page-pagination .pagination-next {
+    margin-left: 0;
+  }
+}
+
+/* 触屏没有 hover，但浏览器点按后会把 :hover 粘在元素上：
+   base.scss 里的 a:hover 会让卡片文字变绿且不复原，这里覆盖回正常配色 */
+@media (hover: none) {
+  .page-pagination .pagination-item:hover,
+  .page-pagination .pagination-item:active {
+    color: var(--secondary);
   }
 }
 
