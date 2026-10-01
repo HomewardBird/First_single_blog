@@ -494,6 +494,24 @@ export async function handleBuild(argv) {
               source: "**/*.*",
               headers: [{ key: "Content-Disposition", value: "inline" }],
             },
+            // 本地预览禁用强缓存：serve 模式产物文件名不带哈希，浏览器缓存旧文件
+            // 会让改动"看起来没生效"（配合 If-Modified-Since 仍可 304，不影响速度）
+            {
+              source: "**/*.html",
+              headers: [{ key: "Cache-Control", value: "no-cache" }],
+            },
+            {
+              source: "**/*.css",
+              headers: [{ key: "Cache-Control", value: "no-cache" }],
+            },
+            {
+              source: "**/*.js",
+              headers: [{ key: "Cache-Control", value: "no-cache" }],
+            },
+            {
+              source: "**/*.json",
+              headers: [{ key: "Cache-Control", value: "no-cache" }],
+            },
             {
               source: "**/*.webp",
               headers: [{ key: "Content-Type", value: "image/webp" }],

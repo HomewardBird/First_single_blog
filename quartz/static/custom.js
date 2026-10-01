@@ -3316,6 +3316,73 @@
   }
 
   // ====================================================================
+  //  Scroll hints：宽表格 / 块级公式横向可滑时显示两端渐隐
+  //  （滚动条全局隐藏，不给提示容易被误以为内容被裁掉）
+  // ====================================================================
+  function initScrollHints() {
+    function attach(el) {
+      var wrap = el.parentElement
+      if (!wrap || !wrap.classList.contains("scroll-hint")) {
+        wrap = document.createElement("div")
+        wrap.className = "scroll-hint"
+        el.parentNode.insertBefore(wrap, el)
+        wrap.appendChild(el)
+        // 顶层块（正文容器 / article 直下）才在移动端破边全宽
+        var host = wrap.parentElement
+        if (
+          host &&
+          (host.tagName === "ARTICLE" || host.classList.contains("markdown-preview-view"))
+        ) {
+          wrap.classList.add("sh-top")
+        }
+      }
+      if (el.__shUpdate) {
+        el.__shUpdate()
+        return
+      }
+      var update = function () {
+        var max = el.scrollWidth - el.clientWidth
+        wrap.classList.toggle("sh-left", el.scrollLeft > 2)
+        wrap.classList.toggle("sh-right", max > 2 && el.scrollLeft < max - 2)
+      }
+      el.__shUpdate = update
+      el.addEventListener("scroll", update, { passive: true })
+      window.addEventListener("resize", update)
+      if (window.ResizeObserver) {
+        new ResizeObserver(update).observe(el)
+      }
+      update()
+    }
+
+    Array.prototype.forEach.call(
+      document.querySelectorAll(".table-container, .katex-display"),
+      attach,
+    )
+
+    // 兜底：Obsidian 习惯把块级公式写成单行 $$…$$，remark-math 会解析成行内公式；
+    // “整段只有一个公式”且折行/超宽时，让段落自身可横向滑动（短公式段落不受影响）
+    Array.prototype.forEach.call(document.querySelectorAll("article p"), function (p) {
+      var math = p.firstElementChild
+      if (!math || math !== p.lastElementChild || !math.classList.contains("katex")) return
+      if (p.textContent.trim() !== math.textContent.trim()) return
+      if (p.classList.contains("math-scroll")) {
+        attach(p) // 已处理过：刷新渐隐状态（字体/尺寸变化后）
+        return
+      }
+      // 公式被折行成多段（getClientRects > 1）或直接溢出行宽时才处理
+      if (math.getClientRects().length <= 1 && p.scrollWidth <= p.clientWidth + 2) return
+      p.classList.add("math-scroll")
+      attach(p)
+    })
+  }
+  document.addEventListener("nav", initScrollHints)
+  window.addEventListener("load", initScrollHints)
+  // KaTeX 字体较晚载入，字形宽度变化可能改变折行结果，就绪后再校准一次
+  if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+    document.fonts.ready.then(initScrollHints)
+  }
+
+  // ====================================================================
   //  Init
   // ====================================================================
   function init() {
@@ -3397,6 +3464,7 @@
     lazyLoadImages()
     setupBgBlurUp()
     initEasterEggs()
+    initScrollHints()
   }
 
   // ====================================================================
