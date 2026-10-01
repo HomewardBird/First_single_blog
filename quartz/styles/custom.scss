@@ -4282,3 +4282,106 @@ html[saved-theme="dark"] #egg-poem .egg-poem-src {
     transition: none;
   }
 }
+
+/* ================================================================
+   长公式 / 宽表格：手机端横向滑动阅读优化
+   （全局隐藏了滚动条，用两端渐隐提示“还能滑”，并尽量占满屏幕宽度）
+   ================================================================ */
+
+/* --- 块级公式：真正的块级 + 横向滚动 ---
+   base.scss 的 `.katex-display { display: initial }` 会把公式打回 inline，
+   长公式无法滚动，只能被卡片裁掉；而 KaTeX 自带 CSS 是运行时后注入的
+   （同优先级、更靠后），所以这里用 `article .katex-display` 提高优先级。 */
+article .katex-display {
+  display: block;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain; /* 滑到头不再触发浏览器返回手势 */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 公式窄时撑满容器居中，宽时按内容宽度滚动：
+   居中溢出会裁掉左端，width: max-content + min-width: 100% 保证左右都能滑到底 */
+article .katex-display > .katex {
+  width: max-content;
+  min-width: 100%;
+}
+
+/* 单行 $$…$$ 兜底：整段只有一个公式且被折行/超宽时，段落自身横滑
+   （类名由 custom.js 检测后添加，短公式段落不受影响） */
+article p.math-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+article p.math-scroll > .katex {
+  white-space: nowrap; /* 公式保持一行，靠段落横向滑动阅读 */
+}
+
+/* --- 横向滑动渐隐提示 ---
+   由 custom.js 给溢出容器套上 .scroll-hint，并按滚动位置切换 sh-left / sh-right */
+.scroll-hint {
+  position: relative;
+}
+.scroll-hint::before,
+.scroll-hint::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  z-index: 2;
+}
+.scroll-hint::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(31, 45, 61, 0.2), transparent);
+}
+.scroll-hint::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(31, 45, 61, 0.2), transparent);
+}
+.scroll-hint.sh-left::before,
+.scroll-hint.sh-right::after {
+  opacity: 1;
+}
+.scroll-hint {
+  @include dark {
+    &::before {
+      background: linear-gradient(to right, rgba(0, 0, 0, 0.55), transparent);
+    }
+    &::after {
+      background: linear-gradient(to left, rgba(0, 0, 0, 0.55), transparent);
+    }
+  }
+}
+
+/* --- 移动端：顶层滚动区域破出卡片左右内边距，占满可用宽度 ---
+   （.sh-top 由 custom.js 只加在直接位于正文顶层的滚动块上，
+   避免 callout / 引用块里的表格溢出气泡边框） */
+@media (max-width: 800px) {
+  .scroll-hint.sh-top {
+    margin-left: -2rem !important;
+    margin-right: -2rem !important;
+  }
+
+  /* 表格：列保底宽度，宁可整体横向滑动，也不把每列挤成两三个字；
+     配合 JS 的两端渐隐提示，横滑才发现得了 */
+  .table-container th,
+  .table-container td {
+    min-width: 7em;
+    padding: 0.35rem 0.55rem;
+    font-size: 0.92rem;
+  }
+  .table-container > table {
+    margin: 0.75rem 1rem;
+  }
+
+  /* 块级公式在手机上略微缩小，减少滑动次数 */
+  article .katex-display > .katex {
+    font-size: 1.08em;
+  }
+}
