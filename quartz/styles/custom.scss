@@ -1942,21 +1942,70 @@ html[saved-theme="dark"] .hamburger-line {
   border-color: var(--secondary);
 }
 
+.hb-install-card {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem;
+  border: 1px solid rgba(128, 128, 128, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.hb-install-icon {
+  display: block;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.hb-install-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.12rem;
+}
+
+.hb-install-copy strong {
+  overflow: hidden;
+  color: var(--dark);
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hb-install-copy span {
+  color: var(--gray);
+  font-size: 0.7rem;
+}
+
 .hb-install-btn {
-  width: 100%;
-  min-height: 40px;
-  padding: 0.5rem 0.75rem;
+  min-width: 3.4rem;
+  min-height: 34px;
+  padding: 0.35rem 0.55rem;
   border: 1px solid var(--secondary);
   border-radius: 6px;
-  background: var(--secondary);
-  color: #fff;
+  background: transparent;
+  color: var(--secondary);
   font: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
   cursor: pointer;
+}
+
+.hb-install-btn:hover:not(:disabled) {
+  background: rgba(128, 128, 128, 0.1);
 }
 
 .hb-install-btn:disabled {
   cursor: default;
   opacity: 0.7;
+}
+
+html[data-theme="dark"] .hb-install-copy strong,
+html[saved-theme="dark"] .hb-install-copy strong {
+  color: #ebebec;
 }
 
 .hb-install-help {

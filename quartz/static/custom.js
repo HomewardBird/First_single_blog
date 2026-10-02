@@ -1464,8 +1464,11 @@
       '<button id="hamburger-close-btn" class="hb-close-btn" type="button" aria-label="关闭菜单">✕</button>',
       "</div>",
       '<div class="hb-section hb-install-section">',
-      '<div class="hb-title">网站应用</div>',
-      '<button id="pwa-install-btn" class="hb-install-btn" type="button">安装到桌面</button>',
+      '<div class="hb-install-card">',
+      '<img class="hb-install-icon" src="' + getBp() + '/static/pwa-icon-192-v5.png" alt="" aria-hidden="true">',
+      '<div class="hb-install-copy"><strong>安巢鸟</strong><span>安装到桌面</span></div>',
+      '<button id="pwa-install-btn" class="hb-install-btn" type="button">安装</button>',
+      '</div>',
       '<div id="pwa-install-help" class="hb-install-help" role="status" aria-live="polite" hidden></div>',
       "</div>",
       '<div class="hb-section"><div class="hb-title">🔅 外观</div>',
@@ -1698,7 +1701,7 @@
       (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
       navigator.standalone === true
     button.disabled = !!installed
-    button.textContent = installed ? "已安装" : deferredPwaInstall ? "安装到桌面" : "如何添加到桌面"
+    button.textContent = installed ? "已安装" : deferredPwaInstall ? "安装" : "查看方法"
   }
 
   function showPwaInstallMessage(message) {

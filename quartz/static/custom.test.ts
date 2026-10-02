@@ -93,6 +93,7 @@ describe("topbar 交互", () => {
     t.click("#hamburger-btn")
     const installButton = t.document.querySelector<HTMLButtonElement>("#pwa-install-btn")
     assert.ok(installButton, "存在安装到桌面的入口")
+    assert.ok(t.document.querySelector(".hb-install-icon"), "安装入口显示网站图标")
     t.click("#pwa-install-btn")
     const help = t.document.querySelector<HTMLElement>("#pwa-install-help")
     assert.ok(!help!.hidden, "点击后显示对应浏览器的安装说明")
