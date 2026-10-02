@@ -29,8 +29,8 @@ export default (() => {
     const url = new URL(`https://${cfg.baseUrl ?? "example.com"}`)
     const path = url.pathname as FullSlug
     const baseDir = fileData.slug === "404" ? path : pathToRoot(fileData.slug!)
-    const iconPath = joinSegments(baseDir, "static/pwa-icon-192-v5.png")
-    const appleIconPath = joinSegments(baseDir, "static/apple-touch-icon-v4.png")
+    const iconPath = joinSegments(baseDir, "static/site-icon-192-v6.png")
+    const appleIconPath = joinSegments(baseDir, "static/apple-touch-icon-v6.png")
 
     // Url of current page
     const socialUrl =
