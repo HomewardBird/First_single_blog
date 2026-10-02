@@ -12,15 +12,17 @@
  *  - 音频（mp3/m4a 等）与字体（/fonts/）：不拦截
  *  - 背景图 ?v= 由构建时的内容哈希生成，换图后 URL 自动变化，无需手改版本
  */
-var VERSION = "v9"
+var VERSION = "v13"
 var CACHE_NAME = "homewardbird-site-" + VERSION
 
 var PRECACHE_URLS = [
   "/quotes.json",
   "/static/contentIndex.json",
   "/static/site.webmanifest",
-  "/static/pwa-icon-192.png",
-  "/static/pwa-icon-512.png",
+  "/static/pwa-icon-maskable-v3.png",
+  "/static/pwa-icon-192-v4.png",
+  "/static/pwa-icon-512-v4.png",
+  "/static/apple-touch-icon-v4.png",
 ]
 
 function collectAssetUrls(html, base) {

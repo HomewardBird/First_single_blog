@@ -13,6 +13,18 @@
 
   // Handler dedup set
   var _handlerSet = new WeakSet()
+  var deferredPwaInstall = null
+
+  window.addEventListener("beforeinstallprompt", function (event) {
+    event.preventDefault()
+    deferredPwaInstall = event
+    syncPwaInstallButton()
+  })
+  window.addEventListener("appinstalled", function () {
+    deferredPwaInstall = null
+    syncPwaInstallButton()
+    showPwaInstallMessage("已安装到桌面。")
+  })
 
   // ====================================================================
   //  Base path
@@ -382,8 +394,8 @@
 
   // ====================================================================
   //  引言：按访客本地日期加权抽取（节日/节气 > 季节 > 通用）
-  //  - 节日/节气当天：专属句 80%，其余从当季+通用池抽
-  //  - 平常日：当季句 65%、通用句 35%；节令句只在当天出现，不串场
+  //  - 节日/节气当天：专属句 50%，其余从当季+通用池抽
+  //  - 平常日：当季句 45%、通用句 55%；节令句只在当天出现，不串场
   //  - quotes.json 里无 tags = 通用；标签取值见该文件
   // ====================================================================
   // 农历数据表（1900-2100）：低 4 位闰月，位 4-15 为各月大小，
@@ -469,8 +481,8 @@
   // 公历节日窗口（含首尾）
   var SOLAR_HOLIDAYS = [
     { key: "holiday:new-year", from: [1, 1], to: [1, 1] },
-    { key: "holiday:labour", from: [5, 1], to: [5, 5] },
-    { key: "holiday:national-day", from: [10, 1], to: [10, 7] },
+    { key: "holiday:labour", from: [5, 1], to: [5, 1] },
+    { key: "holiday:national-day", from: [10, 1], to: [10, 1] },
   ]
   // 二十四节气近似日期（逐年最多相差一天，列出可能日期即可）
   var SOLAR_TERMS = {
@@ -630,31 +642,36 @@
   function pickFromPool(pool, rand) {
     return pool[Math.floor(rand() * pool.length)]
   }
-  // 通用池气质比例：文哲 / ACG / 古典 / 其他（可按喜好调整）
-  var GENERAL_CATEGORY_WEIGHTS = { lit: 40, acg: 35, classic: 20, misc: 5 }
-  function pickGeneral(generalPool, rand) {
-    if (!generalPool.length) return null
+  // 类别比例优先照顾文学与哲学，降低古典诗句在季节和通用池中的占比。
+  var GENERAL_CATEGORY_WEIGHTS = { lit: 35, philosophy: 25, acg: 25, classic: 10, misc: 5 }
+  var OCCASION_CATEGORY_WEIGHTS = { lit: 40, philosophy: 35, classic: 25 }
+  var SEASON_CATEGORY_WEIGHTS = { lit: 40, philosophy: 30, classic: 25, acg: 5 }
+  function pickByCategory(pool, weights, fallbackCategory, rand) {
+    if (!pool.length) return null
     var groups = {}
-    for (var i = 0; i < generalPool.length; i++) {
-      var cat = generalPool[i].cat || "misc"
+    for (var i = 0; i < pool.length; i++) {
+      var cat = pool[i].cat || fallbackCategory
       if (!groups[cat]) groups[cat] = []
-      groups[cat].push(generalPool[i])
+      groups[cat].push(pool[i])
     }
     var total = 0
     var entries = []
-    for (var key in GENERAL_CATEGORY_WEIGHTS) {
+    for (var key in weights) {
       if (groups[key] && groups[key].length) {
         entries.push([key, groups[key]])
-        total += GENERAL_CATEGORY_WEIGHTS[key]
+        total += weights[key]
       }
     }
-    if (!entries.length) return null
+    if (!entries.length) return pickFromPool(pool, rand)
     var r = rand() * total
     for (var j = 0; j < entries.length; j++) {
-      r -= GENERAL_CATEGORY_WEIGHTS[entries[j][0]]
+      r -= weights[entries[j][0]]
       if (r < 0) return pickFromPool(entries[j][1], rand)
     }
     return pickFromPool(entries[entries.length - 1][1], rand)
+  }
+  function pickGeneral(generalPool, rand) {
+    return pickByCategory(generalPool, GENERAL_CATEGORY_WEIGHTS, "misc", rand)
   }
   function pickQuote(qs, date, rand) {
     if (!qs || !qs.length) return null
@@ -686,20 +703,24 @@
     // 节日/节气当天：专属句 80%，其余从当季+通用池抽；
     // 节令句只在当天出现，不会串进其他节日或普通日子
     if (occasionPool.length) {
-      if (rand() < 0.8) return pickFromPool(occasionPool, rand)
+      if (rand() < 0.5)
+        return pickByCategory(occasionPool, OCCASION_CATEGORY_WEIGHTS, "classic", rand)
       if (seasonPool.length && generalPool.length) {
-        if (rand() < 0.5) return pickFromPool(seasonPool, rand)
+        if (rand() < 0.5)
+          return pickByCategory(seasonPool, SEASON_CATEGORY_WEIGHTS, "classic", rand)
         return pickGeneral(generalPool, rand)
       }
-      if (seasonPool.length) return pickFromPool(seasonPool, rand)
+      if (seasonPool.length)
+        return pickByCategory(seasonPool, SEASON_CATEGORY_WEIGHTS, "classic", rand)
       if (generalPool.length) return pickGeneral(generalPool, rand)
       return pickFromPool(occasionPool, rand)
     }
     if (seasonPool.length && generalPool.length) {
-      if (rand() < 0.65) return pickFromPool(seasonPool, rand)
+      if (rand() < 0.45) return pickByCategory(seasonPool, SEASON_CATEGORY_WEIGHTS, "classic", rand)
       return pickGeneral(generalPool, rand)
     }
-    if (seasonPool.length) return pickFromPool(seasonPool, rand)
+    if (seasonPool.length)
+      return pickByCategory(seasonPool, SEASON_CATEGORY_WEIGHTS, "classic", rand)
     if (generalPool.length) return pickGeneral(generalPool, rand)
     return pickFromPool(qs, rand)
   }
@@ -1442,6 +1463,11 @@
       '<div class="hb-title">设置</div>',
       '<button id="hamburger-close-btn" class="hb-close-btn" type="button" aria-label="关闭菜单">✕</button>',
       "</div>",
+      '<div class="hb-section hb-install-section">',
+      '<div class="hb-title">网站应用</div>',
+      '<button id="pwa-install-btn" class="hb-install-btn" type="button">安装到桌面</button>',
+      '<div id="pwa-install-help" class="hb-install-help" role="status" aria-live="polite" hidden></div>',
+      "</div>",
       '<div class="hb-section"><div class="hb-title">🔅 外观</div>',
       '<div class="hb-sub">字体大小</div><div class="hb-row">',
       fHtml,
@@ -1576,6 +1602,12 @@
         }
       })
     })
+    var pwaInstallButton = document.getElementById("pwa-install-btn")
+    if (pwaInstallButton && !_handlerSet.has(pwaInstallButton)) {
+      _handlerSet.add(pwaInstallButton)
+      pwaInstallButton.addEventListener("click", installPwa)
+    }
+    syncPwaInstallButton()
     var closeBtn = document.getElementById("hamburger-close-btn")
     if (closeBtn && !_handlerSet.has(closeBtn)) {
       _handlerSet.add(closeBtn)
@@ -1657,6 +1689,54 @@
         el.addEventListener(a[1], a[2])
       }
     })
+  }
+
+  function syncPwaInstallButton() {
+    var button = document.getElementById("pwa-install-btn")
+    if (!button) return
+    var installed =
+      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+      navigator.standalone === true
+    button.disabled = !!installed
+    button.textContent = installed ? "已安装" : deferredPwaInstall ? "安装到桌面" : "如何添加到桌面"
+  }
+
+  function showPwaInstallMessage(message) {
+    var help = document.getElementById("pwa-install-help")
+    if (!help) return
+    help.textContent = message
+    help.hidden = false
+  }
+
+  function installPwa() {
+    if (deferredPwaInstall) {
+      var promptEvent = deferredPwaInstall
+      deferredPwaInstall = null
+      syncPwaInstallButton()
+      promptEvent.prompt()
+      promptEvent.userChoice.then(function (choice) {
+        if (choice.outcome === "accepted") showPwaInstallMessage("已开始安装，可从桌面打开。")
+        else showPwaInstallMessage("安装已取消；需要时可再次点击地址栏的安装图标。")
+      })
+      return
+    }
+    var ua = navigator.userAgent || ""
+    var isIOS =
+      /iPhone|iPad|iPod/i.test(ua) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    if (isIOS) {
+      showPwaInstallMessage("Safari 中点分享按钮，再选“添加到主屏幕”。")
+    } else if (/Android/i.test(ua)) {
+      showPwaInstallMessage("浏览器菜单 ⋮ →“安装应用”或“添加到主屏幕”。")
+    } else if (/Macintosh|Mac OS X/i.test(ua) && /Safari/i.test(ua) && !/Chrome|CriOS|Edg/i.test(ua)) {
+      showPwaInstallMessage("Safari 菜单栏中选“文件”→“添加到程序坞”。")
+    } else if (/Firefox/i.test(ua)) {
+      showPwaInstallMessage("此浏览器不支持安装为应用；可用 Chrome 或 Edge 打开后安装。")
+    } else {
+      showPwaInstallMessage(
+        "Chrome：点地址栏安装图标或在菜单中选“安装页面为应用”；Edge：菜单 →“应用”→“将此网站安装为应用”。",
+      )
+    }
   }
 
   // ====================================================================

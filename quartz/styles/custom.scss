@@ -1942,6 +1942,30 @@ html[saved-theme="dark"] .hamburger-line {
   border-color: var(--secondary);
 }
 
+.hb-install-btn {
+  width: 100%;
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--secondary);
+  border-radius: 6px;
+  background: var(--secondary);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.hb-install-btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.hb-install-help {
+  margin-top: 0.45rem;
+  color: var(--darkgray);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
 .hb-font-progress {
   grid-column: 1 / -1;
   width: 100%;

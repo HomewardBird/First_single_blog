@@ -17,6 +17,7 @@ description: 安巢鸟的小站。主要写两块：一是计算机入门教学�
 <li>若体验有问题，请联系站长喵</li>
 <li>请务必给我推荐一点好听纯音乐喵</li>
 <li>嫌背景太花可以在上方换为纯色</li>
+<li>已经可以将网站作为应用安装至桌面方便打开</li>
 <li class="notice-contact">联系方式：<a href="mailto:xgf09695@gmail.com">邮箱</a> · <a href="https://space.bilibili.com/1983285744" target="_blank" rel="noopener">B站</a></li>
 </ul>
 </div>

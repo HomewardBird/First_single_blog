@@ -88,6 +88,17 @@ describe("topbar 交互", () => {
     assert.ok(!t.isMenuOpen(), "再点设置面板关闭")
   })
 
+  test("设置菜单提供 PWA 安装入口和浏览器指引", () => {
+    const t = setup()
+    t.click("#hamburger-btn")
+    const installButton = t.document.querySelector<HTMLButtonElement>("#pwa-install-btn")
+    assert.ok(installButton, "存在安装到桌面的入口")
+    t.click("#pwa-install-btn")
+    const help = t.document.querySelector<HTMLElement>("#pwa-install-help")
+    assert.ok(!help!.hidden, "点击后显示对应浏览器的安装说明")
+    assert.ok(help!.textContent!.includes("Chrome"), "桌面浏览器显示 Chrome/Edge 指引")
+  })
+
   test("两侧互不干扰", () => {
     const t = setup()
     t.click("#nav-toggle-btn")
@@ -359,21 +370,44 @@ describe("引言时间加权", () => {
     }
   })
 
-  test("平常日：当季句 65%、通用句 35%", () => {
+  test("平常日：当季句 45%、通用句 55%", () => {
     const { pickQuote } = quoteApi(setup())
     const qs: Quote[] = [{ text: "春", tags: ["spring"] }, { text: "通用" }]
-    assert.strictEqual(pickQuote(qs, day(2026, 3, 15), seq([0.64, 0]))!.text, "春")
-    assert.strictEqual(pickQuote(qs, day(2026, 3, 15), seq([0.65, 0]))!.text, "通用")
+    assert.strictEqual(pickQuote(qs, day(2026, 3, 15), seq([0.44, 0]))!.text, "春")
+    assert.strictEqual(pickQuote(qs, day(2026, 3, 15), seq([0.45, 0]))!.text, "通用")
   })
 
-  test("国庆当天：专属 80%，其余通用；假期外不生效", () => {
+  test("国庆仅 10 月 1 日命中；10 月 2 日及假期外走普通池", () => {
     const { pickQuote } = quoteApi(setup())
     const qs: Quote[] = [{ text: "国庆", tags: ["holiday:national-day"] }, { text: "通用" }]
-    assert.strictEqual(pickQuote(qs, day(2026, 10, 1), seq([0.79, 0]))!.text, "国庆")
-    assert.strictEqual(pickQuote(qs, day(2026, 10, 1), seq([0.8, 0]))!.text, "通用")
-    assert.strictEqual(pickQuote(qs, day(2026, 10, 7), seq([0.1, 0]))!.text, "国庆")
+    assert.strictEqual(pickQuote(qs, day(2026, 10, 1), seq([0.49, 0, 0]))!.text, "国庆")
+    assert.strictEqual(pickQuote(qs, day(2026, 10, 1), seq([0.5, 0, 0]))!.text, "通用")
+    assert.strictEqual(pickQuote(qs, day(2026, 10, 2), seq([0.1, 0, 0]))!.text, "通用")
+    assert.strictEqual(pickQuote(qs, day(2026, 10, 7), seq([0.1, 0, 0]))!.text, "通用")
     assert.strictEqual(pickQuote(qs, day(2026, 9, 30), seq([0.1, 0]))!.text, "通用")
     assert.strictEqual(pickQuote(qs, day(2026, 10, 8), seq([0.1, 0]))!.text, "通用")
+  })
+
+  test("劳动节仅 5 月 1 日命中，不延伸到调休日", () => {
+    const { activeOccasions, pickQuote } = quoteApi(setup())
+    assert.ok(activeOccasions(day(2026, 5, 1)).includes("holiday:labour"))
+    assert.ok(!activeOccasions(day(2026, 5, 2)).includes("holiday:labour"))
+    assert.ok(!activeOccasions(day(2026, 5, 5)).includes("holiday:labour"))
+    const qs: Quote[] = [{ text: "劳动节", tags: ["holiday:labour"] }, { text: "通用" }]
+    assert.strictEqual(pickQuote(qs, day(2026, 5, 2), seq([0, 0, 0]))!.text, "通用")
+  })
+
+  test("节日池优先混合文学、哲学与古典句", () => {
+    const { pickQuote } = quoteApi(setup())
+    const qs: Quote[] = [
+      { text: "文学", cat: "lit", tags: ["holiday:national-day"] },
+      { text: "哲学", cat: "philosophy", tags: ["holiday:national-day"] },
+      { text: "古典", cat: "classic", tags: ["holiday:national-day"] },
+    ]
+    const d = day(2026, 10, 1)
+    assert.strictEqual(pickQuote(qs, d, seq([0, 0.39, 0]))!.text, "文学")
+    assert.strictEqual(pickQuote(qs, d, seq([0, 0.4, 0]))!.text, "哲学")
+    assert.strictEqual(pickQuote(qs, d, seq([0, 0.75, 0]))!.text, "古典")
   })
 
   test("节令句不串场：清明不会出春节，平常日不出节令句", () => {
@@ -418,8 +452,8 @@ describe("引言时间加权", () => {
   test("节气当天专属池为空时回退到季节加权", () => {
     const { pickQuote } = quoteApi(setup())
     const qs: Quote[] = [{ text: "春", tags: ["spring"] }, { text: "通用" }]
-    assert.strictEqual(pickQuote(qs, day(2026, 4, 5), seq([0.64, 0]))!.text, "春")
-    assert.strictEqual(pickQuote(qs, day(2026, 4, 5), seq([0.65, 0]))!.text, "通用")
+    assert.strictEqual(pickQuote(qs, day(2026, 4, 5), seq([0.44, 0]))!.text, "春")
+    assert.strictEqual(pickQuote(qs, day(2026, 4, 5), seq([0.45, 0]))!.text, "通用")
   })
 
   test("本地调试：?season= 强制季节，?date= 模拟日期", () => {
@@ -433,22 +467,25 @@ describe("引言时间加权", () => {
     const dated = quoteApi(setup("http://localhost/?date=2026-10-01"))
     assert.strictEqual(dated.seasonNow(), "autumn")
     const qs: Quote[] = [{ text: "国庆", tags: ["holiday:national-day"] }, { text: "通用" }]
-    assert.strictEqual(dated.pickQuote(qs, undefined, seq([0.5, 0]))!.text, "国庆")
+    assert.strictEqual(dated.pickQuote(qs, undefined, seq([0.49, 0, 0]))!.text, "国庆")
   })
 
-  test("通用池按文哲/ACG/古典/其他比例抽取", () => {
+  test("通用池按文学/哲学/ACG/古典/其他比例抽取", () => {
     const { pickQuote } = quoteApi(setup())
     const qs: Quote[] = [
-      { text: "文哲", cat: "lit" },
+      { text: "文学", cat: "lit" },
+      { text: "哲学", cat: "philosophy" },
       { text: "ACG", cat: "acg" },
       { text: "古典", cat: "classic" },
       { text: "其他", cat: "misc" },
     ]
     const d = day(2026, 5, 15)
-    assert.strictEqual(pickQuote(qs, d, seq([0.39, 0]))!.text, "文哲")
-    assert.strictEqual(pickQuote(qs, d, seq([0.4, 0]))!.text, "ACG")
-    assert.strictEqual(pickQuote(qs, d, seq([0.74, 0]))!.text, "ACG")
-    assert.strictEqual(pickQuote(qs, d, seq([0.75, 0]))!.text, "古典")
+    assert.strictEqual(pickQuote(qs, d, seq([0.34, 0]))!.text, "文学")
+    assert.strictEqual(pickQuote(qs, d, seq([0.35, 0]))!.text, "哲学")
+    assert.strictEqual(pickQuote(qs, d, seq([0.59, 0]))!.text, "哲学")
+    assert.strictEqual(pickQuote(qs, d, seq([0.6, 0]))!.text, "ACG")
+    assert.strictEqual(pickQuote(qs, d, seq([0.84, 0]))!.text, "ACG")
+    assert.strictEqual(pickQuote(qs, d, seq([0.85, 0]))!.text, "古典")
     assert.strictEqual(pickQuote(qs, d, seq([0.94, 0]))!.text, "古典")
     assert.strictEqual(pickQuote(qs, d, seq([0.95, 0]))!.text, "其他")
   })
