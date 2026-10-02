@@ -337,7 +337,13 @@ describe("季节粒子", () => {
 
 type Quote = { text: string; source?: string; tags?: string[]; cat?: string }
 type QuoteApi = {
-  pickQuote: (qs: Quote[], d?: Date, r?: () => number) => Quote | null
+  pickQuote: (
+    qs: Quote[],
+    d?: Date,
+    r?: () => number,
+    recent?: string[],
+  ) => Quote | null
+  pickDailyQuote: (qs: Quote[], r?: () => number) => Quote | null
   activeOccasions: (d: Date) => string[]
   seasonNow: (d?: Date) => string
   solarToLunar: (y: number, m: number, d: number) => {
@@ -355,7 +361,7 @@ const seq = (values: number[]) => {
 }
 const day = (y: number, m: number, d: number) => new Date(y, m - 1, d)
 
-describe("引言时间加权", () => {
+describe("引言筛选与抽取", () => {
   test("春季只从春季句与通用句抽取", () => {
     const { pickQuote } = quoteApi(setup())
     const qs: Quote[] = [
@@ -371,11 +377,11 @@ describe("引言时间加权", () => {
     }
   })
 
-  test("平常日：当季句 45%、通用句 55%", () => {
+  test("普通日：当季句与通用句中的每条候选句等概率", () => {
     const { pickQuote } = quoteApi(setup())
     const qs: Quote[] = [{ text: "春", tags: ["spring"] }, { text: "通用" }]
-    assert.strictEqual(pickQuote(qs, day(2026, 3, 15), seq([0.44, 0]))!.text, "春")
-    assert.strictEqual(pickQuote(qs, day(2026, 3, 15), seq([0.45, 0]))!.text, "通用")
+    assert.strictEqual(pickQuote(qs, day(2026, 3, 15), seq([0.49]))!.text, "春")
+    assert.strictEqual(pickQuote(qs, day(2026, 3, 15), seq([0.5]))!.text, "通用")
   })
 
   test("国庆仅 10 月 1 日命中；10 月 2 日及假期外走普通池", () => {
@@ -398,17 +404,17 @@ describe("引言时间加权", () => {
     assert.strictEqual(pickQuote(qs, day(2026, 5, 2), seq([0, 0, 0]))!.text, "通用")
   })
 
-  test("节日池优先混合文学、哲学与古典句", () => {
+  test("节日、当季与通用候选句等概率抽取", () => {
     const { pickQuote } = quoteApi(setup())
     const qs: Quote[] = [
-      { text: "文学", cat: "lit", tags: ["holiday:national-day"] },
-      { text: "哲学", cat: "philosophy", tags: ["holiday:national-day"] },
-      { text: "古典", cat: "classic", tags: ["holiday:national-day"] },
+      { text: "节日", tags: ["holiday:national-day"] },
+      { text: "当季", tags: ["autumn"] },
+      { text: "通用" },
     ]
     const d = day(2026, 10, 1)
-    assert.strictEqual(pickQuote(qs, d, seq([0, 0.39, 0]))!.text, "文学")
-    assert.strictEqual(pickQuote(qs, d, seq([0, 0.4, 0]))!.text, "哲学")
-    assert.strictEqual(pickQuote(qs, d, seq([0, 0.75, 0]))!.text, "古典")
+    assert.strictEqual(pickQuote(qs, d, seq([0.16]))!.text, "节日")
+    assert.strictEqual(pickQuote(qs, d, seq([0.5]))!.text, "当季")
+    assert.strictEqual(pickQuote(qs, d, seq([0.84]))!.text, "通用")
   })
 
   test("节令句不串场：清明不会出春节，平常日不出节令句", () => {
@@ -450,11 +456,11 @@ describe("引言时间加权", () => {
     assert.ok(activeOccasions(day(2026, 12, 22)).includes("term:冬至"))
   })
 
-  test("节气当天专属池为空时回退到季节加权", () => {
+  test("节气当天专属池为空时回退到当季与通用候选句", () => {
     const { pickQuote } = quoteApi(setup())
     const qs: Quote[] = [{ text: "春", tags: ["spring"] }, { text: "通用" }]
-    assert.strictEqual(pickQuote(qs, day(2026, 4, 5), seq([0.44, 0]))!.text, "春")
-    assert.strictEqual(pickQuote(qs, day(2026, 4, 5), seq([0.45, 0]))!.text, "通用")
+    assert.strictEqual(pickQuote(qs, day(2026, 4, 5), seq([0.49]))!.text, "春")
+    assert.strictEqual(pickQuote(qs, day(2026, 4, 5), seq([0.5]))!.text, "通用")
   })
 
   test("本地调试：?season= 强制季节，?date= 模拟日期", () => {
@@ -471,7 +477,7 @@ describe("引言时间加权", () => {
     assert.strictEqual(dated.pickQuote(qs, undefined, seq([0.49, 0, 0]))!.text, "国庆")
   })
 
-  test("通用池按文学/哲学/ACG/古典/其他比例抽取", () => {
+  test("普通池中各类别的单条句子等概率", () => {
     const { pickQuote } = quoteApi(setup())
     const qs: Quote[] = [
       { text: "文学", cat: "lit" },
@@ -481,14 +487,25 @@ describe("引言时间加权", () => {
       { text: "其他", cat: "misc" },
     ]
     const d = day(2026, 5, 15)
-    assert.strictEqual(pickQuote(qs, d, seq([0.34, 0]))!.text, "文学")
-    assert.strictEqual(pickQuote(qs, d, seq([0.35, 0]))!.text, "哲学")
-    assert.strictEqual(pickQuote(qs, d, seq([0.59, 0]))!.text, "哲学")
-    assert.strictEqual(pickQuote(qs, d, seq([0.6, 0]))!.text, "ACG")
-    assert.strictEqual(pickQuote(qs, d, seq([0.84, 0]))!.text, "ACG")
-    assert.strictEqual(pickQuote(qs, d, seq([0.85, 0]))!.text, "古典")
-    assert.strictEqual(pickQuote(qs, d, seq([0.94, 0]))!.text, "古典")
-    assert.strictEqual(pickQuote(qs, d, seq([0.95, 0]))!.text, "其他")
+    const counts = new Map<string, number>()
+    for (let i = 0; i < 100; i++) {
+      const value = ((i % qs.length) + 0.5) / qs.length
+      const text = pickQuote(qs, d, () => value)!.text
+      counts.set(text, (counts.get(text) ?? 0) + 1)
+    }
+    for (const quote of qs) assert.strictEqual(counts.get(quote.text), 20, quote.text)
+  })
+
+  test("最近五条不会重复，超过候选池容量时重新允许抽取", () => {
+    const t = setup()
+    const { pickDailyQuote } = quoteApi(t)
+    const qs: Quote[] = ["A", "B", "C", "D", "E", "F"].map((text) => ({ text }))
+    const results = Array.from({ length: 7 }, () => pickDailyQuote(qs, () => 0)!.text)
+    assert.deepStrictEqual(results, ["A", "B", "C", "D", "E", "F", "A"])
+    assert.deepStrictEqual(
+      JSON.parse(t.window.localStorage.getItem("homewardbird-recent-quotes")!),
+      ["C", "D", "E", "F", "A"],
+    )
   })
 })
 

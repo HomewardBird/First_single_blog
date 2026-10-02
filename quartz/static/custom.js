@@ -10,6 +10,8 @@
   var LOCK_KEY = "bgLocked"
   var SEASON_KEY = "seasonParticles"
   var SEASON_SUB_KEY = "seasonParticlesSub"
+  var RECENT_QUOTES_KEY = "homewardbird-recent-quotes"
+  var RECENT_QUOTES_LIMIT = 5
 
   // Handler dedup set
   var _handlerSet = new WeakSet()
@@ -393,9 +395,8 @@
   }
 
   // ====================================================================
-  //  引言：按访客本地日期加权抽取（节日/节气 > 季节 > 通用）
-  //  - 节日/节气当天：专属句 50%，其余从当季+通用池抽
-  //  - 平常日：当季句 45%、通用句 55%；节令句只在当天出现，不串场
+  //  引言：按访客本地日期筛选候选，逐句等概率抽取，并避开最近 5 条
+  //  - 节日/节气句仅在命中日期出现；其余候选为当季句与通用句
   //  - quotes.json 里无 tags = 通用；标签取值见该文件
   // ====================================================================
   // 农历数据表（1900-2100）：低 4 位闰月，位 4-15 为各月大小，
@@ -642,38 +643,7 @@
   function pickFromPool(pool, rand) {
     return pool[Math.floor(rand() * pool.length)]
   }
-  // 类别比例优先照顾文学与哲学，降低古典诗句在季节和通用池中的占比。
-  var GENERAL_CATEGORY_WEIGHTS = { lit: 35, philosophy: 25, acg: 25, classic: 10, misc: 5 }
-  var OCCASION_CATEGORY_WEIGHTS = { lit: 40, philosophy: 35, classic: 25 }
-  var SEASON_CATEGORY_WEIGHTS = { lit: 40, philosophy: 30, classic: 25, acg: 5 }
-  function pickByCategory(pool, weights, fallbackCategory, rand) {
-    if (!pool.length) return null
-    var groups = {}
-    for (var i = 0; i < pool.length; i++) {
-      var cat = pool[i].cat || fallbackCategory
-      if (!groups[cat]) groups[cat] = []
-      groups[cat].push(pool[i])
-    }
-    var total = 0
-    var entries = []
-    for (var key in weights) {
-      if (groups[key] && groups[key].length) {
-        entries.push([key, groups[key]])
-        total += weights[key]
-      }
-    }
-    if (!entries.length) return pickFromPool(pool, rand)
-    var r = rand() * total
-    for (var j = 0; j < entries.length; j++) {
-      r -= weights[entries[j][0]]
-      if (r < 0) return pickFromPool(entries[j][1], rand)
-    }
-    return pickFromPool(entries[entries.length - 1][1], rand)
-  }
-  function pickGeneral(generalPool, rand) {
-    return pickByCategory(generalPool, GENERAL_CATEGORY_WEIGHTS, "misc", rand)
-  }
-  function pickQuote(qs, date, rand) {
+  function pickQuote(qs, date, rand, recentlyShown) {
     if (!qs || !qs.length) return null
     date = date || currentDate()
     rand = rand || Math.random
@@ -700,33 +670,51 @@
       if (hitOccasion) occasionPool.push(q)
       else if (!hasOccasionTag && tags.indexOf(season) !== -1) seasonPool.push(q)
     }
-    // 节日/节气当天：专属句 80%，其余从当季+通用池抽；
-    // 节令句只在当天出现，不会串进其他节日或普通日子
-    if (occasionPool.length) {
-      if (rand() < 0.5)
-        return pickByCategory(occasionPool, OCCASION_CATEGORY_WEIGHTS, "classic", rand)
-      if (seasonPool.length && generalPool.length) {
-        if (rand() < 0.5)
-          return pickByCategory(seasonPool, SEASON_CATEGORY_WEIGHTS, "classic", rand)
-        return pickGeneral(generalPool, rand)
-      }
-      if (seasonPool.length)
-        return pickByCategory(seasonPool, SEASON_CATEGORY_WEIGHTS, "classic", rand)
-      if (generalPool.length) return pickGeneral(generalPool, rand)
-      return pickFromPool(occasionPool, rand)
+    var eligiblePool = occasionPool.concat(seasonPool, generalPool)
+    if (!eligiblePool.length) eligiblePool = qs
+    if (recentlyShown && recentlyShown.length) {
+      var unseenPool = eligiblePool.filter(function (q) {
+        return recentlyShown.indexOf(q.text) === -1
+      })
+      if (unseenPool.length) eligiblePool = unseenPool
     }
-    if (seasonPool.length && generalPool.length) {
-      if (rand() < 0.45) return pickByCategory(seasonPool, SEASON_CATEGORY_WEIGHTS, "classic", rand)
-      return pickGeneral(generalPool, rand)
+    return pickFromPool(eligiblePool, rand)
+  }
+  function getRecentQuoteTexts() {
+    var saved = localStorage.getItem(RECENT_QUOTES_KEY)
+    if (!saved) return []
+    var texts
+    try {
+      texts = JSON.parse(saved)
+    } catch (error) {
+      console.warn("Invalid recent quote history; clearing it.", error)
+      localStorage.removeItem(RECENT_QUOTES_KEY)
+      return []
     }
-    if (seasonPool.length)
-      return pickByCategory(seasonPool, SEASON_CATEGORY_WEIGHTS, "classic", rand)
-    if (generalPool.length) return pickGeneral(generalPool, rand)
-    return pickFromPool(qs, rand)
+    if (
+      !Array.isArray(texts) ||
+      texts.some(function (text) {
+        return typeof text !== "string"
+      })
+    ) {
+      console.warn("Invalid recent quote history; clearing it.")
+      localStorage.removeItem(RECENT_QUOTES_KEY)
+      return []
+    }
+    return texts.slice(-RECENT_QUOTES_LIMIT)
+  }
+  function pickDailyQuote(qs, rand) {
+    var recent = getRecentQuoteTexts()
+    var quote = pickQuote(qs, undefined, rand, recent)
+    if (!quote) return null
+    recent.push(quote.text)
+    localStorage.setItem(RECENT_QUOTES_KEY, JSON.stringify(recent.slice(-RECENT_QUOTES_LIMIT)))
+    return quote
   }
   // 单测/调试接口
   window.__quoteApi = {
     pickQuote: pickQuote,
+    pickDailyQuote: pickDailyQuote,
     activeOccasions: activeOccasions,
     seasonNow: seasonNow,
     solarToLunar: solarToLunar,
@@ -738,7 +726,7 @@
     var el = document.getElementById("random-quote")
     if (!el) return
     if (_quotesCache) {
-      var cq = pickQuote(_quotesCache)
+      var cq = pickDailyQuote(_quotesCache)
       if (cq) {
         el.textContent = "「 " + (cq.text || "") + " 」"
         el.title = cq.source || ""
@@ -760,7 +748,7 @@
         .then(function (qs) {
           clearTimeout(tm)
           _quotesCache = qs
-          var q = pickQuote(qs)
+          var q = pickDailyQuote(qs)
           if (!q) throw Error()
           el.textContent = "「 " + (q.text || "") + " 」"
           el.title = q.source || ""
