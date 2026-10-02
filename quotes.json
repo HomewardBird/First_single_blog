@@ -85,18 +85,6 @@
     "cat": "lit"
   },
   {
-    "text": "一切都会好的，城南的花都开了。",
-    "source": "网络",
-    "tags": [
-      "spring"
-    ]
-  },
-  {
-    "text": "满地都是六便士，他却抬头看见了月亮。",
-    "source": "毛姆《月亮与六便士》（常见中文译介语）",
-    "cat": "lit"
-  },
-  {
     "text": "心之所向，素履以往；生如逆旅，一苇以航。",
     "source": "七堇年",
     "cat": "lit"
@@ -129,11 +117,6 @@
   {
     "text": "踏上取经路，比抵达灵山更重要。",
     "source": "《黑神话：悟空》",
-    "cat": "acg"
-  },
-  {
-    "text": "此生无悔入东方，来世愿生幻想乡。",
-    "source": "东方Project 同人圈流行语",
     "cat": "acg"
   },
   {
@@ -340,16 +323,6 @@
     "text": "万物皆有裂痕，那是光照进来的地方。",
     "source": "莱昂纳德·科恩",
     "cat": "lit"
-  },
-  {
-    "text": "永远年轻，永远热泪盈眶。",
-    "source": "杰克·凯鲁亚克",
-    "cat": "lit"
-  },
-  {
-    "text": "种一棵树最好的时间是十年前，其次是现在。",
-    "source": "Dambisa Moyo",
-    "cat": "misc"
   },
   {
     "text": "学而不思则罔，思而不学则殆。",
@@ -1525,14 +1498,6 @@
     ]
   },
   {
-    "text": "秋是第二个春，每一片叶子都是一朵鲜花。",
-    "source": "阿尔贝·加缪（转引）",
-    "tags": [
-      "autumn"
-    ],
-    "source_status": "secondary"
-  },
-  {
     "text": "主啊，是时候了。夏日曾经很盛大。",
     "source": "里尔克《秋日》",
     "tags": [
@@ -1829,5 +1794,419 @@
     "source": "《冰菓》",
     "tags": [],
     "cat": "acg"
+  },
+  {
+    "text": "困扰人的不是事物本身，而是人对事物的看法。",
+    "source": "爱比克泰德《手册》",
+    "tags": [],
+    "cat": "philosophy"
+  },
+  {
+    "text": "你能掌控的是自己的心念，而不是外界的事物。",
+    "source": "马可·奥勒留《沉思录》",
+    "tags": [],
+    "cat": "philosophy"
+  },
+  {
+    "text": "读好书，如同与过去最杰出的人交谈。",
+    "source": "勒内·笛卡尔《谈谈方法》",
+    "tags": [],
+    "cat": "philosophy"
+  },
+  {
+    "text": "凡不能毁灭我的，必使我更强大。",
+    "source": "弗里德里希·尼采《偶像的黄昏》",
+    "tags": [],
+    "cat": "philosophy"
+  },
+  {
+    "text": "把人永远当作目的，绝不只当作手段。",
+    "source": "伊曼努尔·康德《道德形而上学奠基》",
+    "tags": [],
+    "cat": "philosophy"
+  },
+  {
+    "text": "幸福不是美德的奖赏，而是美德本身。",
+    "source": "巴鲁赫·斯宾诺莎《伦理学》",
+    "tags": [],
+    "cat": "philosophy"
+  },
+  {
+    "text": "世界上最伟大的事，是懂得如何属于自己。",
+    "source": "米歇尔·德·蒙田《随笔集》",
+    "tags": [],
+    "cat": "philosophy"
+  },
+  {
+    "text": "人不能两次踏进同一条河流。",
+    "source": "赫拉克利特残篇",
+    "tags": [],
+    "cat": "philosophy"
+  },
+  {
+    "text": "世上没有绝对的善恶，思想使然。",
+    "source": "威廉·莎士比亚《哈姆雷特》",
+    "tags": [],
+    "cat": "lit"
+  },
+  {
+    "text": "真理很少纯粹，也绝不简单。",
+    "source": "奥斯卡·王尔德《不可儿戏》",
+    "tags": [],
+    "cat": "lit"
+  },
+  {
+    "text": "希望是长着羽毛的东西，栖息在灵魂里。",
+    "source": "艾米莉·狄金森《希望是长着羽毛的东西》",
+    "tags": [],
+    "cat": "lit"
+  },
+  {
+    "text": "从某一点起，再没有回头路；而那一点，正是必须抵达之处。",
+    "source": "弗朗茨·卡夫卡《箴言》",
+    "tags": [],
+    "cat": "lit"
+  },
+  {
+    "text": "美将拯救世界。",
+    "source": "费奥多尔·陀思妥耶夫斯基《白痴》",
+    "tags": [],
+    "cat": "lit"
+  },
+  {
+    "text": "在隆冬，我终于发现，心中有个不可战胜的夏天。",
+    "source": "阿尔贝·加缪《重返蒂巴萨》",
+    "tags": [],
+    "cat": "lit"
+  },
+  {
+    "text": "我虽对许多事都不能确定，但星空总令我做梦。",
+    "source": "文森特·梵高致提奥的信",
+    "tags": [],
+    "cat": "lit"
+  },
+  {
+    "text": "没有人是一座孤岛，可以自成一体。",
+    "source": "约翰·多恩《沉思录》第十七篇",
+    "tags": [],
+    "cat": "lit"
+  },
+  {
+    "text": "生活只能向后理解，却必须向前生活。",
+    "source": "索伦·克尔凯郭尔《日记》",
+    "tags": ["holiday:new-year"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "心智不是等待填满的容器，而是等待点燃的火焰。",
+    "source": "普鲁塔克《论听》",
+    "tags": ["holiday:new-year"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "你必须改变你的生活。",
+    "source": "莱纳·马利亚·里尔克《古代阿波罗躯干》",
+    "tags": ["holiday:new-year"],
+    "cat": "lit"
+  },
+  {
+    "text": "立刻开始生活，把每一天都当作独立的一生。",
+    "source": "塞涅卡《致卢西利乌斯书信》",
+    "tags": ["holiday:new-year"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "未来并非掌握在星辰手中，而在我们自己。",
+    "source": "威廉·莎士比亚《尤利乌斯·凯撒》",
+    "tags": ["holiday:new-year-eve"],
+    "cat": "lit"
+  },
+  {
+    "text": "我要让过去、现在和未来都住在心里。",
+    "source": "查尔斯·狄更斯《圣诞颂歌》",
+    "tags": ["holiday:new-year-eve"],
+    "cat": "lit"
+  },
+  {
+    "text": "趁着我们还在等待生活，生活已经流逝。",
+    "source": "塞涅卡《论生命之短暂》",
+    "tags": ["holiday:new-year-eve"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "一切都在变化，没有什么会消失。",
+    "source": "奥维德《变形记》",
+    "tags": ["holiday:new-year-eve"],
+    "cat": "lit"
+  },
+  {
+    "text": "只要能减轻别人的负担，这世上就没有无用之人。",
+    "source": "查尔斯·狄更斯《我们共同的朋友》",
+    "tags": ["holiday:spring-festival"],
+    "cat": "lit"
+  },
+  {
+    "text": "幸福的家庭彼此相似，不幸的家庭各有各的不幸。",
+    "source": "列夫·托尔斯泰《安娜·卡列尼娜》",
+    "tags": ["holiday:spring-festival"],
+    "cat": "lit"
+  },
+  {
+    "text": "团结则存，分裂则亡。",
+    "source": "伊索寓言《四头公牛与狮子》",
+    "tags": ["holiday:spring-festival"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "宇宙处于变化之中，生命由我们的念头塑造。",
+    "source": "马可·奥勒留《沉思录》",
+    "tags": ["holiday:spring-festival"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "一件事做得好，最大的奖赏就是把它做好。",
+    "source": "拉尔夫·沃尔多·爱默生《论文集》",
+    "tags": ["holiday:labour"],
+    "cat": "lit"
+  },
+  {
+    "text": "忙碌本身并不足够，蚂蚁也很忙；关键在于忙些什么。",
+    "source": "亨利·戴维·梭罗《瓦尔登湖》",
+    "tags": ["holiday:labour"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "工作的终点是闲暇。",
+    "source": "亚里士多德《政治学》",
+    "tags": ["holiday:labour"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "我们不是只为自己而生。",
+    "source": "西塞罗《论义务》",
+    "tags": ["holiday:labour"],
+    "cat": "lit"
+  },
+  {
+    "text": "法律不是为了废除或限制自由，而是为了保护并扩大自由。",
+    "source": "约翰·洛克《政府论》",
+    "tags": ["holiday:national-day"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "民有、民治、民享的政府，将永续于世。",
+    "source": "亚伯拉罕·林肯《葛底斯堡演说》",
+    "tags": ["holiday:national-day"],
+    "cat": "lit"
+  },
+  {
+    "text": "一个国家的价值，归根结底取决于组成它的每一个人。",
+    "source": "约翰·斯图亚特·密尔《论自由》",
+    "tags": ["holiday:national-day"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "我将在心里珍重圣诞，并努力让这份精神常在。",
+    "source": "查尔斯·狄更斯《圣诞颂歌》",
+    "tags": ["holiday:laba"],
+    "cat": "lit"
+  },
+  {
+    "text": "真正的给予，不只交出财物，也交出自己。",
+    "source": "纪伯伦《先知》",
+    "tags": ["holiday:laba"],
+    "cat": "lit"
+  },
+  {
+    "text": "只要有人在，就有行善的机会。",
+    "source": "塞涅卡《致卢西利乌斯书信》",
+    "tags": ["holiday:laba"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "我们都身在阴沟，但仍有人仰望星空。",
+    "source": "奥斯卡·王尔德《温夫人的扇子》",
+    "tags": ["holiday:lantern"],
+    "cat": "lit"
+  },
+  {
+    "text": "最后，我们走出来，再次看见星星。",
+    "source": "但丁《神曲·地狱篇》",
+    "tags": ["holiday:lantern"],
+    "cat": "lit"
+  },
+  {
+    "text": "信念是那只在黎明未明时，已感受到光的鸟。",
+    "source": "泰戈尔《飞鸟集》",
+    "tags": ["holiday:lantern"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "行动的阻碍，也会推动行动；道路上的障碍，正是道路本身。",
+    "source": "马可·奥勒留《沉思录》",
+    "tags": ["holiday:dragon-boat"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "世界会击倒每一个人，但许多人会在伤口处变得坚强。",
+    "source": "欧内斯特·海明威《永别了，武器》",
+    "tags": ["holiday:dragon-boat"],
+    "cat": "lit"
+  },
+  {
+    "text": "群体的力量在于每个成员，成员的力量也在于群体。",
+    "source": "鲁德亚德·吉卜林《丛林之书》",
+    "tags": ["holiday:dragon-boat"],
+    "cat": "lit"
+  },
+  {
+    "text": "未来会怎样我不知道；无论如何，我都会笑着迎向它。",
+    "source": "赫尔曼·梅尔维尔《白鲸》",
+    "tags": ["holiday:dragon-boat"],
+    "cat": "lit"
+  },
+  {
+    "text": "爱不是爱，若它会因变化而改变。",
+    "source": "威廉·莎士比亚《十四行诗·第一百一十六首》",
+    "tags": ["holiday:qixi"],
+    "cat": "lit"
+  },
+  {
+    "text": "请允许我告诉你，我是多么热切地爱慕着你。",
+    "source": "简·奥斯汀《傲慢与偏见》",
+    "tags": ["holiday:qixi"],
+    "cat": "lit"
+  },
+  {
+    "text": "爱另一个人，就是看见上帝的面容。",
+    "source": "维克多·雨果《悲惨世界》",
+    "tags": ["holiday:qixi"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "有人说最美的是骑兵或舰队，我说，是你所爱的人。",
+    "source": "萨福残篇第十六首",
+    "tags": ["holiday:qixi"],
+    "cat": "lit"
+  },
+  {
+    "text": "我如此热爱星辰，因此不再畏惧夜色。",
+    "source": "萨拉·威廉姆斯《老天文学家致学生》",
+    "tags": ["holiday:mid-autumn"],
+    "cat": "lit"
+  },
+  {
+    "text": "天空不仅在我们头顶，也铺展在脚下。",
+    "source": "亨利·戴维·梭罗《瓦尔登湖》",
+    "tags": ["holiday:mid-autumn"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "美好的事物，永远令人喜悦。",
+    "source": "约翰·济慈《恩底弥翁》",
+    "tags": ["holiday:mid-autumn"],
+    "cat": "lit"
+  },
+  {
+    "text": "天穹无边的草原上，星星静静地一颗颗绽放。",
+    "source": "亨利·朗费罗《伊万杰琳》",
+    "tags": ["holiday:mid-autumn"],
+    "cat": "lit"
+  },
+  {
+    "text": "懂得如何老去，是智慧的杰作，也是生活艺术中最难的一章。",
+    "source": "亨利-弗雷德里克·阿米耶《日记》",
+    "tags": ["holiday:double-ninth"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "年龄并不比青春少一分机会，只是换了另一种装束。",
+    "source": "乔治·艾略特《米德尔马契》",
+    "tags": ["holiday:double-ninth"],
+    "cat": "lit"
+  },
+  {
+    "text": "没有谁比失去热忱的人更老。",
+    "source": "亨利·戴维·梭罗《瓦尔登湖》",
+    "tags": ["holiday:double-ninth"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "只要活着，就继续学习如何生活。",
+    "source": "塞涅卡《致卢西利乌斯书信》",
+    "tags": ["holiday:double-ninth"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "若冬天来了，春天还会远吗？",
+    "source": "珀西·比希·雪莱《西风颂》",
+    "tags": ["spring"],
+    "cat": "lit"
+  },
+  {
+    "text": "四月为万物添上青春的气息。",
+    "source": "威廉·莎士比亚《十四行诗·第九十八首》",
+    "tags": ["spring"],
+    "cat": "lit"
+  },
+  {
+    "text": "我能否将你比作夏日？",
+    "source": "威廉·莎士比亚《十四行诗·第十八首》",
+    "tags": ["summer"],
+    "cat": "lit"
+  },
+  {
+    "text": "让每个季节自然展开，呼吸空气，品尝果实。",
+    "source": "亨利·戴维·梭罗《瓦尔登湖》",
+    "tags": ["summer"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "此刻无家的人，将不再筑家；此刻孤独的人，将长久孤独。",
+    "source": "莱纳·马利亚·里尔克《秋日》",
+    "tags": ["autumn"],
+    "cat": "lit"
+  },
+  {
+    "text": "现在正是我们不满的冬天。",
+    "source": "威廉·莎士比亚《理查三世》",
+    "tags": ["winter"],
+    "cat": "lit"
+  },
+  {
+    "text": "播种时学习，收获时教导，冬天享受。",
+    "source": "威廉·布莱克《地狱箴言》",
+    "tags": ["winter"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "大胆走向你的梦想，活出你想象中的生活。",
+    "source": "亨利·戴维·梭罗《瓦尔登湖》",
+    "tags": ["holiday:new-year"],
+    "cat": "lit"
+  },
+  {
+    "text": "若想进步，就要甘愿被人看作愚笨。",
+    "source": "爱比克泰德《手册》",
+    "tags": ["holiday:dragon-boat"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "爱是对完整的追寻。",
+    "source": "柏拉图《会饮篇》",
+    "tags": ["holiday:qixi"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "越是持久地思考，越令人敬畏：头顶的星空与心中的道德法则。",
+    "source": "伊曼努尔·康德《实践理性批判》",
+    "tags": ["holiday:mid-autumn"],
+    "cat": "philosophy"
+  },
+  {
+    "text": "成熟是一切。",
+    "source": "威廉·莎士比亚《李尔王》",
+    "tags": ["holiday:double-ninth"],
+    "cat": "lit"
   }
 ]
