@@ -1465,7 +1465,7 @@
       "</div>",
       '<div class="hb-section hb-install-section">',
       '<div class="hb-install-card">',
-      '<img class="hb-install-icon" src="' + getBp() + '/static/site-icon-192-v6.png" alt="" aria-hidden="true">',
+      '<img class="hb-install-icon" src="' + getBp() + '/static/pwa-icon-192-v18.png" alt="" aria-hidden="true">',
       '<div class="hb-install-copy"><strong>安巢鸟</strong><span>安装到桌面</span></div>',
       '<button id="pwa-install-btn" class="hb-install-btn" type="button">安装</button>',
       '</div>',
