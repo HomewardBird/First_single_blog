@@ -1,7 +1,30 @@
+# ── 安全响应头 ────────────────────────────────────────────────────────
+# CSP 允许清单来自对构建产物 public/ 的实际扫描（详见 deepsec-reports/）：
+#   script-src : giscus.app（留言板运行时注入 client.js）、cdnjs.cloudflare.com（mermaid 动态 import）
+#   frame-src  : giscus.app（评论 iframe）
+#   worker-src : blob:（搜索 worker 用 Blob 构造）
+#   'unsafe-inline' 用于 script/style：每页有 2~6 个构建期内联脚本（内容索引预取、页面加载器、
+#   custom.js 注入的 <style>），静态站点无法用 nonce；如需更严格，可改用下面注释里的哈希方案。
+#   'unsafe-eval' 目前不需要：仅 bases 插件的 sortFn/filterFn 会用到 new Function，当前无页面使用，
+#   将来若在 frontmatter 里用了 bases 动态表达式，需要补上 'unsafe-eval'。
+#
+# 严格版（把下面全局规则里的 Content-Security-Policy 换成这两行，并去掉 'unsafe-inline'）：
+#   script-src 'self' https://giscus.app https://cdnjs.cloudflare.com
+#     'sha256-0Vp5twFhiSrDD5teJIPTuxQRPG/B8gpuM7cBSb2Wu0w='
+#     'sha256-QeGXr7MmZ0urv52Pa5mSURII07KH/vxzfcCL9oESUxQ='
+#     'sha256-B3YGPo+RcPEumcwzw38WKAqdkwmdnAkI2+trFxmSWKk='
+#     'sha256-Y2g2dPpL9ftVHtxcjLaVnnHAKSHKszzvTZ7wQk4WuWg='
+#     'sha256-asfGKA3qUmLUk8z6dhGFFuH6l+S84QpLKpf2susTaHE='
+#     'sha256-RCv5Phrq46Vv+SHtmERFJwyGssJKMXOf7yIbGTwQuwY='
+#   注意：CSP 规范规定只要出现哈希，'unsafe-inline' 就会被忽略，两者不能同时写；
+#   且哈希随构建变化（内容索引脚本每目录不同），新增栏目后需重算，否则该页搜索会失效。
 /*
   X-Frame-Options: SAMEORIGIN
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://giscus.app https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; media-src 'self' blob: https:; connect-src 'self' https://giscus.app https://api.github.com; frame-src https://giscus.app; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests
 
 /*.css
   Cache-Control: public, max-age=31536000, immutable
