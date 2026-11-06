@@ -15,6 +15,9 @@ node_modules/
 public/
 .quartz-cache/
 
+# 本地运行日志
+server.log
+
 # 插件目录：提交快照（含预构建 dist）以加速 CI，忽略依赖与 TUI
 .quartz/plugins/*/node_modules/
 .quartz/plugins/obsidian-flavored-markdown
@@ -26,10 +29,6 @@ plugins/*/node_modules/
 # IDE
 .vscode/
 .idea/
-
-node_modules/
-public/
-.quartz-cache/
 
 # TypeScript build cache
 tsconfig.tsbuildinfo

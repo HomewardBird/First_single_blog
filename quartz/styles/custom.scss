@@ -4458,3 +4458,95 @@ article p.math-scroll > .katex {
     font-size: 1.08em;
   }
 }
+
+/* ================================================================
+   2026-10 精修：首页可读性、移动端密度、键盘可达性
+   ================================================================ */
+
+/* 公告卡：提高不透明度与文字对比，联系方式单独成行 */
+html body[data-slug="index"] .welcome-pill {
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #374151;
+  box-shadow: 0 10px 30px rgba(31, 45, 61, 0.1);
+}
+
+html body[data-slug="index"] .notice-list li + li {
+  margin-top: 0.18rem;
+}
+
+html body[data-slug="index"] .notice-list .notice-contact {
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed rgba(128, 128, 128, 0.28);
+}
+
+html[data-theme="dark"] body[data-slug="index"] .welcome-pill,
+html[saved-theme="dark"] body[data-slug="index"] .welcome-pill {
+  background: rgba(22, 22, 24, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #d6d6d6;
+}
+
+/* 移动端：压缩卡片高度与留白，让三张卡与友链更快进入视野 */
+@media (max-width: 800px) {
+  html body[data-slug="index"] .home-header {
+    margin-bottom: 1.8rem;
+  }
+
+  html body[data-slug="index"] .welcome-pill {
+    padding: 1rem 1.1rem;
+    font-size: 0.88rem;
+    line-height: 1.75;
+  }
+
+  html body[data-slug="index"] .card-grid {
+    gap: 0.85rem;
+    margin-bottom: 2rem;
+  }
+
+  html body[data-slug="index"] .glass-card {
+    min-height: 0;
+    padding: 1.15rem 1rem;
+  }
+
+  html body[data-slug="index"] .card-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 0.55rem;
+  }
+
+  html body[data-slug="index"] .card-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  html body[data-slug="index"] .card-desc {
+    line-height: 1.6;
+  }
+
+  html body[data-slug="index"] .friend-link {
+    margin-top: 2rem;
+  }
+}
+
+/* 键盘焦点：顶栏按钮、卡片与正文链接都给出清晰轮廓 */
+#top-bar button:focus-visible,
+#hamburger-menu button:focus-visible,
+html body[data-slug="index"] .glass-card:focus-visible,
+html body[data-slug="index"] .friend-link:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 3px;
+}
+
+/* 顶栏设置按钮已改为滑杆图标，保留 18px 视觉尺寸 */
+.hamburger-btn > svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* 菜单遮罩从顶栏下方开始：顶栏的设置/主题/搜索按钮保持可点，
+   也兑现“再次点击设置按钮关闭面板”的交互 */
+#hamburger-backdrop {
+  top: 44px;
+}
