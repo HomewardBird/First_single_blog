@@ -511,7 +511,12 @@ body:not([data-slug="index"]) .center {
   }
 }
 
-/* ====== 留言区深色模式增强可读性 ====== */
+/* ====== 留言区：占满正文列宽 + 深色模式增强可读性 ====== */
+.giscus-frame {
+  width: 100%;
+  border: none;
+}
+
 .giscus {
   @include dark {
     background: rgba(22, 22, 24, 0.58) !important;

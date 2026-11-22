@@ -6,7 +6,7 @@ description: 安巢鸟的小站。主要写两块：一是计算机入门教学�
 <div class="home-wrapper">
 <header class="home-header">
 <h1 class="site-title">安巢鸟的个人网站</h1>
-<p class="random-quote" id="random-quote">「 正在加载... 」</p>
+<p class="random-quote" id="random-quote">「 正在加载… 」</p>
 </header>
 
 <div class="welcome-pill">
@@ -64,4 +64,3 @@ description: 安巢鸟的小站。主要写两块：一是计算机入门教学�
   Oct 的网站：<a href="https://octseven.us.kg/">octseven.us.kg</a>
 </div>
 </div>
-

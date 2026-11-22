@@ -124,6 +124,7 @@
     }
 
     .callout-content {
+      height: 0;
       & > * {
         transition:
           height 0.1s cubic-bezier(0.02, 0.01, 0.47, 1),
