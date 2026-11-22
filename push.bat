@@ -10,7 +10,7 @@ if errorlevel 1 (
     echo Nothing to commit.
 )
 
-git -c http.proxy= -c https.proxy= push origin HEAD:release-ver
+git push origin HEAD:release-ver
 if errorlevel 1 (
     echo.
     echo Upload FAILED. Check network or proxy settings.
