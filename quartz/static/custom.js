@@ -1215,14 +1215,18 @@
   function currentDate() {
     return debugDate() || new Date()
   }
+  // 四季以「四立」为界：立春/立夏/立秋/立冬。
+  // 日期取常用近似值（立春 2/4、立夏 5/5、立秋 8/7、立冬 11/7），
+  // 与实际节气逐年最多相差一天。
   function seasonNow(date) {
     var forced = debugSeason()
     if (forced) return forced
-    var m = (date || currentDate()).getMonth() // 0-11，访客本地时区
-    if (m >= 2 && m <= 4) return "spring" // 3-5 月
-    if (m >= 5 && m <= 7) return "summer" // 6-8 月
-    if (m >= 8 && m <= 10) return "autumn" // 9-11 月
-    return "winter" // 12-2 月
+    var d = date || currentDate()
+    var md = (d.getMonth() + 1) * 100 + d.getDate() // 访客本地时区，如 1107
+    if (md >= 1107 || md < 204) return "winter" // 立冬 ~ 立春
+    if (md < 505) return "spring" // 立春 ~ 立夏
+    if (md < 807) return "summer" // 立夏 ~ 立秋
+    return "autumn" // 立秋 ~ 立冬
   }
   function seasonParticlesKey() {
     // 首页与子页面偏好分开存，避免在首页开过一次后子页面也飘
